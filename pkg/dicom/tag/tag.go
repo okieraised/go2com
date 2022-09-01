@@ -1,6 +1,8 @@
 package tag
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	TYPE_CURRENT = "current"
@@ -20,10 +22,50 @@ type TagInfo struct {
 	Status string
 }
 
+// Compare checks if 2 tags are equal. If equals, return 0, else returns 1
+func (tag DicomTag) Compare(otherTag DicomTag) int {
+	if tag.Group == otherTag.Group && tag.Element == otherTag.Element {
+		return 0
+	}
+	return 1
+}
+
+// IsPrivateTag return true if the tag is private
 func IsPrivateTag(group uint16) bool {
 	return group%2 == 1
 }
 
+// IsPublicTag return true if the tag is public
+func IsPublicTag(group uint16) bool {
+	return group%2 == 0
+}
+
+// String returns the tag in (gggg, eeee) format
 func (tag DicomTag) String() string {
 	return fmt.Sprintf("(%04x,%04x)", tag.Group, tag.Element)
+}
+
+// Find finds information about the given tag. If the tag is not part of
+func Find(tag DicomTag) (TagInfo, error) {
+	initTag()
+	entry, ok := TagDict[tag]
+	if !ok {
+		if tag.Group%2 == 0 && tag.Element == 0x0000 {
+			entry = TagInfo{tag, "UL", "GenericGroupLength", "1", ""}
+		} else {
+			return TagInfo{}, fmt.Errorf("Could not find tag (0x%x, 0x%x)", tag.Group, tag.Element)
+		}
+	}
+	return entry, nil
+}
+
+// FindByName searchs for the tag by name
+func FindByName(name string) (TagInfo, error) {
+	initTag()
+	for _, tag := range TagDict {
+		if tag.Name == name {
+			return tag, nil
+		}
+	}
+	return TagInfo{}, fmt.Errorf("Could not find tag %s", name)
 }

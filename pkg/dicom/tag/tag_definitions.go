@@ -4995,6 +4995,11 @@ var TagDict map[DicomTag]TagInfo
 
 
 func init() {
+	initTag()
+}
+
+
+func initTag() {
 
 	TagDict = make(map[DicomTag]TagInfo)
 	TagDict[DicomTag{0x0000, 0x0000}] = TagInfo{DicomTag{0x0000, 0x0000}, "UL", "CommandGroupLength", "1", ""}
