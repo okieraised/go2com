@@ -10,6 +10,22 @@ import (
 )
 
 type DcmReader interface {
+	io.Reader
+	ReadUInt8() (uint8, error)
+	ReadUInt16() (uint16, error)
+	ReadUInt32() (uint32, error)
+	ReadUInt64() (uint64, error)
+	ReadInt8() (int8, error)
+	ReadInt16() (int16, error)
+	ReadInt32() (int32, error)
+	ReadInt64() (int64, error)
+	ReadFloat32() (float32, error)
+	ReadFloat64() (float64, error)
+	IsImplicit() bool
+	Peek(n int) ([]byte, error)
+	Discard(n int) (int, error)
+	ByteOrder() binary.ByteOrder
+	Skip(n int64) error
 }
 
 type dcmReader struct {

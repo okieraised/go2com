@@ -1,4 +1,4 @@
-package tag
+package main
 
 import (
 	"bufio"
@@ -7,11 +7,12 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"testing"
+
+	"github.com/okieraised/go2com/pkg/dicom/tag"
 )
 
-func TestGenTag(t *testing.T) {
-	fileName := "./tag_definitions.go"
+func main() {
+	fileName := "../../pkg/dicom/tag/tag_definitions.go"
 	var file *os.File
 
 	_, err := os.Stat(fileName)
@@ -48,7 +49,7 @@ func TestGenTag(t *testing.T) {
 
 	// Generate tag variables
 	r := regexp.MustCompile(`^\(.*,.*\)\t[a-zA-Z]{2}\t\w+\t.*\t\w+(?:\/retired)?`)
-	scanner := bufio.NewScanner(strings.NewReader(PublicTagDict))
+	scanner := bufio.NewScanner(strings.NewReader(tag.PublicTagDict))
 	for scanner.Scan() {
 		line := scanner.Text()
 		if r.MatchString(line) {
@@ -86,6 +87,24 @@ func TestGenTag(t *testing.T) {
 		return
 	}
 
+	_, err = file.Write([]byte("\tinitTag()\n"))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	_, err = file.Write([]byte("}\n"))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	_, err = file.Write([]byte("\n\nfunc initTag() {\n"))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	_, err = file.Write([]byte("\n\tTagDict = make(map[DicomTag]TagInfo)\n"))
 	if err != nil {
 		fmt.Println(err)
@@ -93,7 +112,7 @@ func TestGenTag(t *testing.T) {
 	}
 
 	// Generate Tag dictionary
-	scanner = bufio.NewScanner(strings.NewReader(PublicTagDict))
+	scanner = bufio.NewScanner(strings.NewReader(tag.PublicTagDict))
 	for scanner.Scan() {
 		line := scanner.Text()
 		if r.MatchString(line) {
