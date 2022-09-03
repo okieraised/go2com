@@ -73,8 +73,8 @@ const (
 	VRPixelData
 )
 
-// GetVRKind returns the golang value encoding of an element with <tag, vr>.
-func GetVRKind(dcmTag tag.DicomTag, vr string) VRKind {
+// GetVR returns the golang value encoding of an element with <tag, vr>.
+func GetVR(dcmTag tag.DicomTag, vr string) VRKind {
 	// if dcmTag == Item {
 	// 	return VRItem
 	// }
