@@ -26,6 +26,8 @@ type DcmReader interface {
 	Discard(n int) (int, error)
 	ByteOrder() binary.ByteOrder
 	Skip(n int64) error
+	SetTransferSyntax(binaryOrder binary.ByteOrder, isImplicit bool)
+	ReadString(n uint32) (string, error)
 }
 
 type dcmReader struct {
@@ -47,7 +49,6 @@ func NewDcmReader(reader *bufio.Reader, readPixel bool) DcmReader {
 }
 
 func (r *dcmReader) Read(p []byte) (int, error) {
-	r.reader.Read(p)
 	return r.reader.Read(p)
 }
 
@@ -134,4 +135,18 @@ func (r *dcmReader) Skip(n int64) error {
 	_, err := io.CopyN(io.Discard, r, n)
 
 	return err
+}
+
+func (r *dcmReader) SetTransferSyntax(binaryOrder binary.ByteOrder, isImplicit bool) {
+	r.binaryOrder = binaryOrder
+	r.isImplicit = isImplicit
+}
+
+func (r *dcmReader) ReadString(n uint32) (string, error) {
+	data := make([]byte, n)
+	_, err := io.ReadFull(r, data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

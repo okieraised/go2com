@@ -33,6 +33,10 @@ const (
 	UnlimitedText       = "UT"
 )
 
+const (
+	VR_UNKNOWN = "UN"
+)
+
 type VRKind int
 
 const (

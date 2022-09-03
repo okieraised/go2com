@@ -1,7 +1,12 @@
 package tag
 
 import (
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
+	"strconv"
+
+	"github.com/okieraised/go2com/internal/system"
 )
 
 const (
@@ -45,7 +50,8 @@ func (tag DicomTag) String() string {
 	return fmt.Sprintf("(%04x,%04x)", tag.Group, tag.Element)
 }
 
-// Find finds information about the given tag. If the tag is not part of
+// Find finds information about the given tag. If the tag is not
+// part of the dictionary, raise error
 func Find(tag DicomTag) (TagInfo, error) {
 	initTag()
 	entry, ok := TagDict[tag]
@@ -53,7 +59,7 @@ func Find(tag DicomTag) (TagInfo, error) {
 		if tag.Group%2 == 0 && tag.Element == 0x0000 {
 			entry = TagInfo{tag, "UL", "GenericGroupLength", "1", ""}
 		} else {
-			return TagInfo{}, fmt.Errorf("Could not find tag (0x%x, 0x%x)", tag.Group, tag.Element)
+			return TagInfo{}, fmt.Errorf("could not find tag (0x%x, 0x%x)", tag.Group, tag.Element)
 		}
 	}
 	return entry, nil
@@ -67,5 +73,38 @@ func FindByName(name string) (TagInfo, error) {
 			return tag, nil
 		}
 	}
-	return TagInfo{}, fmt.Errorf("Could not find tag %s", name)
+	return TagInfo{}, fmt.Errorf("could not find tag %s", name)
+}
+
+// ConvertTagtoHex converts the 4 byte of dicom tag to DicomTag struct (gggg, eeee)
+func ConvertTagtoHex(bTag []byte) (DicomTag, error) {
+	if len(bTag) != 4 {
+		return DicomTag{}, fmt.Errorf("invalid tag length of %d bytes", len(bTag))
+	}
+
+	b := make([]byte, 4)
+	var group uint16
+	var element uint16
+	switch system.NativeEndian {
+	case binary.BigEndian:
+		// TODO: case when machine is big endian
+	case binary.LittleEndian:
+		bTagUint16 := binary.LittleEndian.Uint16(bTag[0:4])
+		binary.BigEndian.PutUint16(b, bTagUint16)
+		group64, err := strconv.ParseUint(hex.EncodeToString(b[0:2]), 16, 16)
+		if err != nil {
+			return DicomTag{}, err
+		}
+		group = uint16(group64)
+		element64, err := strconv.ParseUint(hex.EncodeToString(b[2:4]), 16, 16)
+		if err != nil {
+			return DicomTag{}, err
+		}
+		element = uint16(element64)
+
+	}
+	return DicomTag{
+		Group:   group,
+		Element: element,
+	}, nil
 }
