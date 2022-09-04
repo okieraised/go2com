@@ -1,6 +1,7 @@
 package element
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
@@ -22,11 +23,11 @@ const (
 )
 
 type Element struct {
-	Tag                    tag.DicomTag `json:"tag"`
-	ValueRepresentation    vr.VRKind    `json:"vr"`
-	ValueRepresentationStr string       `json:"vr_str"`
-	ValueLength            uint32       `json:"valueLength"`
-	Value                  Value        `json:"value"`
+	Tag                    tag.DicomTag
+	ValueRepresentation    vr.VRKind
+	ValueRepresentationStr string
+	ValueLength            uint32
+	Value                  Value
 }
 
 type SequenceItem struct {
@@ -218,12 +219,26 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 
 func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
 	switch valueRepresentation {
-	case vr.UnsignedShort, vr.AttributeTag:
+	case vr.UnsignedShort:
 		val, err := r.ReadUInt16()
 		if err != nil {
 			return nil, err
 		}
 		return val, nil
+	case vr.AttributeTag:
+		group, err := r.ReadUInt16()
+		if err != nil {
+			return nil, err
+		}
+		elem, err := r.ReadUInt16()
+		if err != nil {
+			return nil, err
+		}
+		return tag.DicomTag{
+			Group:   group,
+			Element: elem,
+		}, nil
+
 	case vr.UnsignedLong:
 		val, err := r.ReadUInt32()
 		if err != nil {
@@ -252,12 +267,10 @@ func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string,
 }
 
 func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
-	var sequences SequenceItemSet
-	// var sequences []Element
+	// var sequences SequenceItemSet
+	var sequences []Element
 
 	// Reference: https://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
-
-	fmt.Println("t", t, valueRepresentation, valueLength)
 
 	if valueLength == VLUndefinedLength {
 		for {
@@ -269,31 +282,34 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 			if subElement.Tag == tag.SequenceDelimitationItem {
 				break
 			}
-			sequences.elements = append(sequences.elements, subElement.Value.(*SequenceItem))
+			// sequences.elements = append(sequences.elements, subElement.Value.(*SequenceItem))
 		}
 
 	} else {
-		// n, err := r.Peek(int(valueLength))
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// fmt.Println("n", n)
-
-		r.Skip(8)
-		for {
-			subElement, err := ReadElement(r, false)
-			if err != nil {
-				return nil, err
-			}
-			fmt.Println("subElement 2", subElement)
-			// sequences.elements = append(sequences.elements, subElement.Value.(*SequenceItem))
-			// sequences = append(sequences, *subElement)
-			// break
+		n, err := r.Peek(int(valueLength))
+		if err != nil {
+			return nil, err
 		}
-		r.Discard(int(valueLength))
+		br := bytes.NewReader(n)
+		subRd := reader.NewDcmReader(bufio.NewReader(br), false)
+		subRd.Skip(8)
+		for {
+			subElement, err := ReadElement(subRd, false)
+			if err != nil {
+				if err == io.EOF {
+					break
+				} else {
+					return nil, err
+				}
 
+			}
+			sequences = append(sequences, *subElement)
+
+		}
+		// fmt.Println("sequences", sequences)
+		r.Discard(int(valueLength))
 	}
 
-	return &sequences, nil
+	return sequences, nil
 
 }

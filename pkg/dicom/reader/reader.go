@@ -10,8 +10,7 @@ import (
 )
 
 type DcmReader interface {
-	// io.Reader
-	io.ReadSeeker
+	io.Reader
 	ReadUInt8() (uint8, error)
 	ReadUInt16() (uint16, error)
 	ReadUInt32() (uint32, error)
@@ -150,8 +149,4 @@ func (r *dcmReader) ReadString(n uint32) (string, error) {
 		return "", err
 	}
 	return string(data), nil
-}
-
-func (r *dcmReader) Seek(offset int64, whence int) (int64, error) {
-	return io.Seeker.Seek(offset, int64(whence))
 }

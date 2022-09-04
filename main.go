@@ -13,14 +13,13 @@ import (
 )
 
 const (
-	filePath = "./test_data/File 12.dcm"
+	filePath = "./test_data/File 2.dcm"
 )
 
 type Parser struct {
 	reader   reader.DcmReader
 	dataset  dataset.Dataset
 	metadata dataset.Dataset
-	file     *os.File
 }
 
 func NewParser(fileReader io.Reader, bytesToRead int64, readPixel bool) (*Parser, error) {
@@ -49,7 +48,7 @@ func (p *Parser) readHeader() error {
 
 	i := 0
 	for {
-		if i > 25 {
+		if i > 90 {
 			return nil
 		}
 		var err error
@@ -60,6 +59,7 @@ func (p *Parser) readHeader() error {
 				return err
 			}
 		}
+
 		res, err := element.ReadElement(p.reader, false)
 
 		if err != nil {
@@ -84,11 +84,6 @@ func (p *Parser) readHeader() error {
 
 func main() {
 
-	// dataset, _ := dicom.ParseFile(filePath, nil) // See also: dicom.Parse which has a generic io.Reader API.
-
-	// // Dataset will nicely print the DICOM dataset data out of the box.
-	// fmt.Println(dataset)
-
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -103,6 +98,14 @@ func main() {
 
 	fileSize := info.Size()
 	fmt.Println("File size: ", fileSize)
+
+	// buffer := make([]byte, fileSize)
+
+	// // read file content to buffer
+	// file.Read(buffer)
+
+	// fileBytes := bytes.NewReader(buffer)
+	// fileBytes.Seek()
 
 	parser, err := NewParser(file, fileSize, false)
 	if err != nil {
