@@ -44,37 +44,23 @@ type VRKind int
 const (
 	// VRStringList means the element stores a list of strings
 	VRStringList VRKind = iota
-	// VRBytes means the element stores a []byte
 	VRBytes
-	// VRString means the element stores a string
 	VRString
-	// VRUInt16List means the element stores a list of uint16s
 	VRUInt16List
-	// VRUInt32List means the element stores a list of uint32s
 	VRUInt32List
-	// VRInt16List means the element stores a list of int16s
 	VRInt16List
-	// VRInt32List element stores a list of int32s
 	VRInt32List
-	// VRFloat32List element stores a list of float32s
 	VRFloat32List
-	// VRFloat64List element stores a list of float64s
 	VRFloat64List
-	// VRSequence means the element stores a list of *Elements, w/ TagItem
 	VRSequence
-	// VRItem means the element stores a list of *Elements
 	VRItem
-	// VRTagList element stores a list of Tags
 	VRTagList
-	// VRDate means the element stores a date string. Use ParseDate() to
-	// parse the date string.
 	VRDate
-	// VRPixelData means the element stores a PixelDataInfo
 	VRPixelData
 )
 
-// GetVRKind returns the golang value encoding of an element with <tag, vr>.
-func GetVRKind(dcmTag tag.DicomTag, vr string) VRKind {
+// GetVR returns the golang value encoding of an element with <tag, vr>.
+func GetVR(dcmTag tag.DicomTag, vr string) VRKind {
 	// if dcmTag == Item {
 	// 	return VRItem
 	// }

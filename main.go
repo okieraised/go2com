@@ -47,34 +47,48 @@ func (p *Parser) validateDicom() error {
 func (p *Parser) readHeader() error {
 	p.reader.Skip(132)
 
-	// group, err := p.reader.ReadUInt16()
-	// if err != nil {
-	// 	return err
-	// }
-	// element, err := p.reader.ReadUInt16()
-	// if err != nil {
-	// 	return err
-	// }
+	i := 0
+	for {
+		if i > 25 {
+			return nil
+		}
+		var err error
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				return err
+			}
+		}
+		res, err := element.ReadElement(p.reader, false)
 
-	// res, err := tag.Find(tag.DicomTag{
-	// 	Group:   group,
-	// 	Element: element,
-	// })
-	// if err != nil {
-	// 	return err
-	// }
-	// fmt.Println("tag:", res)
+		if err != nil {
+			return err
+		}
 
-	res, err := element.ReadElement(p.reader, false)
-	if err != nil {
-		return err
+		// if res.Tag.Group != 0x0002 {
+		// 	return nil
+		// }
+
+		if res.Tag.Group == 0x7FE0 && res.Tag.Element == 0010 {
+			return nil
+		}
+
+		fmt.Println("res:", res)
+
+		i++
 	}
-	fmt.Println("res:", res)
 
 	return nil
 }
 
 func main() {
+
+	// dataset, _ := dicom.ParseFile(filePath, nil) // See also: dicom.Parse which has a generic io.Reader API.
+
+	// // Dataset will nicely print the DICOM dataset data out of the box.
+	// fmt.Println(dataset)
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -107,39 +121,6 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-
-	// data, err := p.reader.Peek(128 + 4)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if string(data[128:]) != magicWord {
-	// 	return nil, nil
-	// }
-
-	// buf := make([]byte, 8)
-	// reader := bufio.NewReaderSize(file, 4096)
-	// reader.Discard(132)
-
-	// for {
-	// 	_, err := reader.Read(buf)
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 		if err == io.EOF {
-	// 			break
-	// 		} else {
-	// 			return
-	// 		}
-	// 	}
-	// 	dicomTag := buf[0:4]
-	// 	fmt.Println("dicomTag: ", dicomTag)
-
-	// 	m := binary.LittleEndian.Uint16(dicomTag)
-
-	// 	b := make([]byte, 4)
-	// 	binary.BigEndian.PutUint16(b, m)
-	// 	fmt.Println(b)
-	// 	break
-	// }
 
 }
 
