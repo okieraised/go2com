@@ -42,7 +42,6 @@ const (
 type VRKind int
 
 const (
-	// VRStringList means the element stores a list of strings
 	VRBytes VRKind = iota
 	VRString
 	VRUInt16
@@ -60,10 +59,6 @@ const (
 
 // GetVR returns the golang value encoding of an element with <tag, vr>.
 func GetVR(dcmTag tag.DicomTag, vr string) VRKind {
-	// if dcmTag == Item {
-	// 	return VRItem
-	// }
-
 	if dcmTag == tag.PixelData {
 		return VRPixelData
 	}
