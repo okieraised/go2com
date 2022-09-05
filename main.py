@@ -1,6 +1,6 @@
 from pydicom import dcmread
 
-fpath = "./Test_data/File 2.dcm"
+fpath = "./test_data/File 2.dcm"
 
 ds = dcmread(fpath)
 print(ds)

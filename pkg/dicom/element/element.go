@@ -15,7 +15,7 @@ import (
 	"github.com/okieraised/go2com/pkg/dicom/vr"
 )
 
-var mapHandleVR map[string]func(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32)
+var mapHandleVR = map[string]func(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32){}
 
 const (
 	GroupSeqItem      uint16 = 0xFFFE
@@ -28,14 +28,6 @@ type Element struct {
 	ValueRepresentationStr string
 	ValueLength            uint32
 	Value                  Value
-}
-
-type SequenceItem struct {
-	elements []*Element
-}
-
-type SequenceItemSet struct {
-	elements []*SequenceItem
 }
 
 type Value interface{}
@@ -152,8 +144,10 @@ func readValue(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueReprese
 	switch vrKind {
 	case vr.VRString, vr.VRDate:
 		return readStringType(r, t, valueRepresentation, valueLength)
-	case vr.VRInt16List, vr.VRInt32List, vr.VRUInt16List, vr.VRUInt32List, vr.VRTagList:
+	case vr.VRInt16, vr.VRInt32, vr.VRUInt16, vr.VRUInt32, vr.VRTagList:
 		return readIntType(r, t, valueRepresentation, valueLength)
+	case vr.VRFloat32, vr.VRFloat64:
+		return readFloatType(r, t, valueRepresentation, valueLength)
 	case vr.VRBytes:
 		return readByteType(r, t, valueRepresentation, valueLength)
 	case vr.VRPixelData:
@@ -167,12 +161,19 @@ func readValue(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueReprese
 
 // readStringType
 func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
+	sep := "\\"
 	str, err := r.ReadString(valueLength)
 	if err != nil {
 		return str, err
 	}
 
 	str = strings.Trim(str, " \000")
+
+	if strings.Contains(str, sep) {
+		res := strings.Split(str, sep)
+		return res, nil
+	}
+
 	return str, nil
 }
 
@@ -266,12 +267,35 @@ func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string,
 	}
 }
 
+func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
+	switch valueRepresentation {
+	case vr.FloatingPointSingle:
+		val, err := r.ReadFloat32()
+		if err != nil {
+			return nil, err
+		}
+		return val, nil
+	case vr.FloatingPointDouble:
+		val, err := r.ReadFloat64()
+		if err != nil {
+			return nil, err
+		}
+		return val, nil
+	case vr.OtherFloat:
+		val, err := r.ReadFloat64()
+		if err != nil {
+			return nil, err
+		}
+		return val, nil
+	}
+	return nil, nil
+}
+
 func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
 	// var sequences SequenceItemSet
 	var sequences []Element
 
 	// Reference: https://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
-
 	if valueLength == VLUndefinedLength {
 		for {
 			subElement, err := ReadElement(r, false)
@@ -282,7 +306,7 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 			if subElement.Tag == tag.SequenceDelimitationItem {
 				break
 			}
-			// sequences.elements = append(sequences.elements, subElement.Value.(*SequenceItem))
+			sequences = append(sequences, *subElement)
 		}
 
 	} else {

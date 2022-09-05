@@ -43,15 +43,14 @@ type VRKind int
 
 const (
 	// VRStringList means the element stores a list of strings
-	VRStringList VRKind = iota
-	VRBytes
+	VRBytes VRKind = iota
 	VRString
-	VRUInt16List
-	VRUInt32List
-	VRInt16List
-	VRInt32List
-	VRFloat32List
-	VRFloat64List
+	VRUInt16
+	VRUInt32
+	VRInt16
+	VRInt32
+	VRFloat32
+	VRFloat64
 	VRSequence
 	VRItem
 	VRTagList
@@ -78,20 +77,20 @@ func GetVR(dcmTag tag.DicomTag, vr string) VRKind {
 	case "LT", "UT":
 		return VRString
 	case "UL":
-		return VRUInt32List
+		return VRUInt32
 	case "SL":
-		return VRInt32List
+		return VRInt32
 	case "US":
-		return VRUInt16List
+		return VRUInt16
 	case "SS":
-		return VRInt16List
+		return VRInt16
 	case "FL":
-		return VRFloat32List
+		return VRFloat32
 	case "FD":
-		return VRFloat64List
+		return VRFloat64
 	case "SQ":
 		return VRSequence
 	default:
-		return VRStringList
+		return VRString
 	}
 }
