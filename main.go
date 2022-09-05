@@ -99,14 +99,6 @@ func main() {
 	fileSize := info.Size()
 	fmt.Println("File size: ", fileSize)
 
-	// buffer := make([]byte, fileSize)
-
-	// // read file content to buffer
-	// file.Read(buffer)
-
-	// fileBytes := bytes.NewReader(buffer)
-	// fileBytes.Seek()
-
 	parser, err := NewParser(file, fileSize, false)
 	if err != nil {
 		fmt.Println(err)

@@ -24,6 +24,7 @@ const (
 
 type Element struct {
 	Tag                    tag.DicomTag
+	TagName                string
 	ValueRepresentation    vr.VRKind
 	ValueRepresentationStr string
 	ValueLength            uint32
@@ -37,6 +38,13 @@ func ReadElement(r reader.DcmReader, isImplicit bool) (*Element, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	dcmTagInfo, err := tag.Find(*dcmTag)
+	if err != nil {
+		return nil, err
+	}
+
+	dmcTagName := dcmTagInfo.Name
 
 	dcmVR, err := readVR(r, isImplicit, *dcmTag)
 	if err != nil {
@@ -55,6 +63,7 @@ func ReadElement(r reader.DcmReader, isImplicit bool) (*Element, error) {
 
 	elem := Element{
 		Tag:                    *dcmTag,
+		TagName:                dmcTagName,
 		ValueRepresentationStr: dcmVR,
 		ValueLength:            dcmVL,
 		Value:                  value,
