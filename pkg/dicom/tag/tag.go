@@ -12,6 +12,7 @@ import (
 const (
 	TYPE_CURRENT = "current"
 	TYPE_RETIRED = "retired"
+	TAG_UNKNOWN  = "unknown_tag"
 )
 
 type DicomTag struct {

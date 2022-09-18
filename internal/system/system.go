@@ -7,6 +7,7 @@ import (
 
 var NativeEndian binary.ByteOrder
 
+// Check the endianess of the running machine
 func init() {
 	buf := [2]byte{}
 	*(*uint16)(unsafe.Pointer(&buf[0])) = uint16(0xABCD)

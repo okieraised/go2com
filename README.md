@@ -1,3 +1,1 @@
 # go2com
-
-## Introduction
