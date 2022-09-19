@@ -6,11 +6,6 @@ import (
 )
 
 func ParseTransferSyntaxUID(uid string) (bo binary.ByteOrder, implicit bool, err error) {
-	//canonical, err := CanonicalTransferSyntaxUID(uid)
-	//transferSyntax := ""
-	//if err != nil {
-	//	return nil, false, err
-	//}
 	switch uid {
 	case ImplicitVRLittleEndian:
 		return binary.LittleEndian, true, nil

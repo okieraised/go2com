@@ -23,7 +23,7 @@ type Parser struct {
 }
 
 // NewParser returns a new dicom parser
-// readPixel is not used yet
+// readPixel and fileSize are not yet used
 func NewParser(fileReader io.Reader, fileSize int64, readPixel, skipDataset bool) (*Parser, error) {
 	dcmReader := reader.NewDcmReader(bufio.NewReader(fileReader), readPixel)
 	parser := Parser{
@@ -135,6 +135,7 @@ func (p *Parser) parseMetadata() error {
 		}) == 0 {
 			transferSyntaxUID = (res.Value).(string)
 		}
+		fmt.Println("res", res)
 	}
 	dicomMetadata := dataset.Dataset{Elements: metadata}
 	p.metadata = dicomMetadata
@@ -162,6 +163,7 @@ func (p *Parser) parseDataset() error {
 				return err
 			}
 		}
+		fmt.Println("res", res)
 		data = append(data, res)
 	}
 	dicomDataset := dataset.Dataset{Elements: data}

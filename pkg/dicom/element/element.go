@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/constants"
@@ -187,8 +188,9 @@ func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation stri
 	if err != nil {
 		return str, err
 	}
+	fmt.Println("STRRRRRRRRRRRRR", t.String(), valueRepresentation, str)
 
-	str = strings.Trim(str, " \000")
+	str = strings.Trim(str, "\000")
 
 	if strings.Contains(str, sep) {
 		res := strings.Split(str, sep)
@@ -247,7 +249,7 @@ func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string,
 			break
 		}
 		switch valueRepresentation {
-		case vr.UnsignedShort, "xs", "XS":
+		case vr.UnsignedShort, vr.SignedShortOrUnsignedShort, strings.ToLower(vr.SignedShortOrUnsignedShort):
 			val, err := subRd.ReadUInt16()
 			if err != nil {
 				return nil, err
@@ -339,12 +341,27 @@ func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation strin
 func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
 	var sequences []Element
 	// Reference: https://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
+	fmt.Println("tag", t.String(), valueLength, valueRepresentation)
 	if valueLength == VLUndefinedLength {
+		fmt.Println("RUN HEREEEEEEEEEEEE")
+		n, err := r.Peek(36)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(n)
+		fmt.Println(hex.EncodeToString(n[0:4]))
+		//fmt.Println(hex.EncodeToString(n[4:8]), binary.LittleEndian.Uint32(n[4:8]))
+		fmt.Println("tag", hex.EncodeToString(n[8:12]))
+		fmt.Println("vr", string(n[12:14]))
+		fmt.Println("vl", binary.LittleEndian.Uint16(n[14:16]))
+		fmt.Println("vr", string(n[16:24]))
+
 		for {
 			subElement, err := ReadElement(r, r.IsImplicit(), r.ByteOrder())
 			if err != nil {
 				return nil, err
 			}
+
 			if subElement == nil {
 				continue
 			}

@@ -7,6 +7,8 @@ fpath = "./test_data/File 32000"
 fpath = "./test_data/File 11636.dcm"
 fpath = "./test_data/File 32000"
 fpath = "./test_data/File 4000.dcm"
+fpath = "./test_data/File 12000"
+fpath = "./test_data/File 160.dcm"
 
 ds = dcmread(fpath)
 print(ds)

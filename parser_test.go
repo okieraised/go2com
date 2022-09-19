@@ -12,7 +12,10 @@ const (
 	//filePath = "./test_data/File 1.dcm"
 	//filePath = "./test_data/File 11636.dcm"
 	//filePath = "./test_data/File 32000"
-	filePath = "./test_data/File 4000.dcm"
+	//filePath = "./test_data/File 4000.dcm"
+	//filePath = "./test_data/File 8000"
+	//filePath = "./test_data/File 12000"
+	filePath = "./test_data/File 160.dcm"
 )
 
 func TestNewParser(t *testing.T) {
@@ -43,16 +46,16 @@ func TestNewParser(t *testing.T) {
 		return
 	}
 
-	mt := parser.GetMetadata()
-	ds := parser.GetDataset()
+	//mt := parser.GetMetadata()
+	//ds := parser.GetDataset()
 
-	for _, d := range mt.Elements {
-		fmt.Println("res", d)
-	}
-
-	for _, d := range ds.Elements {
-		fmt.Println("res", d)
-	}
+	//for _, d := range mt.Elements {
+	//	fmt.Println("res", d)
+	//}
+	//
+	//for _, d := range ds.Elements {
+	//	fmt.Println("res", d)
+	//}
 
 	//res := parser.ConvertToMap()
 	//fmt.Println("res", res)
