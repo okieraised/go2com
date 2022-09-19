@@ -1,6 +1,6 @@
 module github.com/okieraised/go2com
 
-go 1.19
+go 1.18
 
 require (
 	github.com/suyashkumar/dicom v1.0.5 // indirect

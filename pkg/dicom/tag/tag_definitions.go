@@ -4990,14 +4990,11 @@ var ShiftTableSize = DicomTag{0x1000, 0x0014}
 var ShiftTableTriplet = DicomTag{0x1000, 0x0015}
 var ZonalMap = DicomTag{0x1010, 0x0004}
 
-
 var TagDict map[DicomTag]TagInfo
-
 
 func init() {
 	initTag()
 }
-
 
 func initTag() {
 
@@ -27351,7 +27348,6 @@ func initTag() {
 	TagDict[DicomTag{0x7FDD, 0x0010}] = TagInfo{DicomTag{0x7FDD, 0x0010}, "ox", "VariablePixelData", "1", "retired"}
 	TagDict[DicomTag{0x7FDE, 0x0010}] = TagInfo{DicomTag{0x7FDE, 0x0010}, "ox", "VariablePixelData", "1", "retired"}
 	TagDict[DicomTag{0x7FDF, 0x0010}] = TagInfo{DicomTag{0x7FDF, 0x0010}, "ox", "VariablePixelData", "1", "retired"}
-	TagDict[DicomTag{0x7FE0, 0x0010}] = TagInfo{DicomTag{0x7FE0, 0x0010}, "ox", "VariablePixelData", "1", "retired"}
 	TagDict[DicomTag{0x7FE1, 0x0010}] = TagInfo{DicomTag{0x7FE1, 0x0010}, "ox", "VariablePixelData", "1", "retired"}
 	TagDict[DicomTag{0x7FE2, 0x0010}] = TagInfo{DicomTag{0x7FE2, 0x0010}, "ox", "VariablePixelData", "1", "retired"}
 	TagDict[DicomTag{0x7FE3, 0x0010}] = TagInfo{DicomTag{0x7FE3, 0x0010}, "ox", "VariablePixelData", "1", "retired"}
@@ -28424,5 +28420,4 @@ func initTag() {
 	TagDict[DicomTag{0x1000, 0x0015}] = TagInfo{DicomTag{0x1000, 0x0015}, "US", "ShiftTableTriplet", "3", "retired"}
 	TagDict[DicomTag{0x1010, 0x0004}] = TagInfo{DicomTag{0x1010, 0x0004}, "US", "ZonalMap", "1-N", "retired"}
 
-
-} 
+}

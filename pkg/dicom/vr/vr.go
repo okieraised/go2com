@@ -77,7 +77,7 @@ func GetVR(dcmTag tag.DicomTag, vr string) VRKind {
 		return VRInt32
 	case "US":
 		return VRUInt16
-	case "SS":
+	case "SS", "xs", "XS":
 		return VRInt16
 	case "FL":
 		return VRFloat32

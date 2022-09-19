@@ -1,18 +1,13 @@
 package tag
 
 import (
-	"encoding/binary"
-	"encoding/hex"
 	"fmt"
-	"strconv"
-
-	"github.com/okieraised/go2com/internal/system"
 )
 
 const (
-	TYPE_CURRENT = "current"
-	TYPE_RETIRED = "retired"
-	TAG_UNKNOWN  = "unknown_tag"
+	TypeCurrent = "current"
+	TypeRetired = "retired"
+	TagUnknown  = "unknown_tag"
 )
 
 type DicomTag struct {
@@ -75,37 +70,4 @@ func FindByName(name string) (TagInfo, error) {
 		}
 	}
 	return TagInfo{}, fmt.Errorf("could not find tag %s", name)
-}
-
-// ConvertTagtoHex converts the 4 byte of dicom tag to DicomTag struct (gggg, eeee)
-func ConvertTagtoHex(bTag []byte) (DicomTag, error) {
-	if len(bTag) != 4 {
-		return DicomTag{}, fmt.Errorf("invalid tag length of %d bytes", len(bTag))
-	}
-
-	b := make([]byte, 4)
-	var group uint16
-	var element uint16
-	switch system.NativeEndian {
-	case binary.BigEndian:
-		// TODO: case when machine is big endian
-	case binary.LittleEndian:
-		bTagUint16 := binary.LittleEndian.Uint16(bTag[0:4])
-		binary.BigEndian.PutUint16(b, bTagUint16)
-		group64, err := strconv.ParseUint(hex.EncodeToString(b[0:2]), 16, 16)
-		if err != nil {
-			return DicomTag{}, err
-		}
-		group = uint16(group64)
-		element64, err := strconv.ParseUint(hex.EncodeToString(b[2:4]), 16, 16)
-		if err != nil {
-			return DicomTag{}, err
-		}
-		element = uint16(element64)
-
-	}
-	return DicomTag{
-		Group:   group,
-		Element: element,
-	}, nil
 }
