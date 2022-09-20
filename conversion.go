@@ -1,9 +1,8 @@
 package go2com
 
 import (
-	"fmt"
+	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/element"
-	"reflect"
 	"strings"
 )
 
@@ -18,9 +17,8 @@ func (p *Parser) Export() map[string]TagBrowser {
 	res := make(mappedTag)
 	ds := p.dataset
 	for _, elem := range ds.Elements {
-
 		vrStr := elem.ValueRepresentationStr
-		if vrStr == "OB" || vrStr == "OW" || strings.ToLower(vrStr) == "ox" {
+		if vrStr == "OB" || vrStr == "OW" || vrStr == "UN" || strings.ToLower(vrStr) == "ox" {
 			continue
 		}
 		res.mapElement(elem)
@@ -28,13 +26,14 @@ func (p *Parser) Export() map[string]TagBrowser {
 	return res
 }
 
+// mapElement returns a map[string]interface{} with key as tag and value as the tag values
 func (m mappedTag) mapElement(elem *element.Element) {
-	tagStr := fmt.Sprintf("%04X%04X", elem.Tag.Group, elem.Tag.Element)
+	tagStr := elem.Tag.StringWithoutParentheses()
 	vrStr := elem.ValueRepresentationStr
 	var vl interface{}
 
 	// If VR is SQ then we do type assertion to []*element.Element. If the length of sequence is 0, then do nothing.
-	//
+	// Else, loop through each element in the sequence and extract the info
 	if vrStr == "SQ" {
 		subVL := make([]interface{}, 0)
 		vlArr, ok := elem.Value.([]*element.Element)
@@ -42,10 +41,10 @@ func (m mappedTag) mapElement(elem *element.Element) {
 			if len(vlArr) == 0 {
 				return
 			}
-			groupTag := fmt.Sprintf("%04X%04X", vlArr[0].Tag.Group, vlArr[0].Tag.Element)
+			groupTag := vlArr[0].Tag.StringWithoutParentheses()
 			subElemGrp := make(mappedTag)
 			for index, subVl := range vlArr {
-				subTag := fmt.Sprintf("%04X%04X", subVl.Tag.Group, subVl.Tag.Element)
+				subTag := subVl.Tag.StringWithoutParentheses()
 				if subTag == groupTag && index > 0 {
 					subVL = append(subVL, subElemGrp)
 					subElemGrp = mappedTag{}
@@ -58,24 +57,10 @@ func (m mappedTag) mapElement(elem *element.Element) {
 		}
 		vl = subVL
 	} else {
-		vl = checkType(elem.Value)
+		vl = utils.AppendToSlice(elem.Value)
 	}
 	m[tagStr] = TagBrowser{
 		VR:    vrStr,
 		Value: vl,
 	}
-}
-
-func checkType(vl interface{}) []interface{} {
-	res := make([]interface{}, 0)
-	switch reflect.TypeOf(vl).Kind() {
-	case reflect.Slice:
-		s := reflect.ValueOf(vl)
-		for i := 0; i < s.Len(); i++ {
-			res = append(res, s.Index(i).Interface())
-		}
-	default:
-		res = append(res, vl)
-	}
-	return res
 }

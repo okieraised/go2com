@@ -143,7 +143,7 @@ func (p *Parser) parseMetadata() error {
 		}) == 0 {
 			transferSyntaxUID = (res.Value).(string)
 		}
-		//fmt.Println("res", res)
+		metadata = append(metadata, res)
 	}
 	dicomMetadata := dataset.Dataset{Elements: metadata}
 	p.metadata = dicomMetadata

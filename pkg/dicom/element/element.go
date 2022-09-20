@@ -205,7 +205,7 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 		if err != nil {
 			return nil, err
 		}
-		return len(byteStr), nil
+		return byteStr, nil
 	case vr.OtherWord:
 		if valueLength%2 != 0 {
 			return nil, fmt.Errorf("odd value encountered")
@@ -223,7 +223,7 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 			}
 
 		}
-		return len(buf.Bytes()), nil
+		return buf.Bytes(), nil
 	default:
 	}
 	return nil, nil

@@ -46,6 +46,11 @@ func (tag DicomTag) String() string {
 	return fmt.Sprintf("(%04x,%04x)", tag.Group, tag.Element)
 }
 
+// StringWithoutParentheses returns the tag in ggggeeee format
+func (tag DicomTag) StringWithoutParentheses() string {
+	return fmt.Sprintf("%04X%04X", tag.Group, tag.Element)
+}
+
 // Find finds information about the given tag. If the tag is not
 // part of the dictionary, raise error
 func Find(tag DicomTag) (TagInfo, error) {
