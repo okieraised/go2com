@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/constants"
@@ -31,8 +30,6 @@ type Element struct {
 	Value                  Value
 }
 
-type Value interface{}
-
 func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder) (*Element, error) {
 	dcmTagInfo, err := readTag(r)
 	if err != nil {
@@ -44,15 +41,18 @@ func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder)
 		return nil, nil
 	}
 
+	if dcmTagInfo.Tag == tag.PixelData && r.SkipPixelData() {
+		_, err = r.Discard(int(r.GetFileSize()))
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
 	dmcTagName := dcmTagInfo.Name
-	dmcTagDictVal := tag.TagDict[dcmTagInfo.Tag]
 	dcmVR, err := readVR(r, isImplicit, dcmTagInfo.Tag)
 	if err != nil {
 		return nil, err
-	}
-
-	if dcmVR != dmcTagDictVal.VR && dmcTagDictVal.VR != "" {
-		dcmVR = dmcTagDictVal.VR
 	}
 
 	dcmVL, err := readVL(r, isImplicit, dcmTagInfo.Tag, dcmVR)
@@ -188,15 +188,11 @@ func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation stri
 	if err != nil {
 		return str, err
 	}
-	fmt.Println("STRRRRRRRRRRRRR", t.String(), valueRepresentation, str)
-
-	str = strings.Trim(str, "\000")
-
+	str = strings.Trim(str, " \000") // There is a space " \000", not "\000"
 	if strings.Contains(str, sep) {
 		res := strings.Split(str, sep)
 		return res, nil
 	}
-
 	return str, nil
 }
 
@@ -339,23 +335,9 @@ func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation strin
 
 // readSequence reads the value as sequence of items
 func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
-	var sequences []Element
+	var sequences []*Element
 	// Reference: https://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
-	fmt.Println("tag", t.String(), valueLength, valueRepresentation)
 	if valueLength == VLUndefinedLength {
-		fmt.Println("RUN HEREEEEEEEEEEEE")
-		n, err := r.Peek(36)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println(n)
-		fmt.Println(hex.EncodeToString(n[0:4]))
-		//fmt.Println(hex.EncodeToString(n[4:8]), binary.LittleEndian.Uint32(n[4:8]))
-		fmt.Println("tag", hex.EncodeToString(n[8:12]))
-		fmt.Println("vr", string(n[12:14]))
-		fmt.Println("vl", binary.LittleEndian.Uint16(n[14:16]))
-		fmt.Println("vr", string(n[16:24]))
-
 		for {
 			subElement, err := ReadElement(r, r.IsImplicit(), r.ByteOrder())
 			if err != nil {
@@ -369,7 +351,7 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 			if subElement.Tag == tag.SequenceDelimitationItem {
 				break
 			}
-			sequences = append(sequences, *subElement)
+			sequences = append(sequences, subElement)
 		}
 
 	} else {
@@ -393,7 +375,7 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 			if subElement == nil {
 				continue
 			}
-			sequences = append(sequences, *subElement)
+			sequences = append(sequences, subElement)
 		}
 		_, _ = r.Discard(int(valueLength))
 	}

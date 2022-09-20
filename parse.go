@@ -1,4 +1,4 @@
-package parser
+package go2com
 
 import (
 	"bufio"
@@ -14,27 +14,30 @@ import (
 	"strconv"
 )
 
+// Parser implements the field required to parse the dicom file
 type Parser struct {
-	fileSize    int64
-	skipDataset bool
-	reader      reader.DcmReader
-	dataset     dataset.Dataset
-	metadata    dataset.Dataset
+	fileSize      int64
+	skipDataset   bool
+	skipPixelData bool
+	reader        reader.DcmReader
+	dataset       dataset.Dataset
+	metadata      dataset.Dataset
 }
 
 // NewParser returns a new dicom parser
-// readPixel and fileSize are not yet used
-func NewParser(fileReader io.Reader, fileSize int64, readPixel, skipDataset bool) (*Parser, error) {
-	dcmReader := reader.NewDcmReader(bufio.NewReader(fileReader), readPixel)
+func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset bool) (*Parser, error) {
+	dcmReader := reader.NewDcmReader(bufio.NewReader(fileReader), skipPixelData)
 	parser := Parser{
-		skipDataset: skipDataset,
-		fileSize:    fileSize,
-		reader:      dcmReader,
+		skipPixelData: skipPixelData,
+		skipDataset:   skipDataset,
+		fileSize:      fileSize,
+		reader:        dcmReader,
 	}
 	return &parser, nil
 }
 
 func (p *Parser) Parse() error {
+	p.setFileSize()
 	err := p.validateDicom()
 	if err != nil {
 		return err
@@ -84,6 +87,11 @@ func (p *Parser) ConvertToMap() map[string]element.Element {
 //----------------------------------------------------------------------------------------------------------------------
 // Unexported methods
 //----------------------------------------------------------------------------------------------------------------------
+
+// setFileSize sets the file size to the reader
+func (p *Parser) setFileSize() {
+	_ = p.reader.SetFileSize(p.fileSize)
+}
 
 // validateDicom checks if the dicom file follows the standard by having 128 bytes preamble followed by the magic string 'DICM'
 func (p *Parser) validateDicom() error {
@@ -135,7 +143,7 @@ func (p *Parser) parseMetadata() error {
 		}) == 0 {
 			transferSyntaxUID = (res.Value).(string)
 		}
-		fmt.Println("res", res)
+		//fmt.Println("res", res)
 	}
 	dicomMetadata := dataset.Dataset{Elements: metadata}
 	p.metadata = dicomMetadata
@@ -152,6 +160,7 @@ func (p *Parser) parseMetadata() error {
 	return nil
 }
 
+// parseDataset parses the file dataset after the file meta header
 func (p *Parser) parseDataset() error {
 	var data []*element.Element
 	for {
@@ -163,7 +172,7 @@ func (p *Parser) parseDataset() error {
 				return err
 			}
 		}
-		fmt.Println("res", res)
+		//fmt.Println("res", res)
 		data = append(data, res)
 	}
 	dicomDataset := dataset.Dataset{Elements: data}

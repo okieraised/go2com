@@ -1,4 +1,4 @@
-package parser
+package go2com
 
 import (
 	"fmt"
@@ -13,12 +13,13 @@ const (
 	//filePath = "./test_data/File 11636.dcm"
 	//filePath = "./test_data/File 32000"
 	//filePath = "./test_data/File 4000.dcm"
-	//filePath = "./test_data/File 8000"
+	filePath = "./test_data/File 8000"
 	//filePath = "./test_data/File 12000"
-	filePath = "./test_data/File 160.dcm"
+	//filePath = "./test_data/File 160.dcm"
 )
 
 func TestNewParser(t *testing.T) {
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -34,7 +35,7 @@ func TestNewParser(t *testing.T) {
 	fileSize := info.Size()
 
 	//------------------------------------------------------------------------------------------------------------------
-	parser, err := NewParser(file, fileSize, false, false)
+	parser, err := NewParser(file, fileSize, true, false)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -46,13 +47,19 @@ func TestNewParser(t *testing.T) {
 		return
 	}
 
+	mapTag := parser.Export()
+	for key := range mapTag {
+		fmt.Println(key, mapTag[key])
+	}
+
 	//mt := parser.GetMetadata()
-	//ds := parser.GetDataset()
 
 	//for _, d := range mt.Elements {
 	//	fmt.Println("res", d)
 	//}
 	//
+
+	//ds := parser.GetDataset()
 	//for _, d := range ds.Elements {
 	//	fmt.Println("res", d)
 	//}
