@@ -1,6 +1,9 @@
 package utils
 
-import "reflect"
+import (
+	"reflect"
+	"strings"
+)
 
 func AppendToSlice(vl interface{}) []interface{} {
 	res := make([]interface{}, 0)
@@ -14,4 +17,14 @@ func AppendToSlice(vl interface{}) []interface{} {
 		res = append(res, vl)
 	}
 	return res
+}
+
+func FormatTag(tagStr string) string {
+	tagStr = strings.ReplaceAll(tagStr, "(", "")
+	tagStr = strings.ReplaceAll(tagStr, ")", "")
+	tagStr = strings.ReplaceAll(tagStr, ",", "")
+	tagStr = strings.TrimSpace(tagStr)
+	tagStr = strings.ToUpper(tagStr)
+
+	return tagStr
 }
