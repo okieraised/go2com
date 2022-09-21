@@ -3,6 +3,7 @@ package utils
 import (
 	"reflect"
 	"strings"
+	"unicode"
 )
 
 func AppendToSlice(vl interface{}) []interface{} {
@@ -23,8 +24,21 @@ func FormatTag(tagStr string) string {
 	tagStr = strings.ReplaceAll(tagStr, "(", "")
 	tagStr = strings.ReplaceAll(tagStr, ")", "")
 	tagStr = strings.ReplaceAll(tagStr, ",", "")
-	tagStr = strings.TrimSpace(tagStr)
 	tagStr = strings.ToUpper(tagStr)
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, tagStr)
+}
 
-	return tagStr
+func FormatTagName(tagName string) string {
+	tagName = strings.ToLower(tagName)
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, tagName)
 }
