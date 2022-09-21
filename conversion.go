@@ -11,8 +11,15 @@ import (
 type MappedTag map[string]tag.TagBrowser
 
 // Export returns the mapped tag/(vr,value) dictionary
-func (p *Parser) Export() MappedTag {
+func (p *Parser) Export(exportMeta bool) MappedTag {
 	res := make(MappedTag)
+	if exportMeta {
+		mt := p.metadata
+		for _, elem := range mt.Elements {
+			res.mapElement(elem)
+		}
+	}
+
 	ds := p.dataset
 	for _, elem := range ds.Elements {
 		vrStr := elem.ValueRepresentationStr

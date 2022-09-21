@@ -53,7 +53,7 @@ func TestNewParser(t *testing.T) {
 	}
 	fmt.Println("VAL2", val2)
 
-	mapTag := parser.Export()
+	mapTag := parser.Export(true)
 	//for key := range mapTag {
 	//	fmt.Println(key, mapTag[key])
 	//}
