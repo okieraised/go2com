@@ -11,6 +11,29 @@ type Dataset struct {
 	Elements []*element.Element `json:"elements"`
 }
 
+type DicomUID struct {
+	StudyInstanceUID  string
+	SeriesInstanceUID string
+	SOPInstanceUID    string
+}
+
+func (ds *Dataset) RetrieveFileUID() (*DicomUID, error) {
+	res := DicomUID{}
+	for _, elem := range ds.Elements {
+		if strings.ToLower(elem.TagName) == "sopinstanceuid" {
+			res.SOPInstanceUID = elem.Value.(string)
+		}
+		if strings.ToLower(elem.TagName) == "seriesinstanceuid" {
+			res.SeriesInstanceUID = elem.Value.(string)
+		}
+		if strings.ToLower(elem.TagName) == "studyinstanceuid" {
+			res.StudyInstanceUID = elem.Value.(string)
+		}
+	}
+
+	return &res, nil
+}
+
 // FindElementByTagStr returns the corresponding element of the input tag.
 // Tag must be in 'ggggeeee' or '(gggg,eeee)' format
 func (ds *Dataset) FindElementByTagStr(tagStr string) (*element.Element, error) {
