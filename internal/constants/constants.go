@@ -1,5 +1,6 @@
 package constants
 
 const (
-	MAGIC_STRING = "DICM"
+	MagicString = "DICM"
+	PrivateTag  = "PrivateTag"
 )
