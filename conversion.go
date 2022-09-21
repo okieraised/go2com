@@ -1,20 +1,18 @@
 package go2com
 
 import (
+	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/element"
+	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"strings"
 )
 
-type TagBrowser struct {
-	VR    string      `json:"vr"`
-	Value interface{} `json:"Value"`
-}
+type MappedTag map[string]tag.TagBrowser
 
-type mappedTag map[string]TagBrowser
-
-func (p *Parser) Export() map[string]TagBrowser {
-	res := make(mappedTag)
+// Export returns the mapped tag/(vr,value) dictionary
+func (p *Parser) Export() MappedTag {
+	res := make(MappedTag)
 	ds := p.dataset
 	for _, elem := range ds.Elements {
 		vrStr := elem.ValueRepresentationStr
@@ -26,8 +24,20 @@ func (p *Parser) Export() map[string]TagBrowser {
 	return res
 }
 
+// GetElementByTagString returns the element value of the input tag
+// Tag should be in (gggg,eeee) or ggggeeee format
+func (m MappedTag) GetElementByTagString(tagStr string) (interface{}, error) {
+	tagStr = utils.FormatTag(tagStr)
+
+	result, ok := m[tagStr]
+	if !ok {
+		return nil, fmt.Errorf("tag not found: %s", tagStr)
+	}
+	return result.Value, nil
+}
+
 // mapElement returns a map[string]interface{} with key as tag and value as the tag values
-func (m mappedTag) mapElement(elem *element.Element) {
+func (m MappedTag) mapElement(elem *element.Element) {
 	tagStr := elem.Tag.StringWithoutParentheses()
 	vrStr := elem.ValueRepresentationStr
 	var vl interface{}
@@ -42,12 +52,12 @@ func (m mappedTag) mapElement(elem *element.Element) {
 				return
 			}
 			groupTag := vlArr[0].Tag.StringWithoutParentheses()
-			subElemGrp := make(mappedTag)
+			subElemGrp := make(MappedTag)
 			for index, subVl := range vlArr {
 				subTag := subVl.Tag.StringWithoutParentheses()
 				if subTag == groupTag && index > 0 {
 					subVL = append(subVL, subElemGrp)
-					subElemGrp = mappedTag{}
+					subElemGrp = MappedTag{}
 				}
 				subElemGrp.mapElement(subVl)
 				if index == len(vlArr)-1 {
@@ -59,7 +69,7 @@ func (m mappedTag) mapElement(elem *element.Element) {
 	} else {
 		vl = utils.AppendToSlice(elem.Value)
 	}
-	m[tagStr] = TagBrowser{
+	m[tagStr] = tag.TagBrowser{
 		VR:    vrStr,
 		Value: vl,
 	}
