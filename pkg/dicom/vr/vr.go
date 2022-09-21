@@ -1,6 +1,9 @@
 package vr
 
-import "github.com/okieraised/go2com/pkg/dicom/tag"
+import (
+	"github.com/okieraised/go2com/pkg/dicom/tag"
+	"strings"
+)
 
 const (
 	ApplicationEntity           = "AE"
@@ -37,6 +40,7 @@ const (
 	UnsignedShort               = "US"
 	UnlimitedText               = "UT"
 	UnsignedVeryLong            = "UV"
+	SignedShortOrUnsignedShort  = "XS"
 )
 
 type VRKind int
@@ -63,27 +67,27 @@ func GetVR(dcmTag tag.DicomTag, vr string) VRKind {
 		return VRPixelData
 	}
 	switch vr {
-	case "DA":
+	case Date:
 		return VRDate
-	case "AT":
+	case AttributeTag:
 		return VRTagList
-	case "OW", "OB", "UN":
+	case OtherWord, OtherByte, Unknown:
 		return VRBytes
-	case "LT", "UT":
+	case LongText, UnlimitedText:
 		return VRString
-	case "UL":
+	case UnsignedLong:
 		return VRUInt32
-	case "SL":
+	case SignedLong:
 		return VRInt32
-	case "US":
+	case UnsignedShort:
 		return VRUInt16
-	case "SS":
+	case SignedShort, SignedShortOrUnsignedShort, strings.ToLower(SignedShortOrUnsignedShort):
 		return VRInt16
-	case "FL":
+	case FloatingPointSingle:
 		return VRFloat32
-	case "FD":
+	case FloatingPointDouble:
 		return VRFloat64
-	case "SQ":
+	case SequenceOfItems:
 		return VRSequence
 	default:
 		return VRString
