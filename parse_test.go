@@ -46,7 +46,7 @@ func TestNewParser(t *testing.T) {
 		return
 	}
 
-	val2, err := parser.GetElementByTagString("    (7fe0,        0010)        ")
+	val2, err := parser.GetElementByTagString("00280010")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -98,4 +98,11 @@ func TestNewParser(t *testing.T) {
 		return
 	}
 	fmt.Println("VAL3", val3.ValueLength, len(val3.Value.([]byte)))
+
+	res4, err := ds.RetrieveFileUID()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("res4", res4)
 }
