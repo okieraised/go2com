@@ -5,13 +5,14 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/okieraised/go2com/internal/constants"
+	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/dataset"
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/uid"
 	"io"
-	"strconv"
+	"strings"
 )
 
 // Parser implements the field required to parse the dicom file
@@ -56,32 +57,36 @@ func (p *Parser) Parse() error {
 	return nil
 }
 
+// GetMetadata returns the file meta header
 func (p *Parser) GetMetadata() dataset.Dataset {
 	return p.metadata
 }
 
+// GetDataset returns the dataset
 func (p *Parser) GetDataset() dataset.Dataset {
 	return p.dataset
 }
 
-func (p *Parser) ConvertToMap() map[string]element.Element {
-	res := map[string]element.Element{}
-	fileMeta := p.GetMetadata()
-	for _, elem := range fileMeta.Elements {
-		res[elem.TagName] = *elem
-	}
+// GetElementByTagString returns the element value of the input tag
+// Tag should be in (gggg,eeee) or ggggeeee format
+func (p *Parser) GetElementByTagString(tagStr string) (interface{}, error) {
+	tagStr = utils.FormatTag(tagStr)
 
-	fileDataset := p.GetDataset()
-	for _, elem := range fileDataset.Elements {
-		i := 0
-		if elem.TagName == constants.PrivateTag {
-			res[elem.TagName+"_"+strconv.Itoa(i)] = *elem
-			i++
-		} else {
-			res[elem.TagName] = *elem
+	if strings.HasPrefix(tagStr, "0002") {
+		for _, elem := range p.metadata.Elements {
+			if tagStr == elem.Tag.StringWithoutParentheses() {
+				return elem.Value, nil
+			}
 		}
+		return nil, fmt.Errorf("cannot find tag %s", tagStr)
+	} else {
+		for _, elem := range p.dataset.Elements {
+			if tagStr == elem.Tag.StringWithoutParentheses() {
+				return elem.Value, nil
+			}
+		}
+		return nil, fmt.Errorf("cannot find tag %s", tagStr)
 	}
-	return res
 }
 
 //----------------------------------------------------------------------------------------------------------------------

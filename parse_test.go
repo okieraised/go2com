@@ -14,8 +14,8 @@ const (
 	//filePath = "./test_data/File 1.dcm"
 	//filePath = "./test_data/File 11636.dcm"
 	//filePath = "./test_data/File 32000"
-	filePath = "./test_data/File 4000.dcm"
-	//filePath = "./test_data/File 8000"
+	//filePath = "./test_data/File 4000.dcm"
+	filePath = "./test_data/File 8000"
 	//filePath = "./test_data/File 12000"
 	//filePath = "./test_data/File 160.dcm"
 )
@@ -35,7 +35,7 @@ func TestNewParser(t *testing.T) {
 	fileSize := info.Size()
 
 	//------------------------------------------------------------------------------------------------------------------
-	parser, err := NewParser(file, fileSize, true, false)
+	parser, err := NewParser(file, fileSize, false, false)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -45,10 +45,25 @@ func TestNewParser(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
-	mapTag := parser.Export()
+
+	val2, err := parser.GetElementByTagString("7fe0,0010")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("VAL2", val2)
+
+	mapTag := parser.Export(true)
 	//for key := range mapTag {
 	//	fmt.Println(key, mapTag[key])
 	//}
+
+	val, err := mapTag.GetElementByTagString("(0008,0008)")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("VAL", val)
 
 	//------------------------------------------------------------------------------------------------------------------
 	b, err := json.Marshal(mapTag)
@@ -81,7 +96,6 @@ func TestNewParser(t *testing.T) {
 	//for _, d := range mt.Elements {
 	//	fmt.Println("res", d)
 	//}
-	//
 
 	//ds := parser.GetDataset()
 	//for _, d := range ds.Elements {

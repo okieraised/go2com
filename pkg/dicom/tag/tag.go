@@ -10,6 +10,11 @@ const (
 	TagUnknown  = "unknown_tag"
 )
 
+type TagBrowser struct {
+	VR    string      `json:"vr"`
+	Value interface{} `json:"Value"`
+}
+
 type DicomTag struct {
 	Group   uint16
 	Element uint16
