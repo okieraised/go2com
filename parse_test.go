@@ -46,7 +46,7 @@ func TestNewParser(t *testing.T) {
 		return
 	}
 
-	val2, err := parser.GetElementByTagString("7fe0,0010")
+	val2, err := parser.GetElementByTagString("    (7fe0,        0010)        ")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -91,14 +91,11 @@ func TestNewParser(t *testing.T) {
 	json.Unmarshal(deflated, x)
 	fmt.Println(x)
 
-	//mt := parser.GetMetadata()
-	//
-	//for _, d := range mt.Elements {
-	//	fmt.Println("res", d)
-	//}
-
-	//ds := parser.GetDataset()
-	//for _, d := range ds.Elements {
-	//	fmt.Println("res", d)
-	//}
+	ds := parser.GetDataset()
+	val3, err := ds.FindElementByTagName("PixelData")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("VAL3", val3.ValueLength, len(val3.Value.([]byte)))
 }
