@@ -59,7 +59,6 @@ func (tag DicomTag) StringWithoutParentheses() string {
 // Find finds information about the given tag. If the tag is not
 // part of the dictionary, raise error
 func Find(tag DicomTag) (TagInfo, error) {
-	initTag()
 	entry, ok := TagDict[tag]
 	if !ok {
 		if tag.Group%2 == 0 && tag.Element == 0x0000 {
@@ -73,7 +72,6 @@ func Find(tag DicomTag) (TagInfo, error) {
 
 // FindByName searchs for the tag by name
 func FindByName(name string) (TagInfo, error) {
-	initTag()
 	for _, tag := range TagDict {
 		if tag.Name == name {
 			return tag, nil
