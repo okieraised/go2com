@@ -1,5 +1,7 @@
 package tag
 
+import "sync"
+
 var CommandGroupLength = DicomTag{0x0000, 0x0000}
 var AffectedSOPClassUID = DicomTag{0x0000, 0x0002}
 var RequestedSOPClassUID = DicomTag{0x0000, 0x0003}
@@ -4991,13 +4993,18 @@ var ShiftTableTriplet = DicomTag{0x1000, 0x0015}
 var ZonalMap = DicomTag{0x1010, 0x0004}
 
 var TagDict map[DicomTag]TagInfo
+var lock sync.Mutex
 
 func init() {
-	initTag()
+	lock.Lock()
+	defer lock.Unlock()
+	if TagDict == nil {
+		initTag()
+	}
+
 }
 
 func initTag() {
-
 	TagDict = make(map[DicomTag]TagInfo)
 	TagDict[DicomTag{0x0000, 0x0000}] = TagInfo{DicomTag{0x0000, 0x0000}, "UL", "CommandGroupLength", "1", ""}
 	TagDict[DicomTag{0x0000, 0x0002}] = TagInfo{DicomTag{0x0000, 0x0002}, "UI", "AffectedSOPClassUID", "1", ""}
