@@ -10,7 +10,7 @@ import (
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
-	_ "github.com/okieraised/go2com/pkg/dicom/tag"
+	//_ "github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/uid"
 	"io"
 	"strings"
@@ -24,6 +24,10 @@ type Parser struct {
 	reader        reader.DcmReader
 	dataset       dataset.Dataset
 	metadata      dataset.Dataset
+}
+
+func InitTagDict() {
+	tag.InitTagDict()
 }
 
 // NewParser returns a new dicom parser
@@ -133,7 +137,7 @@ func (p *Parser) parseMetadata() error {
 		return err
 	}
 	br := bytes.NewReader(pBytes)
-	subRd := reader.NewDcmReader(bufio.NewReader(br), false)
+	subRd := reader.NewDcmReader(bufio.NewReader(br), p.skipPixelData)
 	for {
 		res, err := element.ReadElement(subRd, p.reader.IsImplicit(), p.reader.ByteOrder())
 		if err != nil {
