@@ -79,3 +79,10 @@ func FindByName(name string) (TagInfo, error) {
 	}
 	return TagInfo{}, fmt.Errorf("could not find tag %s", name)
 }
+
+func InitTagDict() map[DicomTag]TagInfo {
+	if TagDict == nil {
+		initTag()
+	}
+	return TagDict
+}

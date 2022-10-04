@@ -238,7 +238,7 @@ func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string,
 		return nil, err
 	}
 	subReader := bytes.NewReader(n)
-	subRd := reader.NewDcmReader(bufio.NewReader(subReader), false)
+	subRd := reader.NewDcmReader(bufio.NewReader(subReader), r.SkipPixelData())
 	byteRead := 0
 	for {
 		if byteRead >= int(valueLength) {
@@ -301,7 +301,7 @@ func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation strin
 		return nil, err
 	}
 	subReader := bytes.NewReader(n)
-	subRd := reader.NewDcmReader(bufio.NewReader(subReader), false)
+	subRd := reader.NewDcmReader(bufio.NewReader(subReader), r.SkipPixelData())
 	byteRead := 0
 	for {
 		if byteRead >= int(valueLength) {
@@ -360,7 +360,7 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 			return nil, err
 		}
 		br := bytes.NewReader(n)
-		subRd := reader.NewDcmReader(bufio.NewReader(br), false)
+		subRd := reader.NewDcmReader(bufio.NewReader(br), r.SkipPixelData())
 		_ = subRd.Skip(8)
 		subRd.SetTransferSyntax(r.ByteOrder(), r.IsImplicit())
 		for {
