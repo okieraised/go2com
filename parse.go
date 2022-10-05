@@ -182,7 +182,6 @@ func (p *Parser) parseDataset() error {
 				return err
 			}
 		}
-		//fmt.Println("res", res)
 		data = append(data, res)
 	}
 	dicomDataset := dataset.Dataset{Elements: data}

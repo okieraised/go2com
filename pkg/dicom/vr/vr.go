@@ -41,6 +41,7 @@ const (
 	UnlimitedText               = "UT"
 	UnsignedVeryLong            = "UV"
 	SignedShortOrUnsignedShort  = "XS"
+	OtherByteOrOtherWord        = "OX"
 )
 
 type VRKind int
@@ -71,7 +72,7 @@ func GetVR(dcmTag tag.DicomTag, vr string) VRKind {
 		return VRDate
 	case AttributeTag:
 		return VRTagList
-	case OtherWord, OtherByte, Unknown:
+	case OtherWord, OtherByte, Unknown, OtherByteOrOtherWord, strings.ToLower(OtherByteOrOtherWord):
 		return VRBytes
 	case LongText, UnlimitedText:
 		return VRString
