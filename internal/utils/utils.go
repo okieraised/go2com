@@ -1,7 +1,11 @@
 package utils
 
 import (
+	"io/fs"
+	"os"
+	"path/filepath"
 	"reflect"
+	"runtime/pprof"
 	"strings"
 	"unicode"
 )
@@ -41,4 +45,35 @@ func FormatTagName(tagName string) string {
 		}
 		return r
 	}, tagName)
+}
+
+func ReadDirRecursively(path string) ([]string, error) {
+	result := []string{}
+
+	visit := func(path string, f fs.DirEntry, err error) error {
+		if !f.IsDir() {
+			result = append(result, path)
+		}
+		return nil
+	}
+	err := filepath.WalkDir(path, visit)
+	if err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func CPUProfilingFunc(fn func(), filePath string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	err = pprof.StartCPUProfile(f)
+	if err != nil {
+		return err
+	}
+	fn()
+	pprof.StopCPUProfile()
+	return nil
 }

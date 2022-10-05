@@ -21,7 +21,6 @@ type DicomTag struct {
 }
 
 type TagInfo struct {
-	Tag    DicomTag
 	VR     string
 	Name   string
 	VM     string
@@ -62,7 +61,7 @@ func Find(tag DicomTag) (TagInfo, error) {
 	entry, ok := TagDict[tag]
 	if !ok {
 		if tag.Group%2 == 0 && tag.Element == 0x0000 {
-			entry = TagInfo{tag, "UL", "GenericGroupLength", "1", ""}
+			entry = TagInfo{"UL", "GenericGroupLength", "1", ""}
 		} else {
 			return TagInfo{}, fmt.Errorf("could not find tag (0x%x, 0x%x)", tag.Group, tag.Element)
 		}
