@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+
 func TestProfilingParse(t *testing.T) {
 	assert := assert.New(t)
 	fn := func() {
@@ -28,6 +29,7 @@ func TestProfilingParse(t *testing.T) {
 		for _, elem := range parser.GetMetadata().Elements {
 			fmt.Println(elem)
 		}
+
 	}
 	err := utils.CPUProfilingFunc(fn, "./cpu_concurrent.pprof")
 	assert.NoError(err)
