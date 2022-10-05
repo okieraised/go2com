@@ -81,24 +81,6 @@ func main() {
 		return
 	}
 
-	_, err = file.Write([]byte("\n\nfunc init() {\n"))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	_, err = file.Write([]byte("\tinitTag()\n"))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	_, err = file.Write([]byte("}\n"))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
 	_, err = file.Write([]byte("\n\nfunc initTag() {\n"))
 	if err != nil {
 		fmt.Println(err)
@@ -139,8 +121,8 @@ func main() {
 				tagGroupBegin := tagGroup[0:2]
 				for i := 0x00; i <= 0xFF; i++ {
 					tagGroup = fmt.Sprintf("%s%02X", tagGroupBegin, i)
-					mapTagLine := fmt.Sprintf("\tTagDict[DicomTag{0x%s, 0x%s}] = TagInfo{DicomTag{0x%s, 0x%s}, \"%s\", \"%s\", \"%s\", \"%s\"}\n",
-						tagGroup, tagElem, tagGroup, tagElem, tagVR, tagName, tagVM, tagRetired)
+					mapTagLine := fmt.Sprintf("\tTagDict[DicomTag{0x%s, 0x%s}] = TagInfo{\"%s\", \"%s\", \"%s\", \"%s\"}\n",
+						tagGroup, tagElem, tagVR, tagName, tagVM, tagRetired)
 					_, err = file.Write([]byte(mapTagLine))
 					if err != nil {
 						fmt.Println(err)
@@ -155,8 +137,8 @@ func main() {
 				tagElemBegin := tagElem[0:2]
 				for i := 0x00; i <= 0xFF; i++ {
 					tagElem = fmt.Sprintf("%s%02X", tagElemBegin, i)
-					mapTagLine := fmt.Sprintf("\tTagDict[DicomTag{0x%s, 0x%s}] = TagInfo{DicomTag{0x%s, 0x%s}, \"%s\", \"%s\", \"%s\", \"%s\"}\n",
-						tagGroup, tagElem, tagGroup, tagElem, tagVR, tagName, tagVM, tagRetired)
+					mapTagLine := fmt.Sprintf("\tTagDict[DicomTag{0x%s, 0x%s}] = TagInfo{\"%s\", \"%s\", \"%s\", \"%s\"}\n",
+						tagGroup, tagElem, tagVR, tagName, tagVM, tagRetired)
 					_, err = file.Write([]byte(mapTagLine))
 					if err != nil {
 						fmt.Println(err)
@@ -166,8 +148,8 @@ func main() {
 				continue
 			}
 
-			mapTagLine := fmt.Sprintf("\tTagDict[DicomTag{0x%s, 0x%s}] = TagInfo{DicomTag{0x%s, 0x%s}, \"%s\", \"%s\", \"%s\", \"%s\"}\n",
-				tagGroup, tagElem, tagGroup, tagElem, tagVR, tagName, tagVM, tagRetired)
+			mapTagLine := fmt.Sprintf("\tTagDict[DicomTag{0x%s, 0x%s}] = TagInfo{\"%s\", \"%s\", \"%s\", \"%s\"}\n",
+				tagGroup, tagElem, tagVR, tagName, tagVM, tagRetired)
 
 			_, err = file.Write([]byte(mapTagLine))
 			if err != nil {
