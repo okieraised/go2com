@@ -31,17 +31,25 @@ type Element struct {
 }
 
 func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder) (*Element, error) {
-	dcmTagInfo, err := readTag(r)
+	tagVal, dcmTagInfo, err := readTag(r)
 	if err != nil {
 		return nil, err
 	}
 
-	if dcmTagInfo.Tag == tag.ItemDelimitationItem || dcmTagInfo.Tag == tag.Item {
+	if *tagVal == tag.ItemDelimitationItem || *tagVal == tag.Item {
 		_ = r.Skip(4)
 		return nil, nil
 	}
 
-	if dcmTagInfo.Tag == tag.PixelData && r.SkipPixelData() {
+	//if tagVal.Compare(tag.PixelData) == 0 && r.SkipPixelData() {
+	//	_, err = r.Discard(int(r.GetFileSize()))
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	return nil, nil
+	//}
+
+	if *tagVal == tag.PixelData && r.SkipPixelData() {
 		_, err = r.Discard(int(r.GetFileSize()))
 		if err != nil {
 			return nil, err
@@ -50,23 +58,23 @@ func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder)
 	}
 
 	dmcTagName := dcmTagInfo.Name
-	dcmVR, err := readVR(r, isImplicit, dcmTagInfo.Tag)
+	dcmVR, err := readVR(r, isImplicit, *tagVal)
 	if err != nil {
 		return nil, err
 	}
 
-	dcmVL, err := readVL(r, isImplicit, dcmTagInfo.Tag, dcmVR)
+	dcmVL, err := readVL(r, isImplicit, *tagVal, dcmVR)
 	if err != nil {
 		return nil, err
 	}
 
-	value, err := readValue(r, dcmTagInfo.Tag, dcmVR, dcmVL)
+	value, err := readValue(r, *tagVal, dcmVR, dcmVL)
 	if err != nil {
 		return nil, err
 	}
 
 	elem := Element{
-		Tag:                    dcmTagInfo.Tag,
+		Tag:                    *tagVal,
 		TagName:                dmcTagName,
 		ValueRepresentationStr: dcmVR,
 		ValueLength:            dcmVL,
@@ -77,14 +85,14 @@ func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder)
 }
 
 // readTag returns the tag information
-func readTag(r reader.DcmReader) (*tag.TagInfo, error) {
+func readTag(r reader.DcmReader) (*tag.DicomTag, *tag.TagInfo, error) {
 	group, err := r.ReadUInt16()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	element, err := r.ReadUInt16()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	t := tag.DicomTag{
@@ -96,20 +104,19 @@ func readTag(r reader.DcmReader) (*tag.TagInfo, error) {
 	// Otherwise, find info about the public tag
 	if int(group)%2 != 0 {
 		tagInfo := tag.TagInfo{
-			Tag:    t,
 			VR:     "",
 			Name:   constants.PrivateTag,
 			VM:     "",
 			Status: "",
 		}
-		return &tagInfo, nil
+		return &t, &tagInfo, nil
 	}
 
 	tagInfo, err := tag.Find(t)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return &tagInfo, nil
+	return &t, &tagInfo, nil
 }
 
 // readVR
@@ -134,7 +141,7 @@ func readVL(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueRepresenta
 	// if the VR is equal to ‘OB’,’OW’,’OF’,’SQ’,’UI’ or ’UN’,
 	// the VR is having an extra 2 bytes trailing to it. These 2 bytes trailing to VR are empty and are not decoded.
 	// When VR is having these 2 extra empty bytes the VL will occupy 4 bytes rather than 2 bytes
-	case vr.OtherByte, vr.OtherWord, vr.OtherFloat, vr.SequenceOfItems, vr.Unknown:
+	case vr.OtherByte, vr.OtherWord, vr.OtherFloat, vr.SequenceOfItems, vr.Unknown, vr.OtherByteOrOtherWord, strings.ToLower(vr.OtherByteOrOtherWord):
 		r.Skip(2)
 		valueLength, err := r.ReadUInt32()
 		if err != nil {
