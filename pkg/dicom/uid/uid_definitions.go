@@ -22,12 +22,19 @@ const (
 )
 
 const (
-	ImplicitVRLittleEndian               = "1.2.840.10008.1.2"
-	ExplicitVRLittleEndian               = "1.2.840.10008.1.2.1"
-	ExplicitVRBigEndian                  = "1.2.840.10008.1.2.2"
-	DeflatedExplicitVRLittleEndian       = "1.2.840.10008.1.2.1.99"
-	JPEGBaselineProcess1                 = "1.2.840.10008.1.2.4.50"
-	JPEG2000ImageCompressionLosslessOnly = "1.2.840.10008.1.2.4.90"
+	ImplicitVRLittleEndian                  = "1.2.840.10008.1.2"
+	ExplicitVRLittleEndian                  = "1.2.840.10008.1.2.1"
+	ExplicitVRBigEndian                     = "1.2.840.10008.1.2.2"
+	DeflatedExplicitVRLittleEndian          = "1.2.840.10008.1.2.1.99"
+	JPEGBaselineProcess1                    = "1.2.840.10008.1.2.4.50"
+	JPEGBaselineProcess2And4                = "1.2.840.10008.1.2.4.51"
+	JPEGLosslessNonHierarchicalProcesses14  = "1.2.840.10008.1.2.4.57"
+	JPEGLSLosslessImageCompression          = "1.2.840.10008.1.2.4.80"
+	JPEGLSLossyNearLosslessImageCompression = "1.2.840.10008.1.2.4.81"
+	JPEG2000ImageCompressionLosslessOnly    = "1.2.840.10008.1.2.4.90"
+	JPEG2000ImageCompression                = "1.2.840.10008.1.2.4.91"
+	MPEG4AVCH264highProfile                 = "1.2.840.10008.1.2.4.102"
+	MPEG4AVCH264BDCompatibleHighProfile     = "1.2.840.10008.1.2.4.103"
 )
 
 type Info struct {

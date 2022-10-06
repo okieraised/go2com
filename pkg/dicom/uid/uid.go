@@ -11,7 +11,9 @@ func ParseTransferSyntaxUID(uid string) (bo binary.ByteOrder, implicit bool, err
 		return binary.LittleEndian, true, nil
 	case DeflatedExplicitVRLittleEndian:
 		fallthrough
-	case ExplicitVRLittleEndian, JPEGBaselineProcess1, JPEG2000ImageCompressionLosslessOnly:
+	case ExplicitVRLittleEndian, JPEGBaselineProcess1, JPEG2000ImageCompressionLosslessOnly,
+		JPEGBaselineProcess2And4, JPEGLosslessNonHierarchicalProcesses14, JPEGLSLosslessImageCompression,
+		JPEGLSLossyNearLosslessImageCompression, JPEG2000ImageCompression, MPEG4AVCH264highProfile, MPEG4AVCH264BDCompatibleHighProfile:
 		return binary.LittleEndian, false, nil
 	case ExplicitVRBigEndian:
 		return binary.BigEndian, false, nil
