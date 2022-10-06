@@ -11,21 +11,30 @@ const (
 )
 
 const (
-	PatientRootQRFind = "1.2.840.10008.5.1.4.1.2.1.1"
-	StudyRootQRFind   = "1.2.840.10008.5.1.4.1.2.2.1"
-	PatientRootQRGet  = "1.2.840.10008.5.1.4.1.2.1.3"
-	StudyRootQRGet    = "1.2.840.10008.5.1.4.1.2.2.3"
-	PatientRootQRMove = "1.2.840.10008.5.1.4.1.2.1.2"
-	StudyRootQRMove   = "1.2.840.10008.5.1.4.1.2.2.2"
-
+	PatientRootQRFind               = "1.2.840.10008.5.1.4.1.2.1.1"
+	StudyRootQRFind                 = "1.2.840.10008.5.1.4.1.2.2.1"
+	PatientRootQRGet                = "1.2.840.10008.5.1.4.1.2.1.3"
+	StudyRootQRGet                  = "1.2.840.10008.5.1.4.1.2.2.3"
+	PatientRootQRMove               = "1.2.840.10008.5.1.4.1.2.1.2"
+	StudyRootQRMove                 = "1.2.840.10008.5.1.4.1.2.2.2"
 	ModalityWorklistInformationFind = "1.2.840.10008.5.1.4.31"
 	VerificationSOPClass            = "1.2.840.10008.1.1"
+)
 
-	// https://www.dicomlibrary.com/dicom/transfer-syntax/
-	ImplicitVRLittleEndian         = "1.2.840.10008.1.2"
-	ExplicitVRLittleEndian         = "1.2.840.10008.1.2.1"
-	ExplicitVRBigEndian            = "1.2.840.10008.1.2.2"
-	DeflatedExplicitVRLittleEndian = "1.2.840.10008.1.2.1.99"
+const (
+	ImplicitVRLittleEndian                  = "1.2.840.10008.1.2"
+	ExplicitVRLittleEndian                  = "1.2.840.10008.1.2.1"
+	ExplicitVRBigEndian                     = "1.2.840.10008.1.2.2"
+	DeflatedExplicitVRLittleEndian          = "1.2.840.10008.1.2.1.99"
+	JPEGBaselineProcess1                    = "1.2.840.10008.1.2.4.50"
+	JPEGBaselineProcess2And4                = "1.2.840.10008.1.2.4.51"
+	JPEGLosslessNonHierarchicalProcesses14  = "1.2.840.10008.1.2.4.57"
+	JPEGLSLosslessImageCompression          = "1.2.840.10008.1.2.4.80"
+	JPEGLSLossyNearLosslessImageCompression = "1.2.840.10008.1.2.4.81"
+	JPEG2000ImageCompressionLosslessOnly    = "1.2.840.10008.1.2.4.90"
+	JPEG2000ImageCompression                = "1.2.840.10008.1.2.4.91"
+	MPEG4AVCH264highProfile                 = "1.2.840.10008.1.2.4.102"
+	MPEG4AVCH264BDCompatibleHighProfile     = "1.2.840.10008.1.2.4.103"
 )
 
 type Info struct {
