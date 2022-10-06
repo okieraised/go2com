@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/stretchr/testify/assert"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -26,12 +24,8 @@ func TestProfilingParse(t *testing.T) {
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
-
-		for _, elem := range parser.GetMetadata().Elements {
-			fmt.Println(elem)
-		}
 	}
-	err := utils.CPUProfilingFunc(fn, "./cpu_concurrent.pprof")
+	err := utils.CPUProfilingFunc(fn, "./cpu.pprof")
 	assert.NoError(err)
 }
 
@@ -50,48 +44,26 @@ func TestNewParser(t *testing.T) {
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
-
-	for _, elem := range parser.GetMetadata().Elements {
-		fmt.Println(elem)
-	}
 }
 
-//func TestNewParser2(t *testing.T) {
-//	assert := assert.New(t)
-//	InitTagDict()
-//	file, err := os.Open("/home/tripg/Documents/dicom/dcm/vietnhat/test/2022/04/04/1.2.826.0.1.3680043.2.4852.20220404.183125705.659403268/1.2.826.0.1.3680043.2.4852.20220404.183125713.920602682.dcm")
-//	assert.NoError(err)
-//
-//	defer file.Close()
-//	info, err := file.Stat()
-//	assert.NoError(err)
-//	fileSize := info.Size()
-//
-//	parser, err := NewParser(file, fileSize, false, false)
-//	assert.NoError(err)
-//	err = parser.Parse()
-//	assert.NoError(err)
-//
-//	for _, elem := range parser.GetMetadata().Elements {
-//		fmt.Println(elem)
-//	}
-//}
+func TestNewParser2(t *testing.T) {
+	assert := assert.New(t)
+	InitTagDict()
+	filePaths, err := utils.ReadDirRecursively("./test_data")
+	assert.NoError(err)
+	for _, fPath := range filePaths {
+		fmt.Println("process:", fPath)
+		file, err := os.Open(fPath)
+		assert.NoError(err)
 
-func TestCount(t *testing.T) {
-	fPath := "/home/tripg/Documents/dicom/dcm/vietnhat"
+		defer file.Close()
+		info, err := file.Stat()
+		assert.NoError(err)
+		fileSize := info.Size()
 
-	i := 0
-
-	visit := func(path string, f fs.DirEntry, err error) error {
-		if !f.IsDir() {
-			i++
-		}
-		return nil
+		parser, err := NewParser(file, fileSize, false, false)
+		assert.NoError(err)
+		err = parser.Parse()
+		assert.NoError(err)
 	}
-	err := filepath.WalkDir(fPath, visit)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("len", i)
 }

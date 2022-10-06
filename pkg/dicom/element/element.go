@@ -7,13 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/constants"
-	"io"
-	"strings"
-
 	"github.com/okieraised/go2com/internal/system"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/vr"
+	"io"
+	"strings"
 )
 
 const (
@@ -71,6 +70,9 @@ func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder)
 	value, err := readValue(r, *tagVal, dcmVR, dcmVL)
 	if err != nil {
 		return nil, err
+	}
+	if n, ok := value.([]byte); ok {
+		dcmVL = uint32(len(n))
 	}
 
 	elem := Element{
@@ -205,14 +207,19 @@ func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation stri
 
 // readByteType reads the value as byte array or word array
 func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
+
 	switch valueRepresentation {
 	case vr.OtherByte, vr.Unknown:
-		byteStr := make([]byte, valueLength)
-		_, err := io.ReadFull(r, byteStr)
+		bArr := make([]byte, valueLength)
+		n, err := io.ReadFull(r, bArr)
+		sbArr := bArr[:n]
 		if err != nil {
+			if err == io.ErrUnexpectedEOF {
+				return sbArr, nil
+			}
 			return nil, err
 		}
-		return byteStr, nil
+		return bArr, nil
 	case vr.OtherWord:
 		if valueLength%2 != 0 {
 			return nil, fmt.Errorf("odd value encountered")
