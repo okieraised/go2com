@@ -1,6 +1,7 @@
 package tag
 
 import (
+	"encoding/binary"
 	"fmt"
 )
 
@@ -58,12 +59,40 @@ func (tag DicomTag) StringWithoutParentheses() string {
 // Find finds information about the given tag. If the tag is not
 // part of the dictionary, raise error
 func Find(tag DicomTag) (TagInfo, error) {
+	err := fmt.Errorf("could not find tag (0x%x, 0x%x)", tag.Group, tag.Element)
 	entry, ok := TagDict[tag]
 	if !ok {
-		if tag.Group%2 == 0 && tag.Element == 0x0000 {
-			entry = TagInfo{"UL", "GenericGroupLength", "1", ""}
+		if tag.Group%2 == 0 {
+			if tag.Element == 0x0000 {
+				entry = TagInfo{"UL", "GenericGroupLength", "1", ""}
+			} else {
+				b := make([]byte, 2)
+				binary.BigEndian.PutUint16(b, tag.Group)
+				switch int(b[0]) {
+				case 80:
+					entry, kk := TagDict[DicomTag{
+						Group:   0x5000,
+						Element: tag.Element,
+					}]
+					if !kk {
+						return TagInfo{}, err
+					}
+					return entry, nil
+				case 96:
+					entry, kk := TagDict[DicomTag{
+						Group:   0x6000,
+						Element: tag.Element,
+					}]
+					if !kk {
+						return TagInfo{}, err
+					}
+					return entry, nil
+				default:
+					return TagInfo{}, err
+				}
+			}
 		} else {
-			return TagInfo{}, fmt.Errorf("could not find tag (0x%x, 0x%x)", tag.Group, tag.Element)
+			return TagInfo{}, err
 		}
 	}
 	return entry, nil
