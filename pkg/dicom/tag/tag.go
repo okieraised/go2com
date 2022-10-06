@@ -3,6 +3,7 @@ package tag
 import (
 	"encoding/binary"
 	"fmt"
+	"sync"
 )
 
 const (
@@ -108,7 +109,11 @@ func FindByName(name string) (TagInfo, error) {
 	return TagInfo{}, fmt.Errorf("could not find tag %s", name)
 }
 
+var lock = &sync.RWMutex{}
+
 func InitTagDict() map[DicomTag]TagInfo {
+	lock.Lock()
+	defer lock.Unlock()
 	if TagDict == nil {
 		initTag()
 	}
