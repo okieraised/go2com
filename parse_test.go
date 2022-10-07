@@ -32,7 +32,7 @@ func TestProfilingParse(t *testing.T) {
 func TestNewParser(t *testing.T) {
 	assert := assert.New(t)
 	InitTagDict()
-	file, err := os.Open("./test_data/02.dcm")
+	file, err := os.Open("./test_data/027.dcm")
 	assert.NoError(err)
 
 	defer file.Close()
@@ -40,7 +40,7 @@ func TestNewParser(t *testing.T) {
 	assert.NoError(err)
 	fileSize := info.Size()
 
-	parser, err := NewParser(file, fileSize, false, false)
+	parser, err := NewParser(file, fileSize, true, false)
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -71,7 +71,7 @@ func TestNewParser2(t *testing.T) {
 func TestNewParser3(t *testing.T) {
 	assert := assert.New(t)
 	InitTagDict()
-	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/oct/04")
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/Downloads/mammo_dicoms")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		fmt.Println("process:", fPath)
@@ -83,7 +83,7 @@ func TestNewParser3(t *testing.T) {
 		assert.NoError(err)
 		fileSize := info.Size()
 
-		parser, err := NewParser(file, fileSize, false, false)
+		parser, err := NewParser(file, fileSize, true, false)
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
