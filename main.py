@@ -12,6 +12,7 @@ fpath = "./test_data/File 160.dcm"
 fpath = "./test_data/File 8000"
 # fpath = "./test_data/File 12000"
 fpath = '/home/tripg/Documents/1.dcm'
+fpath = '/home/tripg/Downloads/mammo_dicoms/1.3.12.2.1107.5.12.7.5054.30000019090500530000000000556.dicom'
 
 ds = dcmread(fpath)
 print(ds)

@@ -40,14 +40,6 @@ func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder)
 		return nil, nil
 	}
 
-	//if tagVal.Compare(tag.PixelData) == 0 && r.SkipPixelData() {
-	//	_, err = r.Discard(int(r.GetFileSize()))
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	return nil, nil
-	//}
-
 	if *tagVal == tag.PixelData && r.SkipPixelData() {
 		_, err = r.Discard(int(r.GetFileSize()))
 		if err != nil {
@@ -367,33 +359,68 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 			}
 			sequences = append(sequences, subElement)
 		}
-
 	} else {
 		n, err := r.Peek(int(valueLength))
 		if err != nil {
-			return nil, err
-		}
-		br := bytes.NewReader(n)
-		subRd := reader.NewDcmReader(bufio.NewReader(br), r.SkipPixelData())
-		_ = subRd.Skip(8)
-		subRd.SetTransferSyntax(r.ByteOrder(), r.IsImplicit())
-		for {
-			subElement, err := ReadElement(subRd, subRd.IsImplicit(), subRd.ByteOrder())
-			if err != nil {
-				if err == io.EOF {
-					break
-				} else {
+			if err == bufio.ErrBufferFull {
+				bRaw, err := writeToBuf(r, int(valueLength))
+				if err != nil {
 					return nil, err
 				}
+				sequences, err = readDefinedLengthSequences(r, bRaw)
+				if err != nil {
+					return nil, err
+				}
+				return sequences, nil
 			}
-			if subElement == nil {
-				continue
-			}
-			sequences = append(sequences, subElement)
+			return nil, err
+		}
+		sequences, err = readDefinedLengthSequences(r, n)
+		if err != nil {
+			return nil, err
 		}
 		_, _ = r.Discard(int(valueLength))
 	}
 
 	return sequences, nil
 
+}
+
+func writeToBuf(r reader.DcmReader, n int) ([]byte, error) {
+	buf := bytes.NewBuffer(make([]byte, 0, n))
+
+	for i := 0; i < n; i++ {
+		word, err := r.ReadUInt8()
+		if err != nil {
+			return nil, err
+		}
+		err = binary.Write(buf, system.NativeEndian, word)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return buf.Bytes(), nil
+}
+
+func readDefinedLengthSequences(r reader.DcmReader, b []byte) ([]*Element, error) {
+	var sequences []*Element
+	br := bytes.NewReader(b)
+	subRd := reader.NewDcmReader(bufio.NewReaderSize(br, len(b)), r.SkipPixelData())
+	_ = subRd.Skip(8)
+	subRd.SetTransferSyntax(r.ByteOrder(), r.IsImplicit())
+	for {
+		subElement, err := ReadElement(subRd, subRd.IsImplicit(), subRd.ByteOrder())
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				return nil, err
+			}
+		}
+		if subElement == nil {
+			continue
+		}
+		sequences = append(sequences, subElement)
+	}
+	return sequences, nil
 }
