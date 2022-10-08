@@ -6990,7 +6990,7 @@ func initTag() {
 	TagDict[DicomTag{0x0028, 0x3002}] = TagInfo{"xs", "LUTDescriptor", "3", ""}
 	TagDict[DicomTag{0x0028, 0x3003}] = TagInfo{"LO", "LUTExplanation", "1", ""}
 	TagDict[DicomTag{0x0028, 0x3004}] = TagInfo{"LO", "ModalityLUTType", "1", ""}
-	TagDict[DicomTag{0x0028, 0x3006}] = TagInfo{"lt", "LUTData", "1-N", ""}
+	TagDict[DicomTag{0x0028, 0x3006}] = TagInfo{"OW", "LUTData", "1-N", ""}
 	TagDict[DicomTag{0x0028, 0x3010}] = TagInfo{"SQ", "VOILUTSequence", "1", ""}
 	TagDict[DicomTag{0x0028, 0x3110}] = TagInfo{"SQ", "SoftcopyVOILUTSequence", "1", ""}
 	TagDict[DicomTag{0x0028, 0x6010}] = TagInfo{"US", "RepresentativeFrameNumber", "1", ""}
@@ -9746,7 +9746,7 @@ func initTag() {
 	TagDict[DicomTag{0x0028, 0x1111}] = TagInfo{"xs", "LargeRedPaletteColorLookupTableDescriptor", "4", "retired"}
 	TagDict[DicomTag{0x0028, 0x1112}] = TagInfo{"xs", "LargeGreenPaletteColorLookupTableDescriptor", "4", "retired"}
 	TagDict[DicomTag{0x0028, 0x1113}] = TagInfo{"xs", "LargeBluePaletteColorLookupTableDescriptor", "4", "retired"}
-	TagDict[DicomTag{0x0028, 0x1200}] = TagInfo{"lt", "GrayLookupTableData", "1-N", "retired"}
+	TagDict[DicomTag{0x0028, 0x1200}] = TagInfo{"OW", "GrayLookupTableData", "1-N", "retired"}
 	TagDict[DicomTag{0x0028, 0x1211}] = TagInfo{"OW", "LargeRedPaletteColorLookupTableData", "1", "retired"}
 	TagDict[DicomTag{0x0028, 0x1212}] = TagInfo{"OW", "LargeGreenPaletteColorLookupTableData", "1", "retired"}
 	TagDict[DicomTag{0x0028, 0x1213}] = TagInfo{"OW", "LargeBluePaletteColorLookupTableData", "1", "retired"}
