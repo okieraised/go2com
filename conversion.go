@@ -61,6 +61,10 @@ func (m MappedTag) mapElement(elem *element.Element) {
 			groupTag := vlArr[0].Tag.StringWithoutParentheses()
 			subElemGrp := make(MappedTag)
 			for index, subVl := range vlArr {
+				vrStr := subVl.ValueRepresentationStr
+				if vrStr == "OB" || vrStr == "OW" || vrStr == "UN" || strings.ToLower(vrStr) == "ox" {
+					continue
+				}
 				subTag := subVl.Tag.StringWithoutParentheses()
 				if subTag == groupTag && index > 0 {
 					subVL = append(subVL, subElemGrp)
