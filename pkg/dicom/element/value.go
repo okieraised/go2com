@@ -1,11 +1,5 @@
 package element
 
-type Value interface {
-}
-
-type Val struct {
-}
-
-func (v *Val) ToArray() {
-
+type Value struct {
+	RawValue interface{}
 }
