@@ -13,8 +13,8 @@ const (
 )
 
 type TagBrowser struct {
-	VR    string      `json:"vr"`
 	Value interface{} `json:"Value"`
+	VR    string      `json:"vr"`
 }
 
 type DicomTag struct {

@@ -21,13 +21,13 @@ func (ds *Dataset) RetrieveFileUID() (*DicomUID, error) {
 	res := DicomUID{}
 	for _, elem := range ds.Elements {
 		if strings.ToLower(elem.TagName) == "sopinstanceuid" {
-			res.SOPInstanceUID = elem.Value.(string)
+			res.SOPInstanceUID = (elem.Value.RawValue).(string)
 		}
 		if strings.ToLower(elem.TagName) == "seriesinstanceuid" {
-			res.SeriesInstanceUID = elem.Value.(string)
+			res.SeriesInstanceUID = (elem.Value.RawValue).(string)
 		}
 		if strings.ToLower(elem.TagName) == "studyinstanceuid" {
-			res.StudyInstanceUID = elem.Value.(string)
+			res.StudyInstanceUID = (elem.Value.RawValue).(string)
 		}
 	}
 

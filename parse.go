@@ -18,12 +18,12 @@ import (
 
 // Parser implements the field required to parse the dicom file
 type Parser struct {
-	fileSize      int64
-	skipDataset   bool
-	skipPixelData bool
 	reader        reader.DcmReader
 	dataset       dataset.Dataset
 	metadata      dataset.Dataset
+	fileSize      int64
+	skipDataset   bool
+	skipPixelData bool
 }
 
 func InitTagDict() {
@@ -127,7 +127,7 @@ func (p *Parser) parseMetadata() error {
 	if err != nil {
 		return err
 	}
-	metaGroupLength, ok := res.Value.(int)
+	metaGroupLength, ok := (res.Value.RawValue).(int)
 	if !ok {
 		return fmt.Errorf("invalid value for tag (0x%x, 0x%x)", res.Tag.Group, res.Tag.Element)
 	}
@@ -151,7 +151,7 @@ func (p *Parser) parseMetadata() error {
 			Group:   0x0002,
 			Element: 0x0010,
 		}) == 0 {
-			transferSyntaxUID = (res.Value).(string)
+			transferSyntaxUID = (res.Value.RawValue).(string)
 		}
 		metadata = append(metadata, res)
 	}
@@ -183,7 +183,7 @@ func (p *Parser) parseDataset() error {
 			}
 		}
 		data = append(data, res)
-		fmt.Println(res)
+		//fmt.Println(res)
 	}
 	dicomDataset := dataset.Dataset{Elements: data}
 	p.dataset = dicomDataset
