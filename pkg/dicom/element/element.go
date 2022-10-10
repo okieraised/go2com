@@ -20,13 +20,14 @@ const (
 	VLUndefinedLength uint32 = 0xFFFFFFFF
 )
 
+// Element defines the struct for each dicom tag element info. Ordered as below to decrease the memory footprint
 type Element struct {
-	Tag                    tag.DicomTag
+	Value                  Value
 	TagName                string
-	ValueRepresentation    vr.VRKind
 	ValueRepresentationStr string
 	ValueLength            uint32
-	Value                  Value
+	Tag                    tag.DicomTag
+	ValueRepresentation    vr.VRKind
 }
 
 func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder) (*Element, error) {
@@ -72,7 +73,7 @@ func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder)
 		TagName:                dmcTagName,
 		ValueRepresentationStr: dcmVR,
 		ValueLength:            dcmVL,
-		Value:                  value,
+		Value:                  Value{RawValue: value},
 	}
 
 	return &elem, nil
@@ -162,7 +163,19 @@ func readVL(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueRepresenta
 }
 
 // readValue
-func readValue(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
+func readValue(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+	// Add this here for a special case when the tag is private and the value representation is UN (unknown) but the
+	// value is of sequence of items. In this case, we will peek the next 4 bytes and check if it matches the item tag
+	// If yes then handles like SQ
+	if valueRepresentation == vr.Unknown && t.Group%2 != 0 {
+		n, err := r.Peek(4)
+		if err != nil {
+			return nil, err
+		}
+		if binary.BigEndian.Uint32(n) == 0xFFFEE000 || binary.BigEndian.Uint32(n) == 0xFEFF00E0 || binary.BigEndian.Uint32(n) == VLUndefinedLength {
+			return readSequence(r, t, valueRepresentation, valueLength)
+		}
+	}
 	vrKind := vr.GetVR(t, valueRepresentation)
 	switch vrKind {
 	case vr.VRString, vr.VRDate:
@@ -174,7 +187,7 @@ func readValue(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, v
 	case vr.VRBytes:
 		return readByteType(r, t, valueRepresentation, valueLength)
 	case vr.VRPixelData:
-		return readByteType(r, t, valueRepresentation, valueLength)
+		return readPixelDataType(r, t, valueRepresentation, valueLength)
 	case vr.VRSequence:
 		return readSequence(r, t, valueRepresentation, valueLength)
 	default:
@@ -183,7 +196,7 @@ func readValue(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, v
 }
 
 // readStringType
-func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
+func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	sep := "\\"
 	str, err := r.ReadString(valueLength)
 	if err != nil {
@@ -197,9 +210,32 @@ func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation stri
 	return str, nil
 }
 
-// readByteType reads the value as byte array or word array
-func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
+func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+	// FE FF DD E0
+	if valueLength%2 != 0 {
+		fmt.Printf("Odd value length encountered for tag: %v with length %d", t.String(), valueLength)
+	}
+	res := make([]byte, 0)
 
+	for {
+		bRead, err := r.ReadUInt8()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+		res = append(res, bRead)
+	}
+	return res, nil
+}
+
+// readByteType reads the value as byte array or word array
+func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+	//fmt.Println(valueLength)
+	if valueLength == VLUndefinedLength {
+		fmt.Println(true)
+	}
 	switch valueRepresentation {
 	case vr.OtherByte, vr.Unknown:
 		bArr := make([]byte, valueLength)
@@ -214,13 +250,23 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 		return bArr, nil
 	case vr.OtherWord:
 		if valueLength%2 != 0 {
-			return nil, fmt.Errorf("odd value encountered")
+			fmt.Printf("Odd value length encountered for tag: %v with length %d", t.String(), valueLength)
 		}
 		buf := bytes.NewBuffer(make([]byte, 0, valueLength))
 		numWords := int(valueLength / 2)
 		for i := 0; i < numWords; i++ {
 			word, err := r.ReadUInt16()
 			if err != nil {
+				// Handle a case when the actual pixel data is less than the value length. Just return what we can
+				// read here
+				if err == io.EOF {
+					err = binary.Write(buf, system.NativeEndian, word)
+					if err != nil {
+						return nil, err
+					}
+					r = nil
+					return buf.Bytes(), nil
+				}
 				return nil, err
 			}
 			err = binary.Write(buf, system.NativeEndian, word)
@@ -236,7 +282,7 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 }
 
 // readIntType reads the value as integer
-func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
+func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	var subVal int
 	retVal := make([]int, 0, valueLength/2)
 	n, err := r.Peek(int(valueLength))
@@ -299,7 +345,7 @@ func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string,
 }
 
 // readFloatType reads the value as float
-func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
+func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	var subVal float64
 	retVal := make([]float64, 0, valueLength/2)
 	n, err := r.Peek(int(valueLength))
@@ -340,7 +386,7 @@ func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation strin
 }
 
 // readSequence reads the value as sequence of items
-func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (Value, error) {
+func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	var sequences []*Element
 	// Reference: https://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
 	if valueLength == VLUndefinedLength {
