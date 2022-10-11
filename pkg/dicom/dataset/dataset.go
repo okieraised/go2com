@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/element"
+	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"strings"
 )
 
@@ -20,17 +21,16 @@ type DicomUID struct {
 func (ds *Dataset) RetrieveFileUID() (*DicomUID, error) {
 	res := DicomUID{}
 	for _, elem := range ds.Elements {
-		if strings.ToLower(elem.TagName) == "sopinstanceuid" {
+		if elem.Tag == tag.SOPInstanceUID {
 			res.SOPInstanceUID = (elem.Value.RawValue).(string)
 		}
-		if strings.ToLower(elem.TagName) == "seriesinstanceuid" {
+		if elem.Tag == tag.SeriesInstanceUID {
 			res.SeriesInstanceUID = (elem.Value.RawValue).(string)
 		}
-		if strings.ToLower(elem.TagName) == "studyinstanceuid" {
+		if elem.Tag == tag.StudyInstanceUID {
 			res.StudyInstanceUID = (elem.Value.RawValue).(string)
 		}
 	}
-
 	return &res, nil
 }
 

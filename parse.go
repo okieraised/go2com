@@ -43,6 +43,13 @@ func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset 
 }
 
 func (p *Parser) Parse() error {
+	defer func() error {
+		if r := recover(); r != nil {
+			return fmt.Errorf("handled panic caused by the library: %s", fmt.Sprint(r))
+		}
+		return nil
+	}()
+
 	p.setFileSize()
 	err := p.validateDicom()
 	if err != nil {

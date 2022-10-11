@@ -35,7 +35,8 @@ func TestProfilingParse2(t *testing.T) {
 	assert := assert.New(t)
 	fn := func() {
 		InitTagDict()
-		filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/test_data")
+		//filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/test_data")
+		filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/mammo_dicoms")
 		assert.NoError(err)
 		for _, fPath := range filePaths {
 			fmt.Println("process:", fPath)
@@ -128,6 +129,9 @@ func TestNewParser2(t *testing.T) {
 			fmt.Println(err)
 			return
 		}
+		uids, err := parser.dataset.RetrieveFileUID()
+		err = parser.Parse()
+		fmt.Println(uids.StudyInstanceUID, uids.SeriesInstanceUID, uids.SOPInstanceUID)
 	}
 }
 
@@ -137,6 +141,9 @@ func TestNewParser3(t *testing.T) {
 	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/mammo_dicoms")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
+		//_, _ = dicom.ParseFile(fPath, nil)
+		//fmt.Println(dataset)
+
 		fmt.Println("process:", fPath)
 		file, err := os.Open(fPath)
 		assert.NoError(err)
@@ -146,7 +153,7 @@ func TestNewParser3(t *testing.T) {
 		assert.NoError(err)
 		fileSize := info.Size()
 
-		parser, err := NewParser(file, fileSize, true, false)
+		parser, err := NewParser(file, fileSize, false, false)
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
@@ -182,7 +189,11 @@ func TestNewParser5(t *testing.T) {
 	//file, err := os.Open("/home/tripg/Documents/dicom/ptt1.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/dicoms_mr_func/MR.1.3.46.670589.11.38317.5.0.4476.2014042516042547586")
 	//file, err := os.Open("/home/tripg/Documents/dicom/dicoms_struct/N2D_0001.dcm")
-	file, err := os.Open("/home/tripg/Documents/dicom/test_data/File 10051.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/test_data/File 10051.dcm")
+	//file, err := os.Open("/home/tripg/Downloads/1.2.840.113619.2.278.3.717616.166.1580339214.7.99.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/test_data/40009")
+	//file, err := os.Open("/home/tripg/Documents/dicom/test_data/File 12943.dcm")
+	file, err := os.Open("/home/tripg/Documents/dicom/mammo_dicoms/1.3.12.2.1107.5.12.7.3367.30000018112001512650000000209.dicom")
 	assert.NoError(err)
 
 	defer file.Close()
@@ -207,6 +218,5 @@ func TestNewParser5(t *testing.T) {
 	//	for _, subVal := range val {
 	//		fmt.Println(key, tt[key], reflect.ValueOf(subVal).Kind())
 	//	}
-	//
 	//}
 }

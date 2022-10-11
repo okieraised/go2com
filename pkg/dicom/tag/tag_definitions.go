@@ -1348,6 +1348,7 @@ var ExposureControlSensingRegionLowerHorizontalEdge = DicomTag{0x0018, 0x9439}
 var CenterOfCircularExposureControlSensingRegion = DicomTag{0x0018, 0x9440}
 var RadiusOfCircularExposureControlSensingRegion = DicomTag{0x0018, 0x9441}
 var VerticesOfThePolygonalExposureControlSensingRegion = DicomTag{0x0018, 0x9442}
+var RetiredBlank = DicomTag{0x0018, 0x9445}
 var ColumnAngulationPatient = DicomTag{0x0018, 0x9447}
 var BeamAngle = DicomTag{0x0018, 0x9449}
 var FrameDetectorParametersSequence = DicomTag{0x0018, 0x9451}
@@ -6343,6 +6344,7 @@ func initTag() {
 	TagDict[DicomTag{0x0018, 0x9440}] = TagInfo{"SS", "CenterOfCircularExposureControlSensingRegion", "2", ""}
 	TagDict[DicomTag{0x0018, 0x9441}] = TagInfo{"US", "RadiusOfCircularExposureControlSensingRegion", "1", ""}
 	TagDict[DicomTag{0x0018, 0x9442}] = TagInfo{"SS", "VerticesOfThePolygonalExposureControlSensingRegion", "2-N", ""}
+	TagDict[DicomTag{0x0018, 0x9445}] = TagInfo{"FD", "RetiredBlank", "", "retired"}
 	TagDict[DicomTag{0x0018, 0x9447}] = TagInfo{"FL", "ColumnAngulationPatient", "1", ""}
 	TagDict[DicomTag{0x0018, 0x9449}] = TagInfo{"FL", "BeamAngle", "1", ""}
 	TagDict[DicomTag{0x0018, 0x9451}] = TagInfo{"SQ", "FrameDetectorParametersSequence", "1", ""}
