@@ -1,5 +1,54 @@
 # go2com (DICOM image parser)
 
+## Example
+To parse a DICOM file, import the package as `github.com/okieraised/go2com`
+```go
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/okieraised/go2com"
+)
+
+func main() {
+	file, err := os.Open("/path_to_dcm_file")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fileSize := info.Size()
+
+	parser, err := go2com.NewParser(file, fileSize, false, false)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = parser.Parse()
+}
+```
+
+## Supported Transfer Syntaxes
+```text
+ImplicitVRLittleEndian                                     "1.2.840.10008.1.2"
+ExplicitVRLittleEndian                                     "1.2.840.10008.1.2.1"
+ExplicitVRBigEndian                                        "1.2.840.10008.1.2.2"
+DeflatedExplicitVRLittleEndian                             "1.2.840.10008.1.2.1.99"
+JPEGBaselineProcess1                                       "1.2.840.10008.1.2.4.50"
+JPEGBaselineProcess2And4                                   "1.2.840.10008.1.2.4.51"
+JPEGLosslessNonHierarchicalProcesses14                     "1.2.840.10008.1.2.4.57"
+JPEGLosslessNonHierarchicalFirstOrderPredictionProcess14   "1.2.840.10008.1.2.4.70"
+JPEGLSLosslessImageCompression                             "1.2.840.10008.1.2.4.80"
+JPEGLSLossyNearLosslessImageCompression                    "1.2.840.10008.1.2.4.81"
+JPEG2000ImageCompressionLosslessOnly                       "1.2.840.10008.1.2.4.90"
+JPEG2000ImageCompression                                   "1.2.840.10008.1.2.4.91"
+MPEG4AVCH264highProfile                                    "1.2.840.10008.1.2.4.102"
+MPEG4AVCH264BDCompatibleHighProfile                        "1.2.840.10008.1.2.4.103"
+```
 
 ## Benchmark Result
 Using 2 cores
