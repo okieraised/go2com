@@ -21,6 +21,12 @@ fpath = '/home/tripg/Documents/dicom/test_data/File 10000.dcm'
 fpath = '/home/tripg/Documents/dicom/dicoms_mr_func/MR.1.3.46.670589.11.38317.5.0.4476.2014042516042547586'
 # fpath = '/home/tripg/Documents/dicom/dicoms_struct/N2D_0001.dcm'
 fpath = '/home/tripg/Documents/dicom/test_data/File 10051.dcm'
+fpath = '/home/tripg/Documents/dicom/test_data/40009'
+fpath = '/home/tripg/Documents/dicom/test_data/File 12943.dcm'
+fpath = '/home/tripg/Documents/dicom/mammo_dicoms/1.3.12.2.1107.5.12.7.3367.30000018112001512650000000209.dicom'
+fpath = '/home/tripg/Documents/dicom/2_skull_ct/DICOM/I0'
+fpath = '/home/tripg/Documents/dicom/Class-3-malocclusion/Class 3 malocclusion/DICOM/I0'
+fpath = '/home/tripg/Documents/dicom/us_valid_pixel_aspect.dcm'
 
-ds = dcmread(fpath)
+ds = dcmread(fpath, force=True)
 print(ds)
