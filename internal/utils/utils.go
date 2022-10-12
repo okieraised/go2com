@@ -12,6 +12,9 @@ import (
 
 func AppendToSlice(vl interface{}) []interface{} {
 	res := make([]interface{}, 0)
+	if vl == nil {
+		return res
+	}
 	switch reflect.TypeOf(vl).Kind() {
 	case reflect.Slice:
 		s := reflect.ValueOf(vl)
@@ -63,8 +66,8 @@ func ReadDirRecursively(path string) ([]string, error) {
 	return result, nil
 }
 
-func CPUProfilingFunc(fn func(), filePath string) error {
-	f, err := os.Create(filePath)
+func CPUProfilingFunc(fn func(), output string) error {
+	f, err := os.Create(output)
 	if err != nil {
 		return err
 	}

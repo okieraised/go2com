@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	GroupSeqItem      uint16 = 0xFFFE
 	VLUndefinedLength uint32 = 0xFFFFFFFF
 )
 
@@ -211,31 +210,36 @@ func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation stri
 }
 
 func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
-	// FE FF DD E0
 	if valueLength%2 != 0 {
 		fmt.Printf("Odd value length encountered for tag: %v with length %d", t.String(), valueLength)
 	}
-	res := make([]byte, 0)
 
-	for {
-		bRead, err := r.ReadUInt8()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
+	bArr := make([]byte, r.GetFileSize())
+	n, err := io.ReadFull(r, bArr)
+	sbArr := bArr[:n]
+	if err != nil {
+		if err == io.ErrUnexpectedEOF {
+			return sbArr, nil
 		}
-		res = append(res, bRead)
+		return nil, err
 	}
-	return res, nil
+	return bArr, nil
+	//res := make([]byte, r.GetFileSize())
+	//for {
+	//	bRead, err := r.ReadUInt8()
+	//	if err != nil {
+	//		if err == io.EOF {
+	//			break
+	//		}
+	//		return nil, err
+	//	}
+	//	res = append(res, bRead)
+	//}
+	//return res, nil
 }
 
 // readByteType reads the value as byte array or word array
 func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
-	//fmt.Println(valueLength)
-	if valueLength == VLUndefinedLength {
-		fmt.Println(true)
-	}
 	switch valueRepresentation {
 	case vr.OtherByte, vr.Unknown:
 		bArr := make([]byte, valueLength)
