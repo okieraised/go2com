@@ -3,7 +3,10 @@ package go2com
 import (
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
+	"github.com/okieraised/go2com/pkg/dicom/iod"
+	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/stretchr/testify/assert"
+	_ "image/jpeg"
 	"os"
 	"reflect"
 	"strings"
@@ -102,6 +105,7 @@ func TestNewParser2(t *testing.T) {
 	assert := assert.New(t)
 	InitTagDict()
 	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/test_data")
+	//filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/dicom_NGUYEN VAN CONG 42T_20013477_54")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		fmt.Println("process:", fPath)
@@ -132,17 +136,18 @@ func TestNewParser2(t *testing.T) {
 		uids, err := parser.dataset.RetrieveFileUID()
 		err = parser.Parse()
 		fmt.Println(uids.StudyInstanceUID, uids.SeriesInstanceUID, uids.SOPInstanceUID)
+		_ = parser.Export(false)
 	}
 }
 
 func TestNewParser3(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
 	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/mammo_dicoms")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		//_, _ = dicom.ParseFile(fPath, nil)
 		//fmt.Println(dataset)
+		InitTagDict()
 
 		fmt.Println("process:", fPath)
 		file, err := os.Open(fPath)
@@ -159,29 +164,37 @@ func TestNewParser3(t *testing.T) {
 		assert.NoError(err)
 
 		_ = parser.Export(false)
+
+		pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+		pixelData.GetExpectedPixelData()
+		valid := pixelData.ValidatePixelData()
+		if !valid {
+			fmt.Println("Invalid", fPath)
+		}
+
 	}
 }
 
-//func TestNewParser3(t *testing.T) {
-//	assert := assert.New(t)
-//	InitTagDict()
-//	file, err := os.Open("/home/tripg/Documents/dicom/oct/1.dcm")
-//	assert.NoError(err)
-//
-//	defer file.Close()
-//	info, err := file.Stat()
-//	assert.NoError(err)
-//	fileSize := info.Size()
-//
-//	parser, err := NewParser(file, fileSize, true, false)
-//	assert.NoError(err)
-//	err = parser.Parse()
-//	assert.NoError(err)
-//
-//	for _, elem := range parser.dataset.Elements {
-//		fmt.Println(elem)
-//	}
-//}
+func TestNewParser4(t *testing.T) {
+	assert := assert.New(t)
+	InitTagDict()
+	file, err := os.Open("/home/tripg/Documents/dicom/oct/1.dcm")
+	assert.NoError(err)
+
+	defer file.Close()
+	info, err := file.Stat()
+	assert.NoError(err)
+	fileSize := info.Size()
+
+	parser, err := NewParser(file, fileSize, true, false)
+	assert.NoError(err)
+	err = parser.Parse()
+	assert.NoError(err)
+
+	for _, elem := range parser.dataset.Elements {
+		fmt.Println(elem)
+	}
+}
 
 func TestNewParser5(t *testing.T) {
 	assert := assert.New(t)
@@ -212,10 +225,13 @@ func TestNewParser5(t *testing.T) {
 	//file, err := os.Open("/home/tripg/Documents/dicom/9947.LEFT_MLO.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/utf8test.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/samples-of-mr-images-1.0.0/E1154S7I.dcm")
-	file, err := os.Open("/home/tripg/Documents/dicom/GSPS_Liver/DICOM/IM_0001")
+	//file, err := os.Open("/home/tripg/Documents/dicom/GSPS_Liver/DICOM/IM_0001")
+	//file, err := os.Open("/home/tripg/Documents/dicom/us_valid_pixel_aspect.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/US-RGB-8-esopecho")
-	//file, err := os.Open("/home/tripg/Documents/dicom/US-RGB-8-esopecho")
-
+	//file, err := os.Open("/home/tripg/Documents/dicom/Class-3-malocclusion/Class 3 malocclusion/DICOM/I0")
+	//file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73100000 [MG - R CC Tomosynthesis Reconstruction]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.589.0.dcm")
+	file, err := os.Open("/home/tripg/Documents/dicom/test_full/063.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/test_full/068.dcm")
 	assert.NoError(err)
 
 	defer file.Close()
@@ -229,16 +245,110 @@ func TestNewParser5(t *testing.T) {
 	assert.NoError(err)
 
 	for _, elem := range parser.dataset.Elements {
+		if elem.Tag == tag.BluePaletteColorLookupTableData || elem.Tag == tag.RedPaletteColorLookupTableData || elem.Tag == tag.GreenPaletteColorLookupTableData {
+			continue
+		}
+		if elem.ValueRepresentationStr == "OB" || elem.ValueRepresentationStr == "OW" {
+			continue
+		}
 		fmt.Println(elem)
 	}
-	//parser.Export(false)
+}
 
-	//tt := parser.Export(false)
-	//for key := range tt {
-	//	//fmt.Println(fmt.Sprintf("%v", tt[key]))
-	//	val := tt[key].Value.([]interface{})
-	//	for _, subVal := range val {
-	//		fmt.Println(key, tt[key], reflect.ValueOf(subVal).Kind())
-	//	}
+func TestNewParser6(t *testing.T) {
+	assert := assert.New(t)
+	InitTagDict()
+	//file, err := os.Open("/home/tripg/Documents/dicom/ptt1.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/dicoms_mr_func/MR.1.3.46.670589.11.38317.5.0.4476.2014042516042547586")
+	//file, err := os.Open("/home/tripg/Documents/dicom/dicoms_struct/N2D_0001.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/test_data/File 10051.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/test_data/40009")
+	//file, err := os.Open("/home/tripg/Documents/dicom/test_data/File 12943.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/mammo_dicoms/1.3.12.2.1107.5.12.7.3367.30000018112001512650000000209.dicom")
+	//file, err := os.Open("/home/tripg/Documents/dicom/2_skull_ct/DICOM/I0")
+	//file, err := os.Open("/home/tripg/Documents/dicom/Class-3-malocclusion/Class 3 malocclusion/DICOM/I0")
+	//file, err := os.Open("/home/tripg/Documents/img2.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/color_dicom/JPEG2000-RGB.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/color_dicom/JPEG2000-YBR_FULL.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/color_dicom/JPEGLS-RGB.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/color_dicom/losslessJPEG-RGB.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case22/Case22 [Case22]/20071030 021043 [ - MAMMOGRAM DIGITAL DX BILAT]/Series 71100000 [MG - L CC]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.480.0.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/us_valid_pixel_aspect.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/KiTS-00072/04-01-2000-abdomenw-15076/2.000000-arterial-99348/1-001.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/us_monochrome2.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/seg_abdomen_r1/")
+	//file, err := os.Open("/home/tripg/Documents/dicom/perfusion_ct/CT0014")
+	//file, err := os.Open("/home/tripg/Documents/dicom/US-RGB-8-esopecho")
+	//file, err := os.Open("/home/tripg/Documents/dicom/KiTS-00072/04-01-2000-abdomenw-15076/300.000000-Segmentation-99191/1-1.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/9947.LEFT_MLO.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/utf8test.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/samples-of-mr-images-1.0.0/E1154S7I.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/GSPS_Liver/DICOM/IM_0001")
+	//file, err := os.Open("/home/tripg/Documents/dicom/us_valid_pixel_aspect.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/US-RGB-8-esopecho")
+	//file, err := os.Open("/home/tripg/Documents/dicom/Class-3-malocclusion/Class 3 malocclusion/DICOM/I0")
+	//file, err := os.Open("/home/tripg/Documents/dicom/color_dicom/JPEG2000-RGB.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/055829-00000000.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/9947.LEFT_MLO.dcm") // lossless
+	//file, err := os.Open("/home/tripg/Documents/dicom/KiTS-00072/04-01-2000-abdomenw-15076/300.000000-Segmentation-99191/1-1.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/color_dicom/RLE-YBR_FULL.dcm")
+	file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case22/Case22 [Case22]/20071030 022108 [ - BREAST IMAGING TOMOSYNTHESIS]/Series 003 [SR]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.476.0.dcm")
+	assert.NoError(err)
+
+	defer file.Close()
+	info, err := file.Stat()
+	assert.NoError(err)
+	fileSize := info.Size()
+
+	parser, err := NewParser(file, fileSize, true, false)
+	assert.NoError(err)
+	err = parser.Parse()
+	assert.NoError(err)
+
+	//for _, elem := range parser.dataset.Elements {
+	//	fmt.Println(elem)
 	//}
+
+	//pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+	//pixelData.GetExpectedPixelData()
+	//valid := pixelData.ValidatePixelData()
+	//fmt.Println(valid)
+
+	tt := parser.Export(false)
+	for k := range tt {
+		fmt.Println(k, tt[k])
+	}
+
+}
+
+func TestNewParser7(t *testing.T) {
+	assert := assert.New(t)
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/test_full")
+	assert.NoError(err)
+	for _, fPath := range filePaths {
+		InitTagDict()
+		fmt.Println("process:", fPath)
+		file, err := os.Open(fPath)
+		assert.NoError(err)
+
+		defer file.Close()
+		info, err := file.Stat()
+		assert.NoError(err)
+		fileSize := info.Size()
+
+		parser, err := NewParser(file, fileSize, false, false)
+		assert.NoError(err)
+		err = parser.Parse()
+		assert.NoError(err)
+
+		_ = parser.Export(false)
+
+		//pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+		//pixelData.GetExpectedPixelData()
+		//valid := pixelData.ValidatePixelData()
+		//if !valid {
+		//	fmt.Println("Invalid", fPath)
+		//}
+
+	}
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/vr"
 	"io"
+	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -135,7 +137,9 @@ func readVL(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueRepresenta
 	// if the VR is equal to ‘OB’,’OW’,’OF’,’SQ’,’UI’ or ’UN’,
 	// the VR is having an extra 2 bytes trailing to it. These 2 bytes trailing to VR are empty and are not decoded.
 	// When VR is having these 2 extra empty bytes the VL will occupy 4 bytes rather than 2 bytes
-	case vr.OtherByte, vr.OtherWord, vr.OtherFloat, vr.SequenceOfItems, vr.Unknown, vr.OtherByteOrOtherWord, strings.ToLower(vr.OtherByteOrOtherWord):
+	case vr.OtherByte, vr.OtherWord, vr.OtherFloat, vr.SequenceOfItems, vr.Unknown, vr.OtherByteOrOtherWord,
+		strings.ToLower(vr.OtherByteOrOtherWord), vr.UnlimitedText, vr.UniversalResourceIdentifier,
+		vr.UnlimitedCharacters:
 		r.Skip(2)
 		valueLength, err := r.ReadUInt32()
 		if err != nil {
@@ -194,6 +198,68 @@ func readValue(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, v
 	}
 }
 
+func switchStringToNumeric(in interface{}, valueRepresentation string) interface{} {
+	switch valueRepresentation {
+	case vr.IntegerString:
+		switch reflect.ValueOf(in).Kind() {
+		case reflect.Slice:
+			ValStrArr, ok := (in).([]string)
+			if !ok {
+				return in
+			}
+			res := make([]int, len(ValStrArr))
+			for _, sub := range ValStrArr {
+				intVar, err := strconv.Atoi(sub)
+				if err != nil {
+					return in
+				}
+				res = append(res, intVar)
+			}
+			return res
+		case reflect.String:
+			valStr, ok := (in).(string)
+			if !ok {
+				return in
+			}
+			intVal, err := strconv.Atoi(valStr)
+			if err != nil {
+				return in
+			}
+			return intVal
+		}
+
+	case vr.DecimalString, vr.OtherFloat, vr.OtherDouble:
+		switch reflect.ValueOf(in).Kind() {
+		case reflect.Slice:
+			ValStrArr, ok := (in).([]string)
+			if !ok {
+				return in
+			}
+			res := make([]float64, len(ValStrArr))
+			for _, sub := range ValStrArr {
+				flVar, err := strconv.ParseFloat(sub, 64)
+				if err != nil {
+					return in
+				}
+				res = append(res, flVar)
+			}
+			return res
+		case reflect.String:
+			valStr, ok := (in).(string)
+			if !ok {
+				return in
+			}
+			flVar, err := strconv.ParseFloat(valStr, 64)
+			if err != nil {
+				return in
+			}
+			return flVar
+		}
+	default:
+	}
+	return in
+}
+
 // readStringType
 func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	sep := "\\"
@@ -203,18 +269,25 @@ func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation stri
 	}
 	str = strings.Trim(str, " \000") // There is a space " \000", not "\000"
 	if strings.Contains(str, sep) {
-		res := strings.Split(str, sep)
+		strArr := strings.Split(str, sep)
+		res := switchStringToNumeric(strArr, valueRepresentation)
 		return res, nil
 	}
-	return str, nil
+	res := switchStringToNumeric(str, valueRepresentation)
+	return res, nil
 }
 
 func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
-	if valueLength%2 != 0 {
+	if valueLength%2 != 0 && valueLength != VLUndefinedLength {
 		fmt.Printf("Odd value length encountered for tag: %v with length %d", t.String(), valueLength)
 	}
 
-	bArr := make([]byte, r.GetFileSize())
+	byteSize := r.GetFileSize()
+	if valueLength != VLUndefinedLength {
+		byteSize = int64(valueLength)
+	}
+
+	bArr := make([]byte, byteSize)
 	n, err := io.ReadFull(r, bArr)
 	sbArr := bArr[:n]
 	if err != nil {
@@ -224,18 +297,6 @@ func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation s
 		return nil, err
 	}
 	return bArr, nil
-	//res := make([]byte, r.GetFileSize())
-	//for {
-	//	bRead, err := r.ReadUInt8()
-	//	if err != nil {
-	//		if err == io.EOF {
-	//			break
-	//		}
-	//		return nil, err
-	//	}
-	//	res = append(res, bRead)
-	//}
-	//return res, nil
 }
 
 // readByteType reads the value as byte array or word array
@@ -459,7 +520,7 @@ func readDefinedLengthSequences(r reader.DcmReader, b []byte) ([]*Element, error
 	_ = subRd.Skip(8)
 	subRd.SetTransferSyntax(r.ByteOrder(), r.IsImplicit())
 	for {
-		subElement, err := ReadElement(subRd, subRd.IsImplicit(), subRd.ByteOrder())
+		subElement, err := ReadElement(subRd, r.IsImplicit(), r.ByteOrder())
 		if err != nil {
 			if err == io.EOF {
 				break

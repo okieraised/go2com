@@ -26,6 +26,7 @@ const (
 	ImplicitVRLittleEndian                                   = "1.2.840.10008.1.2"
 	ExplicitVRLittleEndian                                   = "1.2.840.10008.1.2.1"
 	ExplicitVRBigEndian                                      = "1.2.840.10008.1.2.2"
+	RLELossless                                              = "1.2.840.10008.1.2.5"
 	DeflatedExplicitVRLittleEndian                           = "1.2.840.10008.1.2.1.99"
 	JPEGBaselineProcess1                                     = "1.2.840.10008.1.2.4.50"
 	JPEGBaselineProcess2And4                                 = "1.2.840.10008.1.2.4.51"
@@ -45,6 +46,12 @@ type Info struct {
 	Type   string // "SOP Class", "Transfer Syntax", etc.
 	Part   string // Not used.
 	Status string // "" if active. "Retired", if retired.
+}
+
+var UncompressedSyntax = map[string]bool{
+	ImplicitVRLittleEndian: true,
+	ExplicitVRLittleEndian: true,
+	ExplicitVRBigEndian:    true,
 }
 
 var uidMap = map[string]Info{

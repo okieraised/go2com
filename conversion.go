@@ -3,6 +3,7 @@ package go2com
 import (
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
+	"github.com/okieraised/go2com/pkg/dicom/dataset"
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/vr"
@@ -24,13 +25,25 @@ func (p *Parser) Export(exportMeta bool) MappedTag {
 	}
 
 	ds := p.dataset
+	//colorImage := false
 	for _, elem := range ds.Elements {
+		//if elem.Tag == tag.RedPaletteColorLookupTableData || elem.Tag == tag.BluePaletteColorLookupTableData || elem.Tag == tag.GreenPaletteColorLookupTableData {
+		//	colorImage = true
+		//}
 		vrStr := elem.ValueRepresentationStr
 		if vrStr == "OB" || vrStr == "OW" || vrStr == "UN" || strings.ToLower(vrStr) == "ox" {
 			continue
 		}
 		res.mapElement(elem)
 	}
+
+	//if colorImage {
+	//	bulkURIMap := createOrthancURI(ds)
+	//	for k, v := range bulkURIMap {
+	//		res[k] = v
+	//	}
+	//}
+
 	return res
 }
 
@@ -81,9 +94,11 @@ func (m MappedTag) mapElement(elem *element.Element) {
 		}
 		value = subVL
 	} else {
-		value = switchStringToNumeric(elem)
-		value = utils.AppendToSlice(value)
+		//value = switchStringToNumeric(elem)
+		//value = utils.AppendToSlice(value)
+		value = utils.AppendToSlice(elem.Value)
 	}
+
 	m[tagStr] = tag.TagBrowser{
 		VR:    vrStr,
 		Value: value,
@@ -149,4 +164,25 @@ func switchStringToNumeric(elem *element.Element) interface{} {
 	default:
 	}
 	return elem.Value.RawValue
+}
+
+func createOrthancURI(ds dataset.Dataset) MappedTag {
+	res := make(MappedTag, 3)
+	prefix := "http://127.0.0.1:8042"
+	uids, err := ds.RetrieveFileUID()
+	if err != nil {
+		return res
+	}
+	for _, elem := range ds.Elements {
+		var bulkURI string
+		tagStr := elem.Tag.StringWithoutParentheses()
+		if elem.Tag == tag.RedPaletteColorLookupTableData || elem.Tag == tag.BluePaletteColorLookupTableData || elem.Tag == tag.GreenPaletteColorLookupTableData {
+			bulkURI = fmt.Sprintf("%s/dicom-web/studies/%s/series/%s/instances/%s/bulk/%s", prefix, uids.StudyInstanceUID, uids.SeriesInstanceUID, uids.SOPInstanceUID, tagStr)
+			res[tagStr] = tag.TagBrowser{
+				VR:          "US",
+				BulkDataURI: bulkURI,
+			}
+		}
+	}
+	return res
 }

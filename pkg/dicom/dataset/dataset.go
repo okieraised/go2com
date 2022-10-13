@@ -56,3 +56,13 @@ func (ds *Dataset) FindElementByTagName(tagName string) (*element.Element, error
 	}
 	return nil, fmt.Errorf("cannot find tag %s", tagName)
 }
+
+// FindElementByTag returns the corresponding element of the input tag name.
+func (ds *Dataset) FindElementByTag(tagName tag.DicomTag) (*element.Element, error) {
+	for _, elem := range ds.Elements {
+		if tagName == elem.Tag {
+			return elem, nil
+		}
+	}
+	return nil, fmt.Errorf("cannot find tag %s", tagName)
+}
