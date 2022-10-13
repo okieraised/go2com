@@ -128,10 +128,13 @@ func TestNewParser2(t *testing.T) {
 		parser, err := NewParser(file, fileSize, false, false)
 		assert.NoError(err)
 		err = parser.Parse()
-		assert.NoError(err)
 		if err != nil && !strings.Contains(err.Error(), "could not find tag") {
 			fmt.Println(err)
 			return
+		}
+		if err != nil && !strings.Contains(err.Error(), "not in valid dicom format") {
+			fmt.Println(err)
+			continue
 		}
 		uids, err := parser.dataset.RetrieveFileUID()
 		err = parser.Parse()
@@ -229,8 +232,8 @@ func TestNewParser5(t *testing.T) {
 	//file, err := os.Open("/home/tripg/Documents/dicom/us_valid_pixel_aspect.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/US-RGB-8-esopecho")
 	//file, err := os.Open("/home/tripg/Documents/dicom/Class-3-malocclusion/Class 3 malocclusion/DICOM/I0")
-	//file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73100000 [MG - R CC Tomosynthesis Reconstruction]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.589.0.dcm")
-	file, err := os.Open("/home/tripg/Documents/dicom/test_full/063.dcm")
+	file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73100000 [MG - R CC Tomosynthesis Reconstruction]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.589.0.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/test_full/063.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/test_full/068.dcm")
 	assert.NoError(err)
 

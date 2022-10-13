@@ -176,6 +176,7 @@ func readValue(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, v
 			return nil, err
 		}
 		if binary.BigEndian.Uint32(n) == 0xFFFEE000 || binary.BigEndian.Uint32(n) == 0xFEFF00E0 || binary.BigEndian.Uint32(n) == VLUndefinedLength {
+			r.SetTransferSyntax(r.ByteOrder(), true)
 			return readSequence(r, t, valueRepresentation, valueLength)
 		}
 	}
@@ -492,7 +493,7 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 		}
 		_, _ = r.Discard(int(valueLength))
 	}
-
+	r.SetTransferSyntax(r.ByteOrder(), r.IsTrackingImplicit())
 	return sequences, nil
 
 }
@@ -532,6 +533,8 @@ func readDefinedLengthSequences(r reader.DcmReader, b []byte) ([]*Element, error
 			continue
 		}
 		sequences = append(sequences, subElement)
+		//fmt.Println(subElement)
 	}
+	r.SetTransferSyntax(r.ByteOrder(), r.IsTrackingImplicit())
 	return sequences, nil
 }

@@ -32,9 +32,10 @@ fpath = '/home/tripg/Documents/dicom/color_dicom/JPEG2000-RGB.dcm'
 fpath = '/home/tripg/Documents/dicom/055829-00000000.dcm'
 fpath = '/home/tripg/Documents/dicom/us_monochrome2.dcm'
 # fpath = '/home/tripg/Documents/dicom/KiTS-00072/04-01-2000-abdomenw-15076/300.000000-Segmentation-99191/1-1.dcm'
-fpath = '/home/tripg/Documents/dicom/MammoTomoUPMC_Case22/Case22 [Case22]/20071030 022108 [ - BREAST IMAGING TOMOSYNTHESIS]/Series 003 [SR]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.476.0.dcm'
+# fpath = '/home/tripg/Documents/dicom/MammoTomoUPMC_Case22/Case22 [Case22]/20071030 022108 [ - BREAST IMAGING TOMOSYNTHESIS]/Series 003 [SR]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.476.0.dcm'
+# fpath = '/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73100000 [MG - R CC Tomosynthesis Reconstruction]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.589.0.dcm'
+# fpath = '/home/tripg/Documents/dicom/test_full/063.dcm'
 fpath = '/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73100000 [MG - R CC Tomosynthesis Reconstruction]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.589.0.dcm'
-fpath = '/home/tripg/Documents/dicom/test_full/063.dcm'
 
 ds = dcmread(fpath, force=True)
 print(ds)
