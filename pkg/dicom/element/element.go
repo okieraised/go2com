@@ -479,7 +479,7 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 				if err != nil {
 					return nil, err
 				}
-				sequences, err = readDefinedLengthSequences(r, bRaw)
+				sequences, err = readDefinedLengthSequences(r, bRaw, valueRepresentation)
 				if err != nil {
 					return nil, err
 				}
@@ -487,13 +487,13 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 			}
 			return nil, err
 		}
-		sequences, err = readDefinedLengthSequences(r, n)
+		sequences, err = readDefinedLengthSequences(r, n, valueRepresentation)
 		if err != nil {
 			return nil, err
 		}
 		_, _ = r.Discard(int(valueLength))
 	}
-	r.SetTransferSyntax(r.ByteOrder(), r.IsTrackingImplicit())
+	//r.SetTransferSyntax(r.ByteOrder(), r.IsTrackingImplicit())
 	return sequences, nil
 
 }
@@ -514,7 +514,7 @@ func writeToBuf(r reader.DcmReader, n int) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func readDefinedLengthSequences(r reader.DcmReader, b []byte) ([]*Element, error) {
+func readDefinedLengthSequences(r reader.DcmReader, b []byte, valueRepresentation string) ([]*Element, error) {
 	var sequences []*Element
 	br := bytes.NewReader(b)
 	subRd := reader.NewDcmReader(bufio.NewReaderSize(br, len(b)), r.SkipPixelData())
@@ -535,6 +535,9 @@ func readDefinedLengthSequences(r reader.DcmReader, b []byte) ([]*Element, error
 		sequences = append(sequences, subElement)
 		//fmt.Println(subElement)
 	}
-	r.SetTransferSyntax(r.ByteOrder(), r.IsTrackingImplicit())
+	if valueRepresentation == vr.Unknown {
+		r.SetTransferSyntax(r.ByteOrder(), r.IsTrackingImplicit())
+	}
+
 	return sequences, nil
 }

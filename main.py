@@ -36,6 +36,9 @@ fpath = '/home/tripg/Documents/dicom/us_monochrome2.dcm'
 # fpath = '/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73100000 [MG - R CC Tomosynthesis Reconstruction]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.589.0.dcm'
 # fpath = '/home/tripg/Documents/dicom/test_full/063.dcm'
 fpath = '/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73100000 [MG - R CC Tomosynthesis Reconstruction]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.589.0.dcm'
+fpath = '/home/tripg/Documents/dicom/invalid_pixel.dcm'
+fpath = '/home/tripg/Documents/dicom/Le_Cong_Giuong/1.2.840.113704.9.1000.16.2.20220421110622828000200020001.dcm'
+fpath = '/home/tripg/Documents/dicom/dcm/vietnhat/test/2022/04/03/1.2.392.200036.9123.100.12.12.31738.90220403093121413382737448/1.2.392.200036.9123.100.12.12.31738.90220403094010178790824826.dcm'
 
 ds = dcmread(fpath, force=True)
 print(ds)

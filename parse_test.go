@@ -295,7 +295,11 @@ func TestNewParser6(t *testing.T) {
 	//file, err := os.Open("/home/tripg/Documents/dicom/9947.LEFT_MLO.dcm") // lossless
 	//file, err := os.Open("/home/tripg/Documents/dicom/KiTS-00072/04-01-2000-abdomenw-15076/300.000000-Segmentation-99191/1-1.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/color_dicom/RLE-YBR_FULL.dcm")
-	file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case22/Case22 [Case22]/20071030 022108 [ - BREAST IMAGING TOMOSYNTHESIS]/Series 003 [SR]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.476.0.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case22/Case22 [Case22]/20071030 022108 [ - BREAST IMAGING TOMOSYNTHESIS]/Series 003 [SR]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.476.0.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/invalid_pixel.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/dcm/vietnhat/test/2022/04/03/1.2.392.200036.9123.100.12.12.31738.90220403093121413382737448/1.2.392.200036.9123.100.12.12.31738.90220403094010178790824826.dcm")
+	//file, err := os.Open("/home/tripg/Documents/dicom/test_full/001.dcm")
+	file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73200000 [MG - R CC Breast Tomosynthesis Image]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.597.0.dcm")
 	assert.NoError(err)
 
 	defer file.Close()
@@ -303,7 +307,7 @@ func TestNewParser6(t *testing.T) {
 	assert.NoError(err)
 	fileSize := info.Size()
 
-	parser, err := NewParser(file, fileSize, true, false)
+	parser, err := NewParser(file, fileSize, false, false)
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -317,10 +321,10 @@ func TestNewParser6(t *testing.T) {
 	//valid := pixelData.ValidatePixelData()
 	//fmt.Println(valid)
 
-	tt := parser.Export(false)
-	for k := range tt {
-		fmt.Println(k, tt[k])
-	}
+	//tt := parser.Export(false)
+	//for k := range tt {
+	//	fmt.Println(k, tt[k])
+	//}
 
 }
 
@@ -346,11 +350,14 @@ func TestNewParser7(t *testing.T) {
 
 		_ = parser.Export(false)
 
-		//pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
-		//pixelData.GetExpectedPixelData()
-		//valid := pixelData.ValidatePixelData()
-		//if !valid {
-		//	fmt.Println("Invalid", fPath)
+		pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+		pixelData.GetExpectedPixelData()
+		valid := pixelData.ValidatePixelData()
+		if !valid {
+			fmt.Println("Invalid", fPath)
+		}
+		//if valid {
+		//	fmt.Println("valid", fPath)
 		//}
 
 	}
