@@ -39,6 +39,7 @@ fpath = '/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 
 fpath = '/home/tripg/Documents/dicom/invalid_pixel.dcm'
 fpath = '/home/tripg/Documents/dicom/Le_Cong_Giuong/1.2.840.113704.9.1000.16.2.20220421110622828000200020001.dcm'
 fpath = '/home/tripg/Documents/dicom/dcm/vietnhat/test/2022/04/03/1.2.392.200036.9123.100.12.12.31738.90220403093121413382737448/1.2.392.200036.9123.100.12.12.31738.90220403094010178790824826.dcm'
+fpath = '/home/tripg/Documents/dicom/10142022/Acuson/Sequoia/EXAMS/EXAM0003/CLIPS/CLIP0039'
 
 ds = dcmread(fpath, force=True)
 print(ds)
