@@ -46,4 +46,9 @@ var OrthancGetSeriesOfStudyTags = map[tag.DicomTag]bool{
 	tag.SOPClassesInStudy:                      true,
 	tag.NumberOfTemporalPositions:              true,
 	tag.RetrieveURL:                            true,
+	tag.PatientName:                            true,
+	tag.PatientBirthDate:                       true,
+	tag.PatientSex:                             true,
+	tag.OtherPatientIDs:                        true,
+	tag.PatientID:                              true,
 }
