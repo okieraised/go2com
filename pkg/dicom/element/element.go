@@ -282,7 +282,6 @@ func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation s
 	if valueLength%2 != 0 && valueLength != VLUndefinedLength {
 		fmt.Printf("Odd value length encountered for tag: %v with length %d", t.String(), valueLength)
 	}
-
 	byteSize := r.GetFileSize()
 	if valueLength != VLUndefinedLength {
 		byteSize = int64(valueLength)
@@ -303,7 +302,7 @@ func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation s
 // readByteType reads the value as byte array or word array
 func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	switch valueRepresentation {
-	case vr.OtherByte, vr.Unknown:
+	case vr.OtherByte, vr.Unknown, vr.OtherByteOrOtherWord, strings.ToLower(vr.OtherByteOrOtherWord):
 		bArr := make([]byte, valueLength)
 		n, err := io.ReadFull(r, bArr)
 		sbArr := bArr[:n]
@@ -343,6 +342,10 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 		}
 		return buf.Bytes(), nil
 	default:
+		_, err := r.Discard(int(valueLength))
+		if err != nil {
+			return nil, err
+		}
 	}
 	return nil, nil
 }

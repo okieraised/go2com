@@ -1,6 +1,7 @@
 package dataset
 
 import (
+	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/element"
@@ -31,6 +32,11 @@ func (ds *Dataset) RetrieveFileUID() (*DicomUID, error) {
 			res.StudyInstanceUID = (elem.Value.RawValue).(string)
 		}
 	}
+
+	if res.StudyInstanceUID == "" || res.SeriesInstanceUID == "" || res.SOPInstanceUID == "" {
+		return nil, errors.New("missing required UID to identify instance")
+	}
+
 	return &res, nil
 }
 

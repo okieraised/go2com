@@ -344,3 +344,108 @@ func TestNewParser7(t *testing.T) {
 		}
 	}
 }
+
+func TestNewParser8(t *testing.T) {
+	assert := assert.New(t)
+	InitTagDict()
+	file, err := os.Open("/home/tripg/Documents/dicom/10142022/ALI_Technologies/UltraPACS/studies/w0019837/view0001")
+	assert.NoError(err)
+
+	defer file.Close()
+	info, err := file.Stat()
+	assert.NoError(err)
+	fileSize := info.Size()
+
+	parser, err := NewParser(file, fileSize, false, false)
+	assert.NoError(err)
+	err = parser.Parse()
+	assert.NoError(err)
+
+	//seriesTag := parser.ExportSeriesTags()
+	//for k := range seriesTag {
+	//	fmt.Println(k, seriesTag[k])
+	//}
+
+	for _, elem := range parser.dataset.Elements {
+		fmt.Println(elem)
+	}
+
+	//pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+	//pixelData.GetExpectedPixelData()
+	//valid := pixelData.ValidatePixelData()
+	//fmt.Println(valid)
+
+	//tt := parser.Export(false)
+	//for k := range tt {
+	//	fmt.Println(k, tt[k])
+	//}
+
+}
+
+func TestNewParser9(t *testing.T) {
+	assert := assert.New(t)
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/vinlab/Mini-batch0")
+	assert.NoError(err)
+	for _, fPath := range filePaths {
+		InitTagDict()
+		fmt.Println("process:", fPath)
+		file, err := os.Open(fPath)
+		assert.NoError(err)
+
+		defer file.Close()
+		info, err := file.Stat()
+		assert.NoError(err)
+		fileSize := info.Size()
+
+		parser, err := NewParser(file, fileSize, false, false)
+		assert.NoError(err)
+		err = parser.Parse()
+		assert.NoError(err)
+
+		_ = parser.Export(false)
+
+		pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+		pixelData.GetExpectedPixelData()
+		valid := pixelData.ValidatePixelData()
+		if !valid {
+			fmt.Println("Invalid", fPath)
+		}
+	}
+}
+
+func TestNewParser10(t *testing.T) {
+	assert := assert.New(t)
+	InitTagDict()
+	file, err := os.Open("/home/tripg/Documents/dicom/vinlab/Mini-batch0/1.3.12.2.1107.5.1.7.112561.30000019122607094739800003704/DICOM/1.3.12.2.1107.5.1.7.112561.30000019122622575003400000100.dcm")
+	assert.NoError(err)
+
+	defer file.Close()
+	info, err := file.Stat()
+	assert.NoError(err)
+	fileSize := info.Size()
+
+	parser, err := NewParser(file, fileSize, false, false)
+	assert.NoError(err)
+	err = parser.Parse()
+	assert.NoError(err)
+
+	//seriesTag := parser.ExportSeriesTags()
+	//for k := range seriesTag {
+	//	fmt.Println(k, seriesTag[k])
+	//}
+
+	//for _, elem := range parser.dataset.Elements {
+	//	fmt.Println(elem)
+	//}
+
+	//pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+	//pixelData.GetExpectedPixelData()
+	//valid := pixelData.ValidatePixelData()
+	//fmt.Println(valid)
+
+	//tt := parser.Export(false)
+	//for k := range tt {
+	//	fmt.Println(k, tt[k])
+	//}
+
+}
