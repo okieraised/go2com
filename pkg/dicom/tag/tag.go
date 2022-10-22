@@ -13,8 +13,9 @@ const (
 )
 
 type TagBrowser struct {
-	Value interface{} `json:"Value"`
-	VR    string      `json:"vr"`
+	Value       interface{} `json:"Value,omitempty"`
+	VR          string      `json:"vr"`
+	BulkDataURI string      `json:"BulkDataURI,omitempty"`
 }
 
 type DicomTag struct {

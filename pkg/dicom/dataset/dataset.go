@@ -1,6 +1,7 @@
 package dataset
 
 import (
+	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/element"
@@ -31,6 +32,11 @@ func (ds *Dataset) RetrieveFileUID() (*DicomUID, error) {
 			res.StudyInstanceUID = (elem.Value.RawValue).(string)
 		}
 	}
+
+	if res.StudyInstanceUID == "" || res.SeriesInstanceUID == "" || res.SOPInstanceUID == "" {
+		return nil, errors.New("missing required UID to identify instance")
+	}
+
 	return &res, nil
 }
 
@@ -51,6 +57,16 @@ func (ds *Dataset) FindElementByTagName(tagName string) (*element.Element, error
 	tagName = utils.FormatTagName(tagName)
 	for _, elem := range ds.Elements {
 		if strings.ToLower(elem.TagName) == tagName {
+			return elem, nil
+		}
+	}
+	return nil, fmt.Errorf("cannot find tag %s", tagName)
+}
+
+// FindElementByTag returns the corresponding element of the input tag name.
+func (ds *Dataset) FindElementByTag(tagName tag.DicomTag) (*element.Element, error) {
+	for _, elem := range ds.Elements {
+		if tagName == elem.Tag {
 			return elem, nil
 		}
 	}
