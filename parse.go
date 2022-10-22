@@ -174,6 +174,7 @@ func (p *Parser) parseMetadata() error {
 		return err
 	}
 	p.reader.SetTransferSyntax(binOrder, isImplicit)
+	p.reader.SetOverallImplicit(isImplicit)
 	return nil
 }
 

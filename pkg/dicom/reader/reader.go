@@ -22,23 +22,26 @@ type DcmReader interface {
 	ReadFloat32() (float32, error)
 	ReadFloat64() (float64, error)
 	IsImplicit() bool
+	IsTrackingImplicit() bool
 	SkipPixelData() bool
 	Peek(n int) ([]byte, error)
 	Discard(n int) (int, error)
 	ByteOrder() binary.ByteOrder
 	Skip(n int64) error
 	SetTransferSyntax(binaryOrder binary.ByteOrder, isImplicit bool)
+	SetOverallImplicit(isImplicit bool)
 	SetFileSize(fileSize int64) error
 	GetFileSize() int64
 	ReadString(n uint32) (string, error)
 }
 
 type dcmReader struct {
-	reader        *bufio.Reader
-	binaryOrder   binary.ByteOrder
-	isImplicit    bool
-	skipPixelData bool
-	fileSize      int64
+	reader            *bufio.Reader
+	binaryOrder       binary.ByteOrder
+	isImplicit        bool
+	keepTrackImplicit bool
+	skipPixelData     bool
+	fileSize          int64
 }
 
 func NewDcmReader(reader *bufio.Reader, skipPixelData bool) DcmReader {
@@ -48,6 +51,14 @@ func NewDcmReader(reader *bufio.Reader, skipPixelData bool) DcmReader {
 		isImplicit:    false,
 		skipPixelData: skipPixelData,
 	}
+}
+
+func (r *dcmReader) IsTrackingImplicit() bool {
+	return r.keepTrackImplicit
+}
+
+func (r *dcmReader) SetOverallImplicit(isImplicit bool) {
+	r.keepTrackImplicit = isImplicit
 }
 
 func (r *dcmReader) Read(p []byte) (int, error) {
