@@ -208,7 +208,7 @@ func switchStringToNumeric(in interface{}, valueRepresentation string) interface
 			if !ok {
 				return in
 			}
-			res := make([]int, len(ValStrArr))
+			res := make([]int, 0, len(ValStrArr))
 			for _, sub := range ValStrArr {
 				intVar, err := strconv.Atoi(sub)
 				if err != nil {
@@ -236,7 +236,7 @@ func switchStringToNumeric(in interface{}, valueRepresentation string) interface
 			if !ok {
 				return in
 			}
-			res := make([]float64, len(ValStrArr))
+			res := make([]float64, 0, len(ValStrArr))
 			for _, sub := range ValStrArr {
 				flVar, err := strconv.ParseFloat(sub, 64)
 				if err != nil {
