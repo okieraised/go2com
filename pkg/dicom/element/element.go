@@ -31,6 +31,7 @@ type Element struct {
 	ValueRepresentation    vr.VRKind
 }
 
+// ReadElement reads the DICOM file tag by tag and returns the pointer to the parsed Element
 func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder) (*Element, error) {
 	tagVal, dcmTagInfo, err := readTag(r)
 	if err != nil {
@@ -115,7 +116,7 @@ func readTag(r reader.DcmReader) (*tag.DicomTag, *tag.TagInfo, error) {
 	return &t, &tagInfo, nil
 }
 
-// readVR
+// readVR returns the value representation of the tag
 func readVR(r reader.DcmReader, isImplicit bool, t tag.DicomTag) (string, error) {
 	if isImplicit {
 		record, err := tag.Find(t)
@@ -127,7 +128,7 @@ func readVR(r reader.DcmReader, isImplicit bool, t tag.DicomTag) (string, error)
 	return r.ReadString(2)
 }
 
-// readVL
+// readVL returns the value length of the dicom tag
 func readVL(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueRepresentation string) (uint32, error) {
 	if isImplicit {
 		return r.ReadUInt32()
@@ -165,7 +166,7 @@ func readVL(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueRepresenta
 	}
 }
 
-// readValue
+// readValue returns the value of the dicom tag
 func readValue(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	// Add this here for a special case when the tag is private and the value representation is UN (unknown) but the
 	// value is of sequence of items. In this case, we will peek the next 4 bytes and check if it matches the item tag
@@ -199,6 +200,7 @@ func readValue(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, v
 	}
 }
 
+// switchStringToNumeric convert the decimal string to its appropriate value type
 func switchStringToNumeric(in interface{}, valueRepresentation string) interface{} {
 	switch valueRepresentation {
 	case vr.IntegerString:
@@ -261,7 +263,7 @@ func switchStringToNumeric(in interface{}, valueRepresentation string) interface
 	return in
 }
 
-// readStringType
+// readStringType reads the value as string and strips any zero padding
 func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	sep := "\\"
 	str, err := r.ReadString(valueLength)
@@ -278,6 +280,7 @@ func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation stri
 	return res, nil
 }
 
+// readPixelDataType reads the raw pixel data
 func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	if valueLength%2 != 0 && valueLength != VLUndefinedLength {
 		fmt.Printf("Odd value length encountered for tag: %v with length %d", t.String(), valueLength)
@@ -299,7 +302,7 @@ func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation s
 	return bArr, nil
 }
 
-// readByteType reads the value as byte array or word array
+// readByteType reads the value as byte array
 func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	switch valueRepresentation {
 	case vr.OtherByte, vr.Unknown, vr.OtherByteOrOtherWord, strings.ToLower(vr.OtherByteOrOtherWord):
@@ -350,7 +353,7 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 	return nil, nil
 }
 
-// readIntType reads the value as integer
+// readIntType reads the value as integer and returns either the value or a slice of value
 func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	var subVal int
 	retVal := make([]int, 0, valueLength/2)
