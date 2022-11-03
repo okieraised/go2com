@@ -27,9 +27,10 @@ type Nii1Reader interface {
 	GetSlice(z, t int32) ([][]float32, error)
 	GetHeader() *Nii1Header
 	GetDatatype() string
-	GetOrientation() string
+	GetOrientation() [3]string
 	GetSliceCode() string
 	QuaternToMatrix() matrix.DMat44
+	MatrixToOrientation(R matrix.DMat44)
 }
 
 type nii1Reader struct {
@@ -58,6 +59,10 @@ func NewNii1Reader(filePath string) (Nii1Reader, error) {
 	}, nil
 }
 
+func (r *nii1Reader) MatrixToOrientation(R matrix.DMat44) {
+	r.niiData.matrixToOrientation(R)
+}
+
 func (r *nii1Reader) QuaternToMatrix() matrix.DMat44 {
 	return r.niiData.quaternToMatrix()
 }
@@ -66,7 +71,7 @@ func (r *nii1Reader) GetSliceCode() string {
 	return r.niiData.getSliceCode()
 }
 
-func (r *nii1Reader) GetOrientation() string {
+func (r *nii1Reader) GetOrientation() [3]string {
 	return r.niiData.getOrientation()
 }
 

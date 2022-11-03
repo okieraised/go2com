@@ -71,13 +71,24 @@ const (
 )
 
 const (
-	NIFTI_L2R = 1
-	NIFTI_R2L = 2
-	NIFTI_P2A = 3
-	NIFTI_A2P = 4
-	NIFTI_I2S = 5
-	NIFTI_S2I = 6
+	NIFTI_UNKNOWN_ORIENT = 0
+	NIFTI_L2R            = 1
+	NIFTI_R2L            = 2
+	NIFTI_P2A            = 3
+	NIFTI_A2P            = 4
+	NIFTI_I2S            = 5
+	NIFTI_S2I            = 6
 )
+
+var OrietationToString = map[int]string{
+	NIFTI_UNKNOWN_ORIENT: "Unknown",
+	NIFTI_L2R:            "Left-to-Right",
+	NIFTI_R2L:            "Right-to-Left",
+	NIFTI_P2A:            "Posterior-to-Anterior",
+	NIFTI_A2P:            "Anterior-to-Posterior",
+	NIFTI_I2S:            "Inferior-to-Superior",
+	NIFTI_S2I:            "Superior-to-Inferior",
+}
 
 const (
 	DT_UNKNOWN       int16 = 0 // what it says, dude

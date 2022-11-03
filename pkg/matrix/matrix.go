@@ -132,15 +132,15 @@ func Mat33ColNorm(A DMat33) float64 {
 
 // MatMultiply multiples 2 3x3 matrices
 func MatMultiply(A, B DMat33) DMat33 {
-	var C DMat33
+	var Cm DMat33
 	var i, j int64
 
 	for i = 0; i < 3; i++ {
 		for j = 0; j < 3; j++ {
-			C.M[i][j] = A.M[i][0]*B.M[0][j] + A.M[i][1]*B.M[1][j] + A.M[i][2]*B.M[2][j]
+			Cm.M[i][j] = A.M[i][0]*B.M[0][j] + A.M[i][1]*B.M[1][j] + A.M[i][2]*B.M[2][j]
 		}
 	}
-	return C
+	return Cm
 }
 
 // Mat33Inverse computes the inverse of a bordered 3x3 matrix
