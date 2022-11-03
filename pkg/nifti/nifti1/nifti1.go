@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/constants"
+	"github.com/okieraised/go2com/pkg/matrix"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
-	"github.com/okieraised/go2com/pkg/nifti/matrix"
 	"math"
 )
 
@@ -134,13 +134,6 @@ type Nifti1Ext struct {
 	ECode int32
 	Edata []byte
 	ESize int32
-}
-
-func (n *Nii1) quaternToMatrix() matrix.DMat44 {
-	var R matrix.DMat44
-
-	return R
-
 }
 
 // getUnitsOfMeasurements returns the spatial and temporal units of measurements
