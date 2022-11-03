@@ -24,12 +24,13 @@ func TestNii1(t *testing.T) {
 	err = niiReader.Parse()
 	assert.NoError(err)
 
-	fmt.Println(niiReader.GetHeader().Datatype)
-
 	//x, err := niiReader.GetTimeSeries(111, 256, 12)
 	//assert.NoError(err)
 	//fmt.Println(x)
-	//
+
+	fmt.Println(niiReader.GetDatatype())
+	fmt.Println(niiReader.GetSliceCode())
+
 	//shape := niiReader.GetImgShape()
 	//fmt.Println(shape)
 	//

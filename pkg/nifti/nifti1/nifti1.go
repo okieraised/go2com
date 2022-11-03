@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 	"github.com/okieraised/go2com/pkg/nifti/matrix"
 	"math"
@@ -135,6 +136,13 @@ type Nifti1Ext struct {
 	ESize int32
 }
 
+func (n *Nii1) quaternToMatrix() matrix.DMat44 {
+	var R matrix.DMat44
+
+	return R
+
+}
+
 // getUnitsOfMeasurements returns the spatial and temporal units of measurements
 func (n *Nii1) getUnitsOfMeasurements() ([2]string, error) {
 	// The bits 1-3 are used to store the spatial dimensions, the bits 4-6 are for temporal dimensions,
@@ -199,17 +207,17 @@ func (n *Nii1) getAt(x, y, z, t int32) float32 {
 
 	var value float32
 	switch n.Data.NByPer {
-	case 1:
+	case constant.NIFTI_TYPE_BOOL:
 		if len(dataPoint) > 0 {
 			value = float32(dataPoint[0])
 		}
-	case 2:
+	case constant.NIFTI_TYPE_UINT8:
 		v := binary.LittleEndian.Uint16(dataPoint)
 		value = float32(v)
-	case 4:
+	case constant.NIFTI_TYPE_INT16:
 		v := binary.LittleEndian.Uint32(dataPoint)
 		value = math.Float32frombits(v)
-	case 8:
+	case constant.NIFTI_TYPE_INT32:
 		v := binary.LittleEndian.Uint64(dataPoint)
 		value = float32(math.Float64frombits(v))
 	default:
@@ -271,6 +279,90 @@ func (n *Nii1) getSlice(z, t int32) ([][]float32, error) {
 		}
 	}
 	return slice, nil
+}
+
+func (n *Nii1) getDatatype() string {
+	fmt.Println("n.Data.Datatype", n.Data.Datatype)
+	switch int16(n.Data.Datatype) {
+	case constant.DT_UNKNOWN:
+		return "UNKNOWN"
+	case constant.DT_BINARY:
+		return "BINARY"
+	case constant.DT_INT8:
+		return "INT8"
+	case constant.DT_UINT8:
+		return "UINT8"
+	case constant.DT_INT16:
+		return "INT16"
+	case constant.DT_UINT16:
+		return "UINT16"
+	case constant.DT_INT32:
+		return "INT32"
+	case constant.DT_UINT32:
+		return "UINT32"
+	case constant.DT_INT64:
+		return "INT64"
+	case constant.DT_UINT64:
+		return "UINT64"
+	case constant.DT_FLOAT32:
+		return "FLOAT32"
+	case constant.DT_FLOAT64:
+		return "FLOAT64"
+	case constant.DT_FLOAT128:
+		return "FLOAT128"
+	case constant.DT_COMPLEX64:
+		return "COMPLEX64"
+	case constant.DT_COMPLEX128:
+		return "COMPLEX128"
+	case constant.DT_COMPLEX256:
+		return "COMPLEX256"
+	case constant.DT_RGB24:
+		return "RGB24"
+	case constant.DT_RGBA32:
+		return "RGBA32"
+	}
+	return "ILLEGAL"
+}
+
+func (n *Nii1) getOrientation() string {
+	switch 1 {
+	case constant.NIFTI_L2R:
+		return "Left-to-Right"
+	case constant.NIFTI_R2L:
+		return "Right-to-Left"
+	case constant.NIFTI_P2A:
+		return "Posterior-to-Anterior"
+	case constant.NIFTI_A2P:
+		return "Anterior-to-Posterior"
+	case constant.NIFTI_I2S:
+		return "Inferior-to-Superior"
+	case constant.NIFTI_S2I:
+		return "Superior-to-Inferior"
+	}
+
+	return constants.COMMON_UNKNOWN
+}
+
+func (n *Nii1) getSliceCode() string {
+	fmt.Println("n.Data.SliceCode", n.Data.SliceCode)
+	switch n.Data.SliceCode {
+	case constant.NIFTI_SLICE_UNKNOWN:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_UNKNOWN]
+	case constant.NIFTI_SLICE_SEQ_INC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_INC]
+	case constant.NIFTI_SLICE_SEQ_DEC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_DEC]
+	case constant.NIFTI_SLICE_ALT_INC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC]
+	case constant.NIFTI_SLICE_ALT_DEC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC]
+	case constant.NIFTI_SLICE_ALT_INC2:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC2]
+	case constant.NIFTI_SLICE_ALT_DEC2:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC2]
+	}
+
+	return constants.COMMON_UNKNOWN
 }
 
 //func (hdr *Nii1Header) GetIntentCode() (string, error) {
