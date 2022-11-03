@@ -12,21 +12,15 @@ func TestNii1(t *testing.T) {
 	assert := assert.New(t)
 
 	filePath := "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
-	//filePath = "/home/tripg/Documents/nifti/RGB16_4D.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/RGB16_4D.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/someones_anatomy.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/someones_epi.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/RGB8_4D.nii.gz"
 
 	niiReader, err := nifti1.NewNii1Reader(filePath)
 	assert.NoError(err)
-
-	//err = niiReader.ParseHeader()
-	//assert.NoError(err)
-	//err = niiReader.ParseData()
-	//assert.NoError(err)
 	err = niiReader.Parse()
 	assert.NoError(err)
-
-	//x, err := niiReader.GetTimeSeries(111, 256, 12)
-	//assert.NoError(err)
-	//fmt.Println(x)
 
 	fmt.Println(niiReader.GetDatatype())
 	fmt.Println(niiReader.GetSliceCode())
@@ -37,10 +31,8 @@ func TestNii1(t *testing.T) {
 
 	fmt.Println(niiReader.GetOrientation())
 
-	//shape := niiReader.GetImgShape()
-	//fmt.Println(shape)
-	//
-	//slices, err := niiReader.GetSlice(1, 0)
-	//assert.NoError(err)
-	//fmt.Println(slices)
+	fmt.Println(niiReader.GetUnitsOfMeasurements())
+
+	shape := niiReader.GetImgShape()
+	fmt.Println(shape)
 }

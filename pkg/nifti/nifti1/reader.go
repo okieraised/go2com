@@ -291,6 +291,13 @@ func (r *nii1Reader) parseData() error {
 	r.niiData.Data.QuaternD = header.QuaternD
 	r.niiData.Data.Descrip = header.Descrip
 
+	// The bits 1-3 are used to store the spatial dimensions, the bits 4-6 are for temporal dimensions,
+	// and the bits 6 and 7 are not used
+	xyzUnit := r.niiData.Header.XyztUnits % 8
+	tUnit := r.niiData.Header.XyztUnits - xyzUnit
+	r.niiData.Data.XYZUnits = int32(xyzUnit)
+	r.niiData.Data.TimeUnits = int32(tUnit)
+
 	r.niiData.Data.QFac = float64(header.Pixdim[0])
 
 	r.niiData.Data.NVox = 1

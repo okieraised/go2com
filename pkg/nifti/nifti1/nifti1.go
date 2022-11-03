@@ -139,20 +139,15 @@ type Nifti1Ext struct {
 
 // getUnitsOfMeasurements returns the spatial and temporal units of measurements
 func (n *Nii1) getUnitsOfMeasurements() ([2]string, error) {
-	// The bits 1-3 are used to store the spatial dimensions, the bits 4-6 are for temporal dimensions,
-	// and the bits 6 and 7 are not used
 	units := [2]string{}
-	xyzUnit := n.Header.XyztUnits % 8
-	tUnit := n.Header.XyztUnits - xyzUnit
-
-	spatialUnit, ok := constant.NiiMeasurementUnits[xyzUnit]
+	spatialUnit, ok := constant.NiiMeasurementUnits[uint8(n.Data.XYZUnits)]
 	if !ok {
-		return units, fmt.Errorf("invalid spatial unit %d", xyzUnit)
+		return units, fmt.Errorf("invalid spatial unit %d", n.Data.XYZUnits)
 	}
 
-	temporalUnit, ok := constant.NiiMeasurementUnits[tUnit]
+	temporalUnit, ok := constant.NiiMeasurementUnits[uint8(n.Data.TimeUnits)]
 	if !ok {
-		return units, fmt.Errorf("invalid temporal unit %d", tUnit)
+		return units, fmt.Errorf("invalid temporal unit %d", n.Data.TimeUnits)
 	}
 
 	units[0] = spatialUnit
@@ -276,7 +271,6 @@ func (n *Nii1) getSlice(z, t int32) ([][]float32, error) {
 }
 
 func (n *Nii1) getDatatype() string {
-	fmt.Println("n.Data.Datatype", n.Data.Datatype)
 	switch int16(n.Data.Datatype) {
 	case constant.DT_UNKNOWN:
 		return "UNKNOWN"
@@ -345,7 +339,6 @@ func (n *Nii1) getOrientation() [3]string {
 }
 
 func (n *Nii1) getSliceCode() string {
-	fmt.Println("n.Data.SliceCode", n.Data.SliceCode)
 	switch n.Data.SliceCode {
 	case constant.NIFTI_SLICE_UNKNOWN:
 		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_UNKNOWN]
@@ -365,22 +358,3 @@ func (n *Nii1) getSliceCode() string {
 
 	return constants.COMMON_UNKNOWN
 }
-
-//func (hdr *Nii1Header) GetIntentCode() (string, error) {
-//	code := hdr.IntentCode
-//	res, ok := constant.
-//	if ok {
-//		return res, nil
-//	}
-//	return "", errors.New("key not exist")
-//}
-//
-//// GetSForm returns the coordinate specified in the header filed `SformCode`
-//func (hdr *Nii1Header) GetSForm() (string, error) {
-//	code := hdr.SformCode
-//	res, ok := pkg.OrientationInfo[code]
-//	if ok {
-//		return res, nil
-//	}
-//	return "", errors.New("key not exist")
-//}
