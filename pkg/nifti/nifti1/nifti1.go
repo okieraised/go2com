@@ -3,13 +3,11 @@ package nifti1
 // #include "./nifti1.h"
 import "C"
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 	"github.com/okieraised/go2com/pkg/nifti/matrix"
-	"io"
 	"math"
 )
 
@@ -66,18 +64,18 @@ type Nii1Header struct {
 }
 
 type Nii1Data struct {
-	NDim          int              // last dimension greater than 1 (1..7)
-	Nx            int              // dimensions of grid array
-	Ny            int              // dimensions of grid array
-	Nz            int              // dimensions of grid array
-	Nt            int              // dimensions of grid array
-	Nu            int              // dimensions of grid array
-	Nv            int              // dimensions of grid array
-	Nw            int              // dimensions of grid array
-	Dim           [8]int           // dim[0] = ndim, dim[1] = nx, etc
-	NVox          int              // number of voxels = nx*ny*nz*...*nw
-	NByPer        int              // bytes per voxel, matches datatype
-	DataType      int              // type of data in voxels: DT_* code
+	NDim          int32            // last dimension greater than 1 (1..7)
+	Nx            int32            // dimensions of grid array
+	Ny            int32            // dimensions of grid array
+	Nz            int32            // dimensions of grid array
+	Nt            int32            // dimensions of grid array
+	Nu            int32            // dimensions of grid array
+	Nv            int32            // dimensions of grid array
+	Nw            int32            // dimensions of grid array
+	Dim           [8]int32         // dim[0] = ndim, dim[1] = nx, etc
+	NVox          int32            // number of voxels = nx*ny*nz*...*nw
+	NByPer        int32            // bytes per voxel, matches datatype (Datatype)
+	Datatype      int32            // type of data in voxels: DT_* code
 	Dx            float64          // grid spacings
 	Dy            float64          // grid spacings
 	Dz            float64          // grid spacings
@@ -128,125 +126,17 @@ type Nii1Data struct {
 	ByteOrder     binary.ByteOrder // byte order on disk (MSB_ or LSB_FIRST)
 	Data          []byte           // slice of data: nbyper*nvox bytes
 	NumExt        int32            // number of extensions in extList
-	Nifti1Ext     []interface{}    // array of extension structs (with data)
+	Nifti1Ext     []Nifti1Ext      // array of extension structs (with data)
 }
 
-func (n *Nii1) Parse(reader *bytes.Reader, bo binary.ByteOrder) error {
-	err := n.parseHeader(reader, bo)
-	if err != nil {
-		return err
-	}
-
-	err = n.parseData(reader, bo)
-	if err != nil {
-		return err
-	}
-
-	return nil
+type Nifti1Ext struct {
+	ECode int32
+	Edata []byte
+	ESize int32
 }
 
-func (n *Nii1) parseHeader(reader *bytes.Reader, bo binary.ByteOrder) error {
-	header := new(Nii1Header)
-	err := binary.Read(reader, bo, header)
-	if err != nil {
-		return err
-	}
-	if header.Magic != [4]byte{110, 43, 49, 0} && header.Magic != [4]byte{110, 105, 49, 0} {
-		return errors.New("invalid NIFTI magic string")
-	}
-	if header.Datatype == C.DT_BINARY || header.Datatype == C.DT_UNKNOWN {
-		return errors.New("data type is invalid")
-	}
-
-	n.Header = header
-
-	return nil
-}
-
-func (n *Nii1) parseData(reader *bytes.Reader, bo binary.ByteOrder) error {
-	var offset int
-	statDim := 1
-	image := new(Nii1Data)
-
-	header := n.Header
-
-	if header.Bitpix == 0 {
-		return errors.New("number of bits per voxel value (bitpix) is zero")
-	}
-
-	image.NDim, image.Dim[0] = int(header.Dim[0]), int(header.Dim[0])
-	image.Nx, image.Dim[1] = int(header.Dim[1]), int(header.Dim[1])
-	image.Ny, image.Dim[2] = int(header.Dim[2]), int(header.Dim[2])
-	image.Nz, image.Dim[3] = int(header.Dim[3]), int(header.Dim[3])
-	image.Nt, image.Dim[4] = int(header.Dim[4]), int(header.Dim[4])
-	image.Nu, image.Dim[5] = int(header.Dim[5]), int(header.Dim[5])
-	image.Nv, image.Dim[6] = int(header.Dim[6]), int(header.Dim[6])
-	image.Nw, image.Dim[7] = int(header.Dim[7]), int(header.Dim[7])
-	image.Dx, image.PixDim[1] = float64(header.Pixdim[1]), float64(header.Pixdim[1])
-	image.Dx, image.PixDim[2] = float64(header.Pixdim[2]), float64(header.Pixdim[2])
-	image.Dx, image.PixDim[3] = float64(header.Pixdim[3]), float64(header.Pixdim[3])
-	image.Dx, image.PixDim[4] = float64(header.Pixdim[4]), float64(header.Pixdim[4])
-	image.Dx, image.PixDim[5] = float64(header.Pixdim[5]), float64(header.Pixdim[5])
-	image.Dx, image.PixDim[6] = float64(header.Pixdim[6]), float64(header.Pixdim[6])
-	image.Dx, image.PixDim[7] = float64(header.Pixdim[7]), float64(header.Pixdim[7])
-	image.IntentName = header.IntentName
-	image.IntentP1 = header.IntentP1
-	image.IntentP2 = header.IntentP2
-	image.IntentP3 = header.IntentP3
-	image.QformCode = int32(header.QformCode)
-	image.SformCode = int32(header.SformCode)
-	image.SclSlope = header.SclSlope
-	image.SclInter = header.SclInter
-	image.QuaternB = header.QuaternB
-	image.QuaternC = header.QuaternC
-	image.QuaternD = header.QuaternD
-	image.Descrip = header.Descrip
-
-	image.NVox = 1
-	for i := int16(1); i <= header.Dim[0]; i++ {
-		image.NVox *= int(header.Dim[i])
-	}
-	image.NByPer = int(header.Bitpix) / 8
-	image.ByteOrder = bo
-
-	image.NByPer = int(header.Bitpix) / 8
-
-	if image.Dim[5] > 1 {
-		statDim = image.Dim[5]
-	}
-	offset = int(header.VoxOffset)
-	dataSize := image.Dim[1] * image.Dim[2] * image.Dim[3] * image.Dim[4] * statDim * (int(header.Bitpix) / 8)
-
-	_, err := reader.Seek(int64(offset), 0)
-	if err != nil {
-		return err
-	}
-
-	buf := make([]byte, dataSize)
-	_, err = io.ReadFull(reader, buf)
-	if err != nil {
-		return err
-	}
-	image.Data = buf
-
-	fmt.Println(dataSize, offset, reader.Len(), len(buf))
-
-	n.Data = image
-
-	return nil
-}
-
-// GetHeader returns the NIFTI header
-func (n *Nii1) GetHeader() interface{} {
-	return n.Header
-}
-
-// GetImg returns the raw NIFTI image data
-func (n *Nii1) GetImg() interface{} {
-	return n.Data
-}
-
-func (n *Nii1) GetUnitsOfMeasurements() ([2]string, error) {
+// getUnitsOfMeasurements returns the spatial and temporal units of measurements
+func (n *Nii1) getUnitsOfMeasurements() ([2]string, error) {
 	// The bits 1-3 are used to store the spatial dimensions, the bits 4-6 are for temporal dimensions,
 	// and the bits 6 and 7 are not used
 	units := [2]string{}
@@ -269,7 +159,8 @@ func (n *Nii1) GetUnitsOfMeasurements() ([2]string, error) {
 	return units, nil
 }
 
-func (n *Nii1) GetAffine() interface{} {
+// getAffine returns the 4x4 affine matrix
+func (n *Nii1) getAffine() [4][4]float32 {
 	affine := [4][4]float32{}
 	affine[0] = n.Header.SrowX
 	affine[1] = n.Header.SrowY
@@ -278,7 +169,8 @@ func (n *Nii1) GetAffine() interface{} {
 	return affine
 }
 
-func (n *Nii1) GetImgShape() interface{} {
+// getImgShape returns the image shape in terms of x, y, z, t
+func (n *Nii1) getImgShape() [4]int16 {
 	dim := [4]int16{}
 	for index, _ := range dim {
 		dim[index] = n.Header.Dim[index+1]
@@ -294,7 +186,8 @@ func (n *Nii1) GetVoxelSize() interface{} {
 	return size
 }
 
-func (n *Nii1) GetAt(x, y, z, t int) float32 {
+// GetAt returns the value at (x, y, z, t) location
+func (n *Nii1) getAt(x, y, z, t int32) float32 {
 
 	tIndex := t * n.Data.Nx * n.Data.Ny * n.Data.Nz
 	zIndex := n.Data.Nx * n.Data.Ny * z
@@ -329,32 +222,55 @@ func (n *Nii1) GetAt(x, y, z, t int) float32 {
 	return value
 }
 
-func (n *Nii1) GetTimeSeries(x, y, z int) interface{} {
-	var timeSeries []float32
-	volumeN := n.Data.Dim[1] * n.Data.Dim[2] * n.Data.Dim[3]
+func (n *Nii1) getTimeSeries(x, y, z int32) ([]float32, error) {
+	timeSeries := make([]float32, 0, n.Data.Dim[4])
 
-	timeNum := len(n.Data.Data) / volumeN * n.Data.NByPer
-
-	fmt.Println("timeNum", timeNum, n.Data.NByPer, volumeN)
-	for i := 0; i < n.Data.Dim[4]; i++ {
-		timeSeries = append(timeSeries, n.GetAt(x, y, z, i))
-	}
-	return timeSeries
-}
-
-func (n *Nii1) GetSlice(z, t int) interface{} {
 	sliceX := n.Data.Nx
 	sliceY := n.Data.Ny
+	sliceZ := n.Data.Nx
+
+	if x > sliceX {
+		return nil, errors.New("invalid x value")
+	}
+
+	if y > sliceY {
+		return nil, errors.New("invalid y value")
+	}
+
+	if z > sliceZ {
+		return nil, errors.New("invalid z value")
+	}
+
+	for t := 0; t < int(n.Data.Dim[4]); t++ {
+		timeSeries = append(timeSeries, n.getAt(x, y, z, int32(t)))
+	}
+	return timeSeries, nil
+}
+
+func (n *Nii1) getSlice(z, t int32) ([][]float32, error) {
+	sliceX := n.Data.Nx
+	sliceY := n.Data.Ny
+	sliceZ := n.Data.Nx
+	sliceT := n.Data.Nt
+
+	if z > sliceZ {
+		return nil, errors.New("invalid z value")
+	}
+
+	if t > sliceT || t < 0 {
+		return nil, errors.New("invalid time value")
+	}
+
 	slice := make([][]float32, sliceX)
 	for i := range slice {
 		slice[i] = make([]float32, sliceY)
 	}
-	for xi := 0; xi < sliceX; xi++ {
-		for yi := 0; yi < sliceY; yi++ {
-			slice[xi][yi] = n.GetAt(xi, yi, z, t)
+	for x := 0; x < int(sliceX); x++ {
+		for y := 0; y < int(sliceY); y++ {
+			slice[x][y] = n.getAt(int32(x), int32(y), z, t)
 		}
 	}
-	return slice
+	return slice, nil
 }
 
 //func (hdr *Nii1Header) GetIntentCode() (string, error) {
