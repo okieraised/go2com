@@ -128,6 +128,7 @@ type Nii1Data struct {
 	Data          []byte           // slice of data: nbyper*nvox bytes
 	NumExt        int32            // number of extensions in extList
 	Nifti1Ext     []Nifti1Ext      // array of extension structs (with data)
+	IJKOrtient    [3]int32         // self-add. Orientation ini, j, k coordinate
 }
 
 type Nifti1Ext struct {
@@ -317,23 +318,30 @@ func (n *Nii1) getDatatype() string {
 	return "ILLEGAL"
 }
 
-func (n *Nii1) getOrientation() string {
-	switch 1 {
-	case constant.NIFTI_L2R:
-		return "Left-to-Right"
-	case constant.NIFTI_R2L:
-		return "Right-to-Left"
-	case constant.NIFTI_P2A:
-		return "Posterior-to-Anterior"
-	case constant.NIFTI_A2P:
-		return "Anterior-to-Posterior"
-	case constant.NIFTI_I2S:
-		return "Inferior-to-Superior"
-	case constant.NIFTI_S2I:
-		return "Superior-to-Inferior"
-	}
+func (n *Nii1) getOrientation() [3]string {
+	res := [3]string{}
 
-	return constants.COMMON_UNKNOWN
+	ijk := n.Data.IJKOrtient
+
+	iOrient, ok := constant.OrietationToString[int(ijk[0])]
+	if !ok {
+		res[0] = constant.OrietationToString[constant.NIFTI_UNKNOWN_ORIENT]
+	}
+	res[0] = iOrient
+
+	jOrient, ok := constant.OrietationToString[int(ijk[1])]
+	if !ok {
+		res[1] = constant.OrietationToString[constant.NIFTI_UNKNOWN_ORIENT]
+	}
+	res[1] = jOrient
+
+	kOrient, ok := constant.OrietationToString[int(ijk[2])]
+	if !ok {
+		res[2] = constant.OrietationToString[constant.NIFTI_UNKNOWN_ORIENT]
+	}
+	res[2] = kOrient
+
+	return res
 }
 
 func (n *Nii1) getSliceCode() string {
