@@ -71,6 +71,65 @@ const (
 )
 
 const (
+	NIFTI_L2R = 1
+	NIFTI_R2L = 2
+	NIFTI_P2A = 3
+	NIFTI_A2P = 4
+	NIFTI_I2S = 5
+	NIFTI_S2I = 6
+)
+
+const (
+	DT_UNKNOWN       int16 = 0 // what it says, dude
+	DT_BINARY        int16 = 1 // binary (1 bit/voxel)
+	DT_UNSIGNED_CHAR int16 = 2 // unsigned char (8 bits/voxel)
+	DT_UINT8         int16 = 2
+	DT_SIGNED_SHORT  int16 = 4 // signed short (16 bits/voxel)
+	DT_INT16         int16 = 4
+	DT_SIGNED_INT    int16 = 8 // signed int (32 bits/voxel)
+	DT_INT32         int16 = 8
+	DT_FLOAT         int16 = 16 // float (32 bits/voxel)
+	DT_FLOAT32       int16 = 16
+	DT_COMPLEX       int16 = 32 // complex (64 bits/voxel)
+	DT_COMPLEX64     int16 = 32
+	DT_DOUBLE        int16 = 64 // double (64 bits/voxel)
+	DT_FLOAT64       int16 = 64
+	DT_RGB           int16 = 128 // RGB triple (24 bits/voxel)
+	DT_RGB24         int16 = 128
+	DT_ALL           int16 = 255  // not very useful (?)
+	DT_INT8          int16 = 256  // signed char (8 bits)
+	DT_UINT16        int16 = 512  // unsigned short (16 bits)
+	DT_UINT32        int16 = 768  // unsigned int (32 bits)
+	DT_INT64         int16 = 1024 // long long (64 bits)
+	DT_UINT64        int16 = 1280 // unsigned long long (64 bits)
+	DT_FLOAT128      int16 = 1536 // long double (128 bits)
+	DT_COMPLEX128    int16 = 1792 // double pair (128 bits)
+	DT_COMPLEX256    int16 = 2048 // long double pair (256 bits)
+	DT_RGBA32        int16 = 2304
+)
+
+var IsDatatypeInt = map[int16]bool{
+	DT_UNKNOWN:    false,
+	DT_BINARY:     false,
+	DT_INT8:       true,
+	DT_UINT8:      true,
+	DT_INT16:      true,
+	DT_UINT16:     true,
+	DT_INT32:      true,
+	DT_UINT32:     true,
+	DT_INT64:      true,
+	DT_UINT64:     true,
+	DT_FLOAT32:    false,
+	DT_FLOAT64:    false,
+	DT_FLOAT128:   false,
+	DT_COMPLEX64:  false,
+	DT_COMPLEX128: false,
+	DT_COMPLEX256: false,
+	DT_RGB24:      true,
+	DT_RGBA32:     true,
+}
+
+const (
 	NIFTI_XFORM_UNKNOWN      = 0
 	NIFTI_XFORM_SCANNER_ANAT = 1
 	NIFTI_XFORM_ALIGNED_ANAT = 2
@@ -87,16 +146,16 @@ var NiiPatientOrientationInfo = map[uint8]string{
 }
 
 const (
-	NIFTI_SLICE_UNKNOWN  uint8 = 0
-	NIFTI_SLICE_SEQ_INC  uint8 = 1
-	NIFTI_SLICE_SEQ_DEC  uint8 = 2
-	NIFTI_SLICE_ALT_INC  uint8 = 3
-	NIFTI_SLICE_ALT_DEC  uint8 = 4
-	NIFTI_SLICE_ALT_INC2 uint8 = 5 /* 05 May 2005: RWCox */
-	NIFTI_SLICE_ALT_DEC2 uint8 = 6 /* 05 May 2005: RWCox */
+	NIFTI_SLICE_UNKNOWN  int32 = 0
+	NIFTI_SLICE_SEQ_INC  int32 = 1
+	NIFTI_SLICE_SEQ_DEC  int32 = 2
+	NIFTI_SLICE_ALT_INC  int32 = 3
+	NIFTI_SLICE_ALT_DEC  int32 = 4
+	NIFTI_SLICE_ALT_INC2 int32 = 5 /* 05 May 2005: RWCox */
+	NIFTI_SLICE_ALT_DEC2 int32 = 6 /* 05 May 2005: RWCox */
 )
 
-var NiiSliceAcquistionInfo = map[uint8]string{
+var NiiSliceAcquistionInfo = map[int32]string{
 	NIFTI_SLICE_UNKNOWN:  "Unknown",
 	NIFTI_SLICE_SEQ_INC:  "Sequential, increasing",
 	NIFTI_SLICE_SEQ_DEC:  "Sequential, decreasing",

@@ -14,3 +14,7 @@ const (
 	NII1HeaderSize = 348
 	NII2HeaderSize = 540
 )
+
+const (
+	COMMON_UNKNOWN = "UNKNOWN"
+)
