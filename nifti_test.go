@@ -30,6 +30,7 @@ func TestNii1(t *testing.T) {
 
 	fmt.Println(niiReader.GetDatatype())
 	fmt.Println(niiReader.GetSliceCode())
+	fmt.Println(niiReader.QuaternToMatrix().M)
 
 	//shape := niiReader.GetImgShape()
 	//fmt.Println(shape)

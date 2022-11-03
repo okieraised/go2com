@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/internal/utils"
+	"github.com/okieraised/go2com/pkg/matrix"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 	"io"
 	"net/http"
@@ -28,6 +29,7 @@ type Nii1Reader interface {
 	GetDatatype() string
 	GetOrientation() string
 	GetSliceCode() string
+	QuaternToMatrix() matrix.DMat44
 }
 
 type nii1Reader struct {
@@ -54,6 +56,10 @@ func NewNii1Reader(filePath string) (Nii1Reader, error) {
 		reader:      bytes.NewReader(bData),
 		niiData:     &Nii1{},
 	}, nil
+}
+
+func (r *nii1Reader) QuaternToMatrix() matrix.DMat44 {
+	return r.niiData.quaternToMatrix()
 }
 
 func (r *nii1Reader) GetSliceCode() string {
@@ -279,6 +285,8 @@ func (r *nii1Reader) parseData() error {
 	r.niiData.Data.QuaternC = header.QuaternC
 	r.niiData.Data.QuaternD = header.QuaternD
 	r.niiData.Data.Descrip = header.Descrip
+
+	r.niiData.Data.QFac = float64(header.Pixdim[0])
 
 	r.niiData.Data.NVox = 1
 	for i := int16(1); i <= header.Dim[0]; i++ {
