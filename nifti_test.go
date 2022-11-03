@@ -1,7 +1,8 @@
 package go2com
 
 import (
-	"github.com/okieraised/go2com/pkg/nifti/nii_reader"
+	"fmt"
+	"github.com/okieraised/go2com/pkg/nifti/nifti1"
 	"github.com/stretchr/testify/assert"
 	_ "image/jpeg"
 	"testing"
@@ -13,7 +14,7 @@ func TestNii1(t *testing.T) {
 	filePath := "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
 	//filePath = "/home/tripg/Documents/nifti/RGB16_4D.nii.gz"
 
-	niiReader, err := nii_reader.NewNiiReader(filePath)
+	niiReader, err := nifti1.NewNii1Reader(filePath)
 	assert.NoError(err)
 
 	//err = niiReader.ParseHeader()
@@ -23,4 +24,16 @@ func TestNii1(t *testing.T) {
 	err = niiReader.Parse()
 	assert.NoError(err)
 
+	fmt.Println(niiReader.GetHeader().Datatype)
+
+	//x, err := niiReader.GetTimeSeries(111, 256, 12)
+	//assert.NoError(err)
+	//fmt.Println(x)
+	//
+	//shape := niiReader.GetImgShape()
+	//fmt.Println(shape)
+	//
+	//slices, err := niiReader.GetSlice(1, 0)
+	//assert.NoError(err)
+	//fmt.Println(slices)
 }
