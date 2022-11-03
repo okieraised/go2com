@@ -20,15 +20,15 @@ type Nii1Reader interface {
 	GetBinaryOrder() binary.ByteOrder
 	GetNiiData() *Nii1
 	GetUnitsOfMeasurements() ([2]string, error)
-	GetAffine() [4][4]float32
 	GetImgShape() [4]int16
-	GetAt(x, y, z, t int32) float32
-	GetTimeSeries(x, y, z int32) ([]float32, error)
-	GetSlice(z, t int32) ([][]float32, error)
+	GetAt(x, y, z, t int64) float64
+	GetTimeSeries(x, y, z int64) ([]float64, error)
+	GetSlice(z, t int64) ([][]float64, error)
 	GetHeader() *Nii1Header
 	GetDatatype() string
 	GetOrientation() [3]string
 	GetSliceCode() string
+	GetAffine() matrix.DMat44
 	QuaternToMatrix() matrix.DMat44
 	MatrixToOrientation(R matrix.DMat44)
 }
@@ -83,15 +83,15 @@ func (r *nii1Reader) GetHeader() *Nii1Header {
 	return r.niiData.Header
 }
 
-func (r *nii1Reader) GetSlice(z, t int32) ([][]float32, error) {
+func (r *nii1Reader) GetSlice(z, t int64) ([][]float64, error) {
 	return r.niiData.getSlice(z, t)
 }
 
-func (r *nii1Reader) GetTimeSeries(x, y, z int32) ([]float32, error) {
+func (r *nii1Reader) GetTimeSeries(x, y, z int64) ([]float64, error) {
 	return r.niiData.getTimeSeries(x, y, z)
 }
 
-func (r *nii1Reader) GetAt(x, y, z, t int32) float32 {
+func (r *nii1Reader) GetAt(x, y, z, t int64) float64 {
 	return r.niiData.getAt(x, y, z, t)
 }
 
@@ -99,7 +99,7 @@ func (r *nii1Reader) GetUnitsOfMeasurements() ([2]string, error) {
 	return r.niiData.getUnitsOfMeasurements()
 }
 
-func (r *nii1Reader) GetAffine() [4][4]float32 {
+func (r *nii1Reader) GetAffine() matrix.DMat44 {
 	return r.niiData.getAffine()
 }
 
