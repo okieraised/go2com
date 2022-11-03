@@ -14,8 +14,8 @@ func TestNii1(t *testing.T) {
 	filePath := "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
 	filePath = "/home/tripg/Documents/nifti/RGB16_4D.nii.gz"
 	filePath = "/home/tripg/Documents/nifti/someones_anatomy.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/someones_epi.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/RGB8_4D.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/someones_epi.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/RGB8_4D.nii.gz"
 
 	niiReader, err := nifti1.NewNii1Reader(filePath)
 	assert.NoError(err)
@@ -33,6 +33,10 @@ func TestNii1(t *testing.T) {
 
 	fmt.Println(niiReader.GetUnitsOfMeasurements())
 
+	fmt.Println(niiReader.GetNiiData().Data.Data)
+
 	shape := niiReader.GetImgShape()
 	fmt.Println(shape)
+
+	fmt.Println(niiReader.GetSlice(28, 0))
 }

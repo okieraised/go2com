@@ -157,12 +157,28 @@ func (n *Nii1) getUnitsOfMeasurements() ([2]string, error) {
 }
 
 // getAffine returns the 4x4 affine matrix
-func (n *Nii1) getAffine() [4][4]float32 {
-	affine := [4][4]float32{}
-	affine[0] = n.Header.SrowX
-	affine[1] = n.Header.SrowY
-	affine[2] = n.Header.SrowZ
-	affine[3] = [4]float32{0, 0, 0, 1}
+func (n *Nii1) getAffine() matrix.DMat44 {
+
+	DSrowX := [4]float64{}
+	for index, elem := range n.Header.SrowX {
+		DSrowX[index] = float64(elem)
+	}
+
+	DSrowY := [4]float64{}
+	for index, elem := range n.Header.SrowY {
+		DSrowY[index] = float64(elem)
+	}
+
+	DSrowZ := [4]float64{}
+	for index, elem := range n.Header.SrowZ {
+		DSrowZ[index] = float64(elem)
+	}
+
+	affine := matrix.DMat44{}
+	affine.M[0] = DSrowX
+	affine.M[1] = DSrowY
+	affine.M[2] = DSrowZ
+	affine.M[3] = [4]float64{0, 0, 0, 1}
 	return affine
 }
 
@@ -184,87 +200,88 @@ func (n *Nii1) GetVoxelSize() interface{} {
 }
 
 // GetAt returns the value at (x, y, z, t) location
-func (n *Nii1) getAt(x, y, z, t int32) float32 {
+func (n *Nii1) getAt(x, y, z, t int64) float64 {
 
-	tIndex := t * n.Data.Nx * n.Data.Ny * n.Data.Nz
-	zIndex := n.Data.Nx * n.Data.Ny * z
-	yIndex := n.Data.Nx * y
+	tIndex := t * int64(n.Data.Nx) * int64(n.Data.Ny) * int64(n.Data.Nz)
+	zIndex := int64(n.Data.Nx) * int64(n.Data.Ny) * z
+	yIndex := int64(n.Data.Nx) * y
 	xIndex := x
 	index := tIndex + zIndex + yIndex + xIndex
+	nByPer := int64(n.Data.NByPer)
 
-	dataPoint := n.Data.Data[index*n.Data.NByPer : (index+1)*n.Data.NByPer]
+	dataPoint := n.Data.Data[index*nByPer : (index+1)*nByPer]
 
-	var value float32
+	var value float64
 	switch n.Data.NByPer {
-	case constant.NIFTI_TYPE_BOOL:
+	case int32(constant.DT_UNKNOWN):
 		if len(dataPoint) > 0 {
-			value = float32(dataPoint[0])
+			value = float64(dataPoint[0])
 		}
-	case constant.NIFTI_TYPE_UINT8:
+	case int32(constant.DT_UINT8):
 		v := binary.LittleEndian.Uint16(dataPoint)
-		value = float32(v)
-	case constant.NIFTI_TYPE_INT16:
+		value = float64(v)
+	case int32(constant.DT_INT16):
 		v := binary.LittleEndian.Uint32(dataPoint)
-		value = math.Float32frombits(v)
-	case constant.NIFTI_TYPE_INT32:
+		value = float64(math.Float32frombits(v))
+	case int32(constant.DT_INT32):
 		v := binary.LittleEndian.Uint64(dataPoint)
-		value = float32(math.Float64frombits(v))
+		value = math.Float64frombits(v)
 	default:
 	}
 
 	if n.Data.SclSlope != 0 {
-		value = n.Data.SclSlope*value + n.Data.SclInter
+		value = float64(n.Data.SclSlope)*value + float64(n.Data.SclInter)
 	}
 
 	return value
 }
 
-func (n *Nii1) getTimeSeries(x, y, z int32) ([]float32, error) {
-	timeSeries := make([]float32, 0, n.Data.Dim[4])
+func (n *Nii1) getTimeSeries(x, y, z int64) ([]float64, error) {
+	timeSeries := make([]float64, 0, n.Data.Dim[4])
 
 	sliceX := n.Data.Nx
 	sliceY := n.Data.Ny
 	sliceZ := n.Data.Nx
 
-	if x > sliceX {
+	if x > int64(sliceX) {
 		return nil, errors.New("invalid x value")
 	}
 
-	if y > sliceY {
+	if y > int64(sliceY) {
 		return nil, errors.New("invalid y value")
 	}
 
-	if z > sliceZ {
+	if z > int64(sliceZ) {
 		return nil, errors.New("invalid z value")
 	}
 
 	for t := 0; t < int(n.Data.Dim[4]); t++ {
-		timeSeries = append(timeSeries, n.getAt(x, y, z, int32(t)))
+		timeSeries = append(timeSeries, n.getAt(x, y, z, int64(t)))
 	}
 	return timeSeries, nil
 }
 
-func (n *Nii1) getSlice(z, t int32) ([][]float32, error) {
+func (n *Nii1) getSlice(z, t int64) ([][]float64, error) {
 	sliceX := n.Data.Nx
 	sliceY := n.Data.Ny
 	sliceZ := n.Data.Nx
 	sliceT := n.Data.Nt
 
-	if z > sliceZ {
+	if z > int64(sliceZ) {
 		return nil, errors.New("invalid z value")
 	}
 
-	if t > sliceT || t < 0 {
+	if t > int64(sliceT) || t < 0 {
 		return nil, errors.New("invalid time value")
 	}
 
-	slice := make([][]float32, sliceX)
+	slice := make([][]float64, sliceX)
 	for i := range slice {
-		slice[i] = make([]float32, sliceY)
+		slice[i] = make([]float64, sliceY)
 	}
 	for x := 0; x < int(sliceX); x++ {
 		for y := 0; y < int(sliceY); y++ {
-			slice[x][y] = n.getAt(int32(x), int32(y), z, t)
+			slice[x][y] = n.getAt(int64(x), int64(y), z, t)
 		}
 	}
 	return slice, nil
