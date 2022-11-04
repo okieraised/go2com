@@ -149,11 +149,11 @@ const (
 )
 
 var NiiPatientOrientationInfo = map[uint8]string{
-	NIFTI_XFORM_UNKNOWN:      "Unknown",
-	NIFTI_XFORM_SCANNER_ANAT: "Scanner-based anatomical coordinates",
-	NIFTI_XFORM_ALIGNED_ANAT: "Coordinates aligned to another file, or to the truth",
-	NIFTI_XFORM_TALAIRACH:    "Coordinates aligned to the Talairach space",
-	NIFTI_XFORM_MNI_152:      "Coordinates aligned to the mni space",
+	NIFTI_XFORM_UNKNOWN:      "0: Unknown",
+	NIFTI_XFORM_SCANNER_ANAT: "1: Scanner Anat",
+	NIFTI_XFORM_ALIGNED_ANAT: "2: Aligned Anat",
+	NIFTI_XFORM_TALAIRACH:    "3: Talairach",
+	NIFTI_XFORM_MNI_152:      "4: MNI",
 }
 
 const (
