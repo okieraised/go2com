@@ -213,19 +213,49 @@ func (n *Nii1) getAt(x, y, z, t int64) float64 {
 
 	var value float64
 	switch n.Data.NByPer {
-	case int32(constant.DT_UNKNOWN):
+	case 0, 1:
 		if len(dataPoint) > 0 {
 			value = float64(dataPoint[0])
 		}
-	case int32(constant.DT_UINT8):
-		v := binary.LittleEndian.Uint16(dataPoint)
+	case 2: // This fits Uint16
+		var v uint16
+		switch n.Data.ByteOrder {
+		case binary.LittleEndian:
+			v = binary.LittleEndian.Uint16(dataPoint)
+		case binary.BigEndian:
+			v = binary.BigEndian.Uint16(dataPoint)
+		}
 		value = float64(v)
-	case int32(constant.DT_INT16):
-		v := binary.LittleEndian.Uint32(dataPoint)
+	case 3, 4: // This fits Uint32
+		var v uint32
+		switch n.Data.ByteOrder {
+		case binary.LittleEndian:
+			switch len(dataPoint) {
+			case 3:
+				v = uint32(uint(dataPoint[0]) | uint(dataPoint[1])<<8 | uint(dataPoint[2])<<16)
+			case 4:
+				v = binary.LittleEndian.Uint32(dataPoint)
+			}
+		case binary.BigEndian:
+			switch len(dataPoint) {
+			case 3:
+				v = uint32(uint(dataPoint[2]) | uint(dataPoint[1])<<8 | uint(dataPoint[0])<<16)
+			case 4:
+				v = binary.BigEndian.Uint32(dataPoint)
+			}
+		}
 		value = float64(math.Float32frombits(v))
-	case int32(constant.DT_INT32):
-		v := binary.LittleEndian.Uint64(dataPoint)
+	case 8:
+		var v uint64
+		switch n.Data.ByteOrder {
+		case binary.LittleEndian:
+			v = binary.LittleEndian.Uint64(dataPoint)
+		case binary.BigEndian:
+			v = binary.BigEndian.Uint64(dataPoint)
+		}
 		value = math.Float64frombits(v)
+	case 16: // Unsupported
+	case 32: // Unsupported
 	default:
 	}
 
@@ -243,15 +273,15 @@ func (n *Nii1) getTimeSeries(x, y, z int64) ([]float64, error) {
 	sliceY := n.Data.Ny
 	sliceZ := n.Data.Nx
 
-	if x > int64(sliceX) {
+	if x >= int64(sliceX) {
 		return nil, errors.New("invalid x value")
 	}
 
-	if y > int64(sliceY) {
+	if y >= int64(sliceY) {
 		return nil, errors.New("invalid y value")
 	}
 
-	if z > int64(sliceZ) {
+	if z >= int64(sliceZ) {
 		return nil, errors.New("invalid z value")
 	}
 
@@ -264,14 +294,14 @@ func (n *Nii1) getTimeSeries(x, y, z int64) ([]float64, error) {
 func (n *Nii1) getSlice(z, t int64) ([][]float64, error) {
 	sliceX := n.Data.Nx
 	sliceY := n.Data.Ny
-	sliceZ := n.Data.Nx
+	sliceZ := n.Data.Nz
 	sliceT := n.Data.Nt
 
-	if z > int64(sliceZ) {
+	if z >= int64(sliceZ) {
 		return nil, errors.New("invalid z value")
 	}
 
-	if t > int64(sliceT) || t < 0 {
+	if t >= int64(sliceT) || t < 0 {
 		return nil, errors.New("invalid time value")
 	}
 
@@ -285,6 +315,32 @@ func (n *Nii1) getSlice(z, t int64) ([][]float64, error) {
 		}
 	}
 	return slice, nil
+}
+
+func (n *Nii1) getVolume(t int64) ([][][]float64, error) {
+	sliceX := n.Data.Nx
+	sliceY := n.Data.Ny
+	sliceZ := n.Data.Nz
+	sliceT := n.Data.Nt
+
+	if t >= int64(sliceT) || t < 0 {
+		return nil, errors.New("invalid time value")
+	}
+	volume := make([][][]float64, sliceX)
+	for i := range volume {
+		volume[i] = make([][]float64, sliceY)
+		for j := range volume[i] {
+			volume[i][j] = make([]float64, sliceZ)
+		}
+	}
+	for x := 0; x < int(sliceX); x++ {
+		for y := 0; y < int(sliceY); y++ {
+			for z := 0; z < int(sliceZ); z++ {
+				volume[x][y][z] = n.getAt(int64(x), int64(y), int64(z), t)
+			}
+		}
+	}
+	return volume, nil
 }
 
 func (n *Nii1) getDatatype() string {

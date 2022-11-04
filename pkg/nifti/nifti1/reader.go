@@ -30,6 +30,7 @@ type Nii1Reader interface {
 	GetUnitsOfMeasurements() ([2]string, error)
 	GetTimeSeries(x, y, z int64) ([]float64, error)
 	GetSlice(z, t int64) ([][]float64, error)
+	GetVolume(t int64) ([][][]float64, error)
 	GetAffine() matrix.DMat44
 	QuaternToMatrix() matrix.DMat44
 	MatrixToOrientation(R matrix.DMat44)
@@ -88,6 +89,10 @@ func (r *nii1Reader) GetSlice(z, t int64) ([][]float64, error) {
 
 func (r *nii1Reader) GetTimeSeries(x, y, z int64) ([]float64, error) {
 	return r.niiData.getTimeSeries(x, y, z)
+}
+
+func (r *nii1Reader) GetVolume(t int64) ([][][]float64, error) {
+	return r.niiData.getVolume(t)
 }
 
 func (r *nii1Reader) GetAt(x, y, z, t int64) float64 {
@@ -420,6 +425,8 @@ func (r *nii1Reader) parseData() error {
 		return err
 	}
 	r.niiData.Data.Data = buf
+
+	r.niiData.matrixToOrientation(r.niiData.Data.QtoXYZ)
 
 	return nil
 }
