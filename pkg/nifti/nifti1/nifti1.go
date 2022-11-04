@@ -105,10 +105,10 @@ type Nii1Data struct {
 	QOffsetY      float32          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
 	QOffsetZ      float32          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
 	QFac          float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
-	QtoXYZ        matrix.FMat44    // qform: transform (i,j,k) to (x,y,z)
-	QtoIJK        matrix.FMat44    // qform: transform (x,y,z) to (i,j,k)
-	StoXYZ        matrix.FMat44    // sform: transform (i,j,k) to (x,y,z)
-	StoIJK        matrix.FMat44    // sform: transform (x,y,z) to (i,j,k)
+	QtoXYZ        matrix.DMat44    // qform: transform (i,j,k) to (x,y,z)
+	QtoIJK        matrix.DMat44    // qform: transform (x,y,z) to (i,j,k)
+	StoXYZ        matrix.DMat44    // sform: transform (i,j,k) to (x,y,z)
+	StoIJK        matrix.DMat44    // sform: transform (x,y,z) to (i,j,k)
 	TOffset       float64          // time coordinate offset
 	XYZUnits      int32            // dx,dy,dz units: NIFTI_UNITS_* code
 	TimeUnits     int32            // dt units: NIFTI_UNITS_* code
@@ -374,4 +374,55 @@ func (n *Nii1) getSliceCode() string {
 	}
 
 	return constants.COMMON_UNKNOWN
+}
+
+func (n *Nii1) getQFromCode() string {
+	qForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.QformCode)]
+	if !ok {
+		return "Invalid"
+	}
+
+	return qForm
+}
+
+func (n *Nii1) getSFromCode() string {
+	sForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.SformCode)]
+	if !ok {
+		return "Invalid"
+	}
+
+	return sForm
+}
+
+// isByteSwapNeeded check if byte swap is needed.
+// returns 1 if swap needed
+// returns 0 if no swap not needed
+// returns -1 is error
+func (n *Nii1) isByteSwapNeeded() int {
+	var dim0 int16 = n.Header.Dim[0]
+	if dim0 != 0 {
+		if dim0 > 0 && dim0 <= 7 {
+			return 0
+		}
+		// swap 2 bytes here
+		if dim0 > 0 && dim0 <= 7 {
+			return 1
+		}
+
+		if dim0 == 0 {
+			if n.Header.SizeofHdr == constants.NII1HeaderSize {
+				return 0
+			}
+
+			// Swap 4 bytes here
+			if n.Header.SizeofHdr == constants.NII1HeaderSize {
+				return 1
+			}
+
+		}
+		return -1
+
+	}
+
+	return -1
 }
