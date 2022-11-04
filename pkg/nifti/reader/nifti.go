@@ -1,62 +1,24 @@
-package nifti2
+package reader
 
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/pkg/matrix"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
+	"github.com/okieraised/go2com/pkg/nifti/nifti1"
+	"github.com/okieraised/go2com/pkg/nifti/nifti2"
 	"math"
 )
 
-type Nii2 struct {
-	Header *Nii2Header
-	Data   *Nii2Data
+type Nii struct {
+	n1Header *nifti1.Nii1Header
+	n2Header *nifti2.Nii2Header
+	Data     *NiiData
 }
 
-// Nii2Header defines the structure of the NIFTI-2 header
-type Nii2Header struct {
-	SizeofHdr     int32
-	Magic         [8]uint8
-	Datatype      int16
-	Bitpix        int16
-	Dim           [8]int64
-	IntentP1      float64
-	IntentP2      float64
-	IntentP3      float64
-	Pixdim        [8]float64
-	VoxOffset     int64
-	SclSlope      float64
-	SclInter      float64
-	CalMax        float64
-	CalMin        float64
-	SliceDuration float64
-	Toffset       float64
-	SliceStart    int64
-	SliceEnd      int64
-	Descrip       [80]uint8
-	AuxFile       [24]uint8
-	QformCode     int32
-	SformCode     int32
-	QuaternB      float64
-	QuaternC      float64
-	QuaternD      float64
-	QoffsetX      float64
-	QoffsetY      float64
-	QoffsetZ      float64
-	SrowX         [4]float64
-	SrowY         [4]float64
-	SrowZ         [4]float64
-	SliceCode     int32
-	XyztUnits     int32
-	IntentCode    int32
-	IntentName    [16]uint8
-	DimInfo       uint8
-	UnusedStr     [15]uint8
-}
-
-type Nii2Data struct {
+// NiiData defines the structure of the NIFTI-1 data for I/O purpose
+type NiiData struct {
 	NDim          int32            // last dimension greater than 1 (1..7)
 	Nx            int32            // dimensions of grid array
 	Ny            int32            // dimensions of grid array
@@ -129,70 +91,113 @@ type Nifti1Ext struct {
 	ESize int32
 }
 
-// getUnitsOfMeasurements returns the spatial and temporal units of measurements
-func (n *Nii2) getUnitsOfMeasurements() ([2]string, error) {
-	units := [2]string{}
-	spatialUnit, ok := constant.NiiMeasurementUnits[uint8(n.Data.XYZUnits)]
+func (n *Nii) getSliceCode() string {
+	switch n.Data.SliceCode {
+	case constant.NIFTI_SLICE_UNKNOWN:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_UNKNOWN]
+	case constant.NIFTI_SLICE_SEQ_INC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_INC]
+	case constant.NIFTI_SLICE_SEQ_DEC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_DEC]
+	case constant.NIFTI_SLICE_ALT_INC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC]
+	case constant.NIFTI_SLICE_ALT_DEC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC]
+	case constant.NIFTI_SLICE_ALT_INC2:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC2]
+	case constant.NIFTI_SLICE_ALT_DEC2:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC2]
+	}
+
+	return constants.COMMON_UNKNOWN
+}
+
+func (n *Nii) getQFormCode() string {
+	qForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.QformCode)]
 	if !ok {
-		return units, fmt.Errorf("invalid spatial unit %d", n.Data.XYZUnits)
+		return "Invalid"
 	}
+	return qForm
+}
 
-	temporalUnit, ok := constant.NiiMeasurementUnits[uint8(n.Data.TimeUnits)]
+func (n *Nii) getSFormCode() string {
+	sForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.SformCode)]
 	if !ok {
-		return units, fmt.Errorf("invalid temporal unit %d", n.Data.TimeUnits)
+		return "Invalid"
 	}
-
-	units[0] = spatialUnit
-	units[1] = temporalUnit
-
-	return units, nil
+	return sForm
 }
 
-// getAffine returns the 4x4 affine matrix
-func (n *Nii2) getAffine() matrix.DMat44 {
-
-	DSrowX := [4]float64{}
-	for index, elem := range n.Header.SrowX {
-		DSrowX[index] = float64(elem)
+func (n *Nii) getDatatype() string {
+	switch int16(n.Data.Datatype) {
+	case constant.DT_UNKNOWN:
+		return "UNKNOWN"
+	case constant.DT_BINARY:
+		return "BINARY"
+	case constant.DT_INT8:
+		return "INT8"
+	case constant.DT_UINT8:
+		return "UINT8"
+	case constant.DT_INT16:
+		return "INT16"
+	case constant.DT_UINT16:
+		return "UINT16"
+	case constant.DT_INT32:
+		return "INT32"
+	case constant.DT_UINT32:
+		return "UINT32"
+	case constant.DT_INT64:
+		return "INT64"
+	case constant.DT_UINT64:
+		return "UINT64"
+	case constant.DT_FLOAT32:
+		return "FLOAT32"
+	case constant.DT_FLOAT64:
+		return "FLOAT64"
+	case constant.DT_FLOAT128:
+		return "FLOAT128"
+	case constant.DT_COMPLEX64:
+		return "COMPLEX64"
+	case constant.DT_COMPLEX128:
+		return "COMPLEX128"
+	case constant.DT_COMPLEX256:
+		return "COMPLEX256"
+	case constant.DT_RGB24:
+		return "RGB24"
+	case constant.DT_RGBA32:
+		return "RGBA32"
 	}
-
-	DSrowY := [4]float64{}
-	for index, elem := range n.Header.SrowY {
-		DSrowY[index] = float64(elem)
-	}
-
-	DSrowZ := [4]float64{}
-	for index, elem := range n.Header.SrowZ {
-		DSrowZ[index] = float64(elem)
-	}
-
-	affine := matrix.DMat44{}
-	affine.M[0] = DSrowX
-	affine.M[1] = DSrowY
-	affine.M[2] = DSrowZ
-	affine.M[3] = [4]float64{0, 0, 0, 1}
-	return affine
+	return "ILLEGAL"
 }
 
-// getImgShape returns the image shape in terms of x, y, z, t
-func (n *Nii2) getImgShape() [4]int64 {
-	dim := [4]int64{}
-	for index, _ := range dim {
-		dim[index] = n.Header.Dim[index+1]
-	}
-	return dim
-}
+func (n *Nii) getOrientation() [3]string {
+	res := [3]string{}
 
-func (n *Nii2) GetVoxelSize() [4]float64 {
-	size := [4]float64{}
-	for index, _ := range size {
-		size[index] = n.Header.Pixdim[index+1]
+	ijk := n.Data.IJKOrtient
+
+	iOrient, ok := constant.OrietationToString[int(ijk[0])]
+	if !ok {
+		res[0] = constant.OrietationToString[constant.NIFTI_UNKNOWN_ORIENT]
 	}
-	return size
+	res[0] = iOrient
+
+	jOrient, ok := constant.OrietationToString[int(ijk[1])]
+	if !ok {
+		res[1] = constant.OrietationToString[constant.NIFTI_UNKNOWN_ORIENT]
+	}
+	res[1] = jOrient
+
+	kOrient, ok := constant.OrietationToString[int(ijk[2])]
+	if !ok {
+		res[2] = constant.OrietationToString[constant.NIFTI_UNKNOWN_ORIENT]
+	}
+	res[2] = kOrient
+
+	return res
 }
 
 // GetAt returns the value at (x, y, z, t) location
-func (n *Nii2) getAt(x, y, z, t int64) float64 {
+func (n *Nii) getAt(x, y, z, t int64) float64 {
 
 	tIndex := t * int64(n.Data.Nx) * int64(n.Data.Ny) * int64(n.Data.Nz)
 	zIndex := int64(n.Data.Nx) * int64(n.Data.Ny) * z
@@ -258,7 +263,7 @@ func (n *Nii2) getAt(x, y, z, t int64) float64 {
 	return value
 }
 
-func (n *Nii2) getTimeSeries(x, y, z int64) ([]float64, error) {
+func (n *Nii) getTimeSeries(x, y, z int64) ([]float64, error) {
 	timeSeries := make([]float64, 0, n.Data.Dim[4])
 
 	sliceX := n.Data.Nx
@@ -283,7 +288,7 @@ func (n *Nii2) getTimeSeries(x, y, z int64) ([]float64, error) {
 	return timeSeries, nil
 }
 
-func (n *Nii2) getSlice(z, t int64) ([][]float64, error) {
+func (n *Nii) getSlice(z, t int64) ([][]float64, error) {
 	sliceX := n.Data.Nx
 	sliceY := n.Data.Ny
 	sliceZ := n.Data.Nz
@@ -309,7 +314,7 @@ func (n *Nii2) getSlice(z, t int64) ([][]float64, error) {
 	return slice, nil
 }
 
-func (n *Nii2) getVolume(t int64) ([][][]float64, error) {
+func (n *Nii) getVolume(t int64) ([][][]float64, error) {
 	sliceX := n.Data.Nx
 	sliceY := n.Data.Ny
 	sliceZ := n.Data.Nz
@@ -333,144 +338,4 @@ func (n *Nii2) getVolume(t int64) ([][][]float64, error) {
 		}
 	}
 	return volume, nil
-}
-
-func (n *Nii2) getDatatype() string {
-	switch int16(n.Data.Datatype) {
-	case constant.DT_UNKNOWN:
-		return "UNKNOWN"
-	case constant.DT_BINARY:
-		return "BINARY"
-	case constant.DT_INT8:
-		return "INT8"
-	case constant.DT_UINT8:
-		return "UINT8"
-	case constant.DT_INT16:
-		return "INT16"
-	case constant.DT_UINT16:
-		return "UINT16"
-	case constant.DT_INT32:
-		return "INT32"
-	case constant.DT_UINT32:
-		return "UINT32"
-	case constant.DT_INT64:
-		return "INT64"
-	case constant.DT_UINT64:
-		return "UINT64"
-	case constant.DT_FLOAT32:
-		return "FLOAT32"
-	case constant.DT_FLOAT64:
-		return "FLOAT64"
-	case constant.DT_FLOAT128:
-		return "FLOAT128"
-	case constant.DT_COMPLEX64:
-		return "COMPLEX64"
-	case constant.DT_COMPLEX128:
-		return "COMPLEX128"
-	case constant.DT_COMPLEX256:
-		return "COMPLEX256"
-	case constant.DT_RGB24:
-		return "RGB24"
-	case constant.DT_RGBA32:
-		return "RGBA32"
-	}
-	return "ILLEGAL"
-}
-
-func (n *Nii2) getOrientation() [3]string {
-	res := [3]string{}
-
-	ijk := n.Data.IJKOrtient
-
-	iOrient, ok := constant.OrietationToString[int(ijk[0])]
-	if !ok {
-		res[0] = constant.OrietationToString[constant.NIFTI_UNKNOWN_ORIENT]
-	}
-	res[0] = iOrient
-
-	jOrient, ok := constant.OrietationToString[int(ijk[1])]
-	if !ok {
-		res[1] = constant.OrietationToString[constant.NIFTI_UNKNOWN_ORIENT]
-	}
-	res[1] = jOrient
-
-	kOrient, ok := constant.OrietationToString[int(ijk[2])]
-	if !ok {
-		res[2] = constant.OrietationToString[constant.NIFTI_UNKNOWN_ORIENT]
-	}
-	res[2] = kOrient
-
-	return res
-}
-
-func (n *Nii2) getSliceCode() string {
-	switch n.Data.SliceCode {
-	case constant.NIFTI_SLICE_UNKNOWN:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_UNKNOWN]
-	case constant.NIFTI_SLICE_SEQ_INC:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_INC]
-	case constant.NIFTI_SLICE_SEQ_DEC:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_DEC]
-	case constant.NIFTI_SLICE_ALT_INC:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC]
-	case constant.NIFTI_SLICE_ALT_DEC:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC]
-	case constant.NIFTI_SLICE_ALT_INC2:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC2]
-	case constant.NIFTI_SLICE_ALT_DEC2:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC2]
-	}
-
-	return constants.COMMON_UNKNOWN
-}
-
-func (n *Nii2) getQFormCode() string {
-	qForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.QformCode)]
-	if !ok {
-		return "Invalid"
-	}
-
-	return qForm
-}
-
-func (n *Nii2) getSFormCode() string {
-	sForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.SformCode)]
-	if !ok {
-		return "Invalid"
-	}
-
-	return sForm
-}
-
-// isByteSwapNeeded check if byte swap is needed.
-// returns 1 if swap needed
-// returns 0 if no swap not needed
-// returns -1 is error
-func (n *Nii2) isByteSwapNeeded() int {
-	var dim0 int64 = n.Header.Dim[0]
-	if dim0 != 0 {
-		if dim0 > 0 && dim0 <= 7 {
-			return 0
-		}
-		// swap 2 bytes here
-		if dim0 > 0 && dim0 <= 7 {
-			return 1
-		}
-
-		if dim0 == 0 {
-			if n.Header.SizeofHdr == constants.NII1HeaderSize {
-				return 0
-			}
-
-			// Swap 4 bytes here
-			if n.Header.SizeofHdr == constants.NII1HeaderSize {
-				return 1
-			}
-
-		}
-		return -1
-
-	}
-
-	return -1
 }

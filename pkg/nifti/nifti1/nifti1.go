@@ -191,7 +191,7 @@ func (n *Nii1) getImgShape() [4]int16 {
 	return dim
 }
 
-func (n *Nii1) GetVoxelSize() interface{} {
+func (n *Nii1) getVoxelSize() [4]float32 {
 	size := [4]float32{}
 	for index, _ := range size {
 		size[index] = n.Header.Pixdim[index+1]
@@ -432,7 +432,7 @@ func (n *Nii1) getSliceCode() string {
 	return constants.COMMON_UNKNOWN
 }
 
-func (n *Nii1) getQFromCode() string {
+func (n *Nii1) getQFormCode() string {
 	qForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.QformCode)]
 	if !ok {
 		return "Invalid"
@@ -441,7 +441,7 @@ func (n *Nii1) getQFromCode() string {
 	return qForm
 }
 
-func (n *Nii1) getSFromCode() string {
+func (n *Nii1) getSFormCode() string {
 	sForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.SformCode)]
 	if !ok {
 		return "Invalid"

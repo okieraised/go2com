@@ -1,11 +1,10 @@
-package nifti1
+package nifti2
 
-// #include "./nifti1.h"
-import "C"
 import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/matrix"
@@ -29,7 +28,7 @@ type Nii1Reader interface {
 	// GetQFormCode returns the QForm code string
 	GetQFormCode() string
 	// GetImgShape returns the image shape [x, y, z, t]
-	GetImgShape() [4]int16
+	GetImgShape() [4]int64
 	// GetAt returns the value at [x, y, z, t] as float64
 	GetAt(x, y, z, t int64) float64
 	// GetBinaryOrder returns the binary order of the NIFTI image
@@ -47,16 +46,16 @@ type Nii1Reader interface {
 	// QuaternToMatrix converts the quarternions parameters to matrix
 	QuaternToMatrix() matrix.DMat44
 	// GetNiiData returns the raw NIFTI header and image data
-	GetNiiData() *Nii1
+	GetNiiData() *Nii2
 }
 
-type nii1Reader struct {
+type nii2Reader struct {
 	reader      *bytes.Reader
 	binaryOrder binary.ByteOrder
-	niiData     *Nii1
+	niiData     *Nii2
 }
 
-func NewNii1Reader(filePath string) (Nii1Reader, error) {
+func NewNii2Reader(filePath string) (Nii1Reader, error) {
 	bData, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -69,78 +68,14 @@ func NewNii1Reader(filePath string) (Nii1Reader, error) {
 			return nil, err
 		}
 	}
-	return &nii1Reader{
+	return &nii2Reader{
 		binaryOrder: binary.LittleEndian,
 		reader:      bytes.NewReader(bData),
-		niiData:     &Nii1{},
+		niiData:     &Nii2{},
 	}, nil
 }
 
-func (r *nii1Reader) MatrixToOrientation(R matrix.DMat44) {
-	r.niiData.matrixToOrientation(R)
-}
-
-func (r *nii1Reader) QuaternToMatrix() matrix.DMat44 {
-	return r.niiData.quaternToMatrix()
-}
-
-func (r *nii1Reader) GetSliceCode() string {
-	return r.niiData.getSliceCode()
-}
-
-func (r *nii1Reader) GetOrientation() [3]string {
-	return r.niiData.getOrientation()
-}
-
-func (r *nii1Reader) GetDatatype() string {
-	return r.niiData.getDatatype()
-}
-
-func (r *nii1Reader) GetSlice(z, t int64) ([][]float64, error) {
-	return r.niiData.getSlice(z, t)
-}
-
-func (r *nii1Reader) GetTimeSeries(x, y, z int64) ([]float64, error) {
-	return r.niiData.getTimeSeries(x, y, z)
-}
-
-func (r *nii1Reader) GetVolume(t int64) ([][][]float64, error) {
-	return r.niiData.getVolume(t)
-}
-
-func (r *nii1Reader) GetAt(x, y, z, t int64) float64 {
-	return r.niiData.getAt(x, y, z, t)
-}
-
-func (r *nii1Reader) GetUnitsOfMeasurements() ([2]string, error) {
-	return r.niiData.getUnitsOfMeasurements()
-}
-
-func (r *nii1Reader) GetAffine() matrix.DMat44 {
-	return r.niiData.getAffine()
-}
-
-func (r *nii1Reader) GetImgShape() [4]int16 {
-	return r.niiData.getImgShape()
-}
-
-func (r *nii1Reader) GetQFormCode() string {
-	return r.niiData.getQFormCode()
-}
-
-func (r *nii1Reader) GetSFormCode() string {
-	return r.niiData.getSFormCode()
-}
-
-func (r *nii1Reader) GetNiiData() *Nii1 {
-	return r.niiData
-}
-
-func (r *nii1Reader) GetBinaryOrder() binary.ByteOrder {
-	return r.binaryOrder
-}
-
-func (r *nii1Reader) checkNiiVersion() error {
+func (r *nii2Reader) checkNiiVersion() error {
 	var hSize int32
 
 	err := binary.Read(r.reader, r.binaryOrder, &hSize)
@@ -150,9 +85,9 @@ func (r *nii1Reader) checkNiiVersion() error {
 
 	switch hSize {
 	case constants.NII1HeaderSize:
-		return nil
+		return errors.New("file is of NIFTI-1 format")
 	case constants.NII2HeaderSize:
-		return errors.New("file is of NIFTI-2 format")
+		return nil
 	default:
 		r.binaryOrder = binary.BigEndian
 		_, err := r.reader.Seek(0, 0)
@@ -168,17 +103,81 @@ func (r *nii1Reader) checkNiiVersion() error {
 		}
 		switch hSize {
 		case constants.NII1HeaderSize:
-			return nil
+			return errors.New("file is of NIFTI-1 format")
 		case constants.NII2HeaderSize:
-			return errors.New("file is of NIFTI-2 format")
+			return nil
 		default:
 			return errors.New("invalid NIFTI file format")
 		}
 	}
 }
 
+func (r *nii2Reader) MatrixToOrientation(R matrix.DMat44) {
+	r.niiData.matrixToOrientation(R)
+}
+
+func (r *nii2Reader) QuaternToMatrix() matrix.DMat44 {
+	return r.niiData.quaternToMatrix()
+}
+
+func (r *nii2Reader) GetSliceCode() string {
+	return r.niiData.getSliceCode()
+}
+
+func (r *nii2Reader) GetOrientation() [3]string {
+	return r.niiData.getOrientation()
+}
+
+func (r *nii2Reader) GetDatatype() string {
+	return r.niiData.getDatatype()
+}
+
+func (r *nii2Reader) GetSlice(z, t int64) ([][]float64, error) {
+	return r.niiData.getSlice(z, t)
+}
+
+func (r *nii2Reader) GetTimeSeries(x, y, z int64) ([]float64, error) {
+	return r.niiData.getTimeSeries(x, y, z)
+}
+
+func (r *nii2Reader) GetVolume(t int64) ([][][]float64, error) {
+	return r.niiData.getVolume(t)
+}
+
+func (r *nii2Reader) GetAt(x, y, z, t int64) float64 {
+	return r.niiData.getAt(x, y, z, t)
+}
+
+func (r *nii2Reader) GetUnitsOfMeasurements() ([2]string, error) {
+	return r.niiData.getUnitsOfMeasurements()
+}
+
+func (r *nii2Reader) GetAffine() matrix.DMat44 {
+	return r.niiData.getAffine()
+}
+
+func (r *nii2Reader) GetImgShape() [4]int64 {
+	return r.niiData.getImgShape()
+}
+
+func (r *nii2Reader) GetQFormCode() string {
+	return r.niiData.getQFormCode()
+}
+
+func (r *nii2Reader) GetSFormCode() string {
+	return r.niiData.getSFormCode()
+}
+
+func (r *nii2Reader) GetNiiData() *Nii2 {
+	return r.niiData
+}
+
+func (r *nii2Reader) GetBinaryOrder() binary.ByteOrder {
+	return r.binaryOrder
+}
+
 // Parse returns the raw byte array into NIFTI-1 header and dataset structure
-func (r *nii1Reader) Parse() error {
+func (r *nii2Reader) Parse() error {
 	err := r.checkNiiVersion()
 	if err != nil {
 		return err
@@ -193,27 +192,25 @@ func (r *nii1Reader) Parse() error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(r.niiData.Header)
 
 	return nil
 }
 
 // parseHeader parses the raw byte array into NIFTI-1 header structure
-func (r *nii1Reader) parseHeader() error {
+func (r *nii2Reader) parseHeader() error {
 	_, err := r.reader.Seek(0, 0)
 	if err != nil {
 		return err
 	}
-	header := new(Nii1Header)
+	header := new(Nii2Header)
 
 	err = binary.Read(r.reader, r.binaryOrder, header)
 	if err != nil {
 		return err
 	}
-	if header.Magic != [4]byte{110, 43, 49, 0} && header.Magic != [4]byte{110, 105, 49, 0} {
+	if header.Magic != [8]byte{110, 43, 50, 0, 13, 10, 26, 10} {
 		return errors.New("invalid NIFTI magic string")
-	}
-	if header.Datatype == C.DT_BINARY || header.Datatype == C.DT_UNKNOWN {
-		return errors.New("data type is invalid")
 	}
 
 	r.niiData.Header = header
@@ -230,7 +227,7 @@ func (r *nii1Reader) parseHeader() error {
 }
 
 // setDatatypeSize sets number of bytes per voxel and the swapsize for the header datatype
-func (r *nii1Reader) setDatatypeSize() {
+func (r *nii2Reader) setDatatypeSize() {
 	var NByPerVoxel int32 = 0
 	var SwapSize int32 = 0
 
@@ -271,8 +268,8 @@ func (r *nii1Reader) setDatatypeSize() {
 }
 
 // parseData parse the raw byte array into NIFTI-1 data structure
-func (r *nii1Reader) parseData() error {
-	r.niiData.Data = &Nii1Data{}
+func (r *nii2Reader) parseData() error {
+	r.niiData.Data = &Nii2Data{}
 	var offset int
 	statDim := 1
 
@@ -293,7 +290,7 @@ func (r *nii1Reader) parseData() error {
 	}
 
 	r.niiData.Data.NVox = 1
-	for i := int16(1); i <= header.Dim[0]; i++ {
+	for i := int64(1); i <= header.Dim[0]; i++ {
 		r.niiData.Data.NVox *= int32(header.Dim[i])
 	}
 
@@ -391,7 +388,7 @@ func (r *nii1Reader) parseData() error {
 	r.niiData.Data.SclInter = header.SclInter
 
 	r.niiData.Data.IntentName = header.IntentName
-	r.niiData.Data.IntentCode = int32(header.IntentCode)
+	r.niiData.Data.IntentCode = header.IntentCode
 	r.niiData.Data.IntentP1 = header.IntentP1
 	r.niiData.Data.IntentP2 = header.IntentP2
 	r.niiData.Data.IntentP3 = header.IntentP3
@@ -412,8 +409,8 @@ func (r *nii1Reader) parseData() error {
 	r.niiData.Data.TimeUnits = int32(header.XyztUnits) - r.niiData.Data.XYZUnits
 
 	r.niiData.Data.SliceCode = int32(header.SliceCode)
-	r.niiData.Data.SliceStart = int32(header.SliceStart)
-	r.niiData.Data.SliceEnd = int32(header.SliceEnd)
+	r.niiData.Data.SliceStart = int64(header.SliceStart)
+	r.niiData.Data.SliceEnd = int64(header.SliceEnd)
 	r.niiData.Data.SliceDuration = float64(header.SliceDuration)
 
 	r.niiData.Data.CalMin = float64(header.CalMin)

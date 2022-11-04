@@ -3,10 +3,20 @@ package go2com
 import (
 	"fmt"
 	"github.com/okieraised/go2com/pkg/nifti/nifti1"
+	"github.com/okieraised/go2com/pkg/nifti/nifti2"
 	"github.com/stretchr/testify/assert"
 	_ "image/jpeg"
 	"testing"
 )
+
+func TestNii2(t *testing.T) {
+	assert := assert.New(t)
+	filePath := "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
+	niiReader, err := nifti2.NewNii2Reader(filePath)
+	assert.NoError(err)
+	err = niiReader.Parse()
+	assert.NoError(err)
+}
 
 func TestNii1(t *testing.T) {
 	assert := assert.New(t)
@@ -20,8 +30,10 @@ func TestNii1(t *testing.T) {
 	filePath = "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
 	filePath = "/home/tripg/Documents/nifti/knee.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/ExBox11/fmri.nii.gz"
-	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/ExBox11/structural.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural_brain.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/JHU_MNI_SS_T1.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
 
 	niiReader, err := nifti1.NewNii1Reader(filePath)
 	assert.NoError(err)
@@ -33,8 +45,8 @@ func TestNii1(t *testing.T) {
 	fmt.Println(niiReader.GetUnitsOfMeasurements())
 	fmt.Println("dtype", niiReader.GetDatatype())
 	fmt.Println("nbyper", niiReader.GetNiiData().Data.NByPer)
-	fmt.Println("GetSFromCode()", niiReader.GetSFromCode())
-	fmt.Println("GetQFromCode()", niiReader.GetQFromCode())
+	fmt.Println("GetSFromCode()", niiReader.GetSFormCode())
+	fmt.Println("GetQFromCode()", niiReader.GetQFormCode())
 	fmt.Println(niiReader.GetOrientation())
 
 	res, err := niiReader.GetSlice(1, 0)
