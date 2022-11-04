@@ -14,36 +14,45 @@ func TestNii1(t *testing.T) {
 	filePath := "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
 	filePath = "/home/tripg/Documents/nifti/RGB16_4D.nii.gz"
 	filePath = "/home/tripg/Documents/nifti/someones_anatomy.nii.gz"
-	//filePath = "/home/tripg/Documents/nifti/someones_epi.nii.gz"
-	//filePath = "/home/tripg/Documents/nifti/RGB8_4D.nii.gz"
-	//filePath = "/home/tripg/Documents/nifti/jaw.nii.gz"
-	//filePath = "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
+	filePath = "/home/tripg/Documents/nifti/someones_epi.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/RGB8_4D.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/jaw.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
+	filePath = "/home/tripg/Documents/nifti/knee.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/ExBox11/fmri.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural_brain.nii.gz"
 
 	niiReader, err := nifti1.NewNii1Reader(filePath)
 	assert.NoError(err)
 	err = niiReader.Parse()
 	assert.NoError(err)
 
+	shape := niiReader.GetImgShape()
+	fmt.Println("shape", shape)
 	fmt.Println(niiReader.GetUnitsOfMeasurements())
-	fmt.Println(niiReader.GetDatatype())
-	fmt.Println(niiReader.GetNiiData().Header)
-	fmt.Println(niiReader.GetNiiData().Header.Bitpix)
+	fmt.Println("dtype", niiReader.GetDatatype())
+	fmt.Println("nbyper", niiReader.GetNiiData().Data.NByPer)
 	fmt.Println("GetSFromCode()", niiReader.GetSFromCode())
 	fmt.Println("GetQFromCode()", niiReader.GetQFromCode())
+	fmt.Println(niiReader.GetOrientation())
 
-	//fmt.Println(niiReader.GetSliceCode())
-	//mat := niiReader.QuaternToMatrix()
-	//fmt.Println(mat.M)
-	//
-	//niiReader.MatrixToOrientation(mat)
-	//
-	//fmt.Println(niiReader.GetOrientation())
-	//
-	//fmt.Println(niiReader.GetUnitsOfMeasurements())
-	//
-	//fmt.Println(niiReader.GetNiiData().Header)
+	res, err := niiReader.GetSlice(1, 0)
+	assert.NoError(err)
 
-	fmt.Println(niiReader.GetSlice(13, 0))
+	fmt.Println("len res", len(res))
+	fmt.Println("len res0", len(res[0]))
+
+	//fmt.Println(res)
+	res2, err := niiReader.GetVolume(0)
+	assert.NoError(err)
+
+	fmt.Println("len res2", len(res2))
+
+	//for _, elem := range res {
+	//	fmt.Println(elem)
+	//
+	//}
 
 	//fmt.Println(niiReader.GetTimeSeries(26, 30, 16))
 
@@ -55,6 +64,6 @@ func TestNii1(t *testing.T) {
 	//	}
 	//}
 
-	shape := niiReader.GetImgShape()
+	shape = niiReader.GetImgShape()
 	fmt.Println(shape)
 }
