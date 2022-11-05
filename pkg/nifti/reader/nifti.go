@@ -3,6 +3,7 @@ package reader
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/pkg/matrix"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
@@ -19,16 +20,16 @@ type Nii struct {
 
 // NiiData defines the structure of the NIFTI-1 data for I/O purpose
 type NiiData struct {
-	NDim          int32            // last dimension greater than 1 (1..7)
-	Nx            int32            // dimensions of grid array
-	Ny            int32            // dimensions of grid array
-	Nz            int32            // dimensions of grid array
-	Nt            int32            // dimensions of grid array
-	Nu            int32            // dimensions of grid array
-	Nv            int32            // dimensions of grid array
-	Nw            int32            // dimensions of grid array
-	Dim           [8]int32         // dim[0] = ndim, dim[1] = nx, etc
-	NVox          int32            // number of voxels = nx*ny*nz*...*nw
+	NDim          int64            // last dimension greater than 1 (1..7)
+	Nx            int64            // dimensions of grid array
+	Ny            int64            // dimensions of grid array
+	Nz            int64            // dimensions of grid array
+	Nt            int64            // dimensions of grid array
+	Nu            int64            // dimensions of grid array
+	Nv            int64            // dimensions of grid array
+	Nw            int64            // dimensions of grid array
+	Dim           [8]int64         // dim[0] = ndim, dim[1] = nx, etc
+	NVox          int64            // number of voxels = nx*ny*nz*...*nw
 	NByPer        int32            // bytes per voxel, matches datatype (Datatype)
 	Datatype      int32            // type of data in voxels: DT_* code
 	Dx            float64          // grid spacings
@@ -83,6 +84,7 @@ type NiiData struct {
 	NumExt        int32            // number of extensions in extList
 	Nifti1Ext     []Nifti1Ext      // array of extension structs (with data)
 	IJKOrtient    [3]int32         // self-add. Orientation ini, j, k coordinate
+	Affine        matrix.DMat44    // self-add. Affine matrix
 }
 
 type Nifti1Ext struct {
@@ -338,4 +340,47 @@ func (n *Nii) getVolume(t int64) ([][][]float64, error) {
 		}
 	}
 	return volume, nil
+}
+
+// getUnitsOfMeasurements returns the spatial and temporal units of measurements
+func (n *Nii) getUnitsOfMeasurements() ([2]string, error) {
+	units := [2]string{}
+	spatialUnit, ok := constant.NiiMeasurementUnits[uint8(n.Data.XYZUnits)]
+	if !ok {
+		return units, fmt.Errorf("invalid spatial unit %d", n.Data.XYZUnits)
+	}
+
+	temporalUnit, ok := constant.NiiMeasurementUnits[uint8(n.Data.TimeUnits)]
+	if !ok {
+		return units, fmt.Errorf("invalid temporal unit %d", n.Data.TimeUnits)
+	}
+
+	units[0] = spatialUnit
+	units[1] = temporalUnit
+
+	return units, nil
+}
+
+// getAffine returns the 4x4 affine matrix
+func (n *Nii) getAffine() matrix.DMat44 {
+	return n.Data.Affine
+}
+
+// getImgShape returns the image shape in terms of x, y, z, t
+func (n *Nii) getImgShape() [4]int64 {
+	dim := [4]int64{}
+
+	for index, _ := range n.Data.Dim {
+		dim[index] = n.Data.Dim[index+1]
+	}
+	return dim
+}
+
+// getVoxelSize returns the voxel size of the image
+func (n *Nii) getVoxelSize() [4]float64 {
+	size := [4]float64{}
+	for index, _ := range size {
+		size[index] = n.Data.PixDim[index+1]
+	}
+	return size
 }
