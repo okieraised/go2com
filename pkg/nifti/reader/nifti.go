@@ -370,7 +370,7 @@ func (n *Nii) getAffine() matrix.DMat44 {
 func (n *Nii) getImgShape() [4]int64 {
 	dim := [4]int64{}
 
-	for index, _ := range n.Data.Dim {
+	for index, _ := range dim {
 		dim[index] = n.Data.Dim[index+1]
 	}
 	return dim

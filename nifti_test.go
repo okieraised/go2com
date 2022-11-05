@@ -2,8 +2,8 @@ package go2com
 
 import (
 	"fmt"
-	"github.com/okieraised/go2com/pkg/nifti/nifti1"
 	"github.com/okieraised/go2com/pkg/nifti/nifti2"
+	"github.com/okieraised/go2com/pkg/nifti/reader"
 	"github.com/stretchr/testify/assert"
 	_ "image/jpeg"
 	"testing"
@@ -35,7 +35,7 @@ func TestNii1(t *testing.T) {
 	//filePath = "/home/tripg/Documents/nifti/JHU_MNI_SS_T1.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
 
-	niiReader, err := nifti1.NewNii1Reader(filePath)
+	niiReader, err := reader.NewNiiReader(filePath)
 	assert.NoError(err)
 	err = niiReader.Parse()
 	assert.NoError(err)
