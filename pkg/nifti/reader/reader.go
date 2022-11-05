@@ -112,7 +112,7 @@ func (r *niiReader) checkNiiVersion() error {
 			return errors.New("invalid NIFTI file format")
 		}
 	}
-	return errors.New("cannot determine NIFTI file version")
+	return nil
 }
 
 func (r *niiReader) MatrixToOrientation(R matrix.DMat44) {
