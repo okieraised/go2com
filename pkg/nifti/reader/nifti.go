@@ -316,6 +316,7 @@ func (n *Nii) getSlice(z, t int64) ([][]float64, error) {
 	return slice, nil
 }
 
+// getVolume
 func (n *Nii) getVolume(t int64) ([][][]float64, error) {
 	sliceX := n.Data.Nx
 	sliceY := n.Data.Ny
