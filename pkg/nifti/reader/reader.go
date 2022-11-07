@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/matrix"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
-	"github.com/okieraised/go2com/pkg/nifti/nifti1"
-	"github.com/okieraised/go2com/pkg/nifti/nifti2"
-	"io"
-	"net/http"
-	"os"
 )
 
 type NiiReader interface {
@@ -210,7 +209,7 @@ func (r *niiReader) parseHeader() error {
 
 	switch r.version {
 	case constants.NIIVersion1:
-		header := new(nifti1.Nii1Header)
+		header := new(Nii1Header)
 		err = binary.Read(r.reader, r.binaryOrder, header)
 		if err != nil {
 			return err
@@ -221,7 +220,7 @@ func (r *niiReader) parseHeader() error {
 		r.niiData.n1Header = header
 		dim0 = int64(header.Dim[0])
 	case constants.NIIVersion2:
-		header := new(nifti2.Nii2Header)
+		header := new(Nii2Header)
 		err = binary.Read(r.reader, r.binaryOrder, header)
 		if err != nil {
 			return err
