@@ -20,6 +20,9 @@ import (
 
 // Parser implements the field required to parse the dicom file
 type Parser struct {
+	filePath      string
+	fileContent   []byte
+	fileReader    *io.Reader
 	reader        reader.DcmReader
 	dataset       dataset.Dataset
 	metadata      dataset.Dataset
@@ -63,6 +66,7 @@ func NewDCMFileParser(filePath string, options ...func(*Parser)) (*Parser, error
 	for _, opt := range options {
 		opt(parser)
 	}
+
 	return parser, nil
 }
 
