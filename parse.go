@@ -10,6 +10,8 @@ import (
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
+	"os"
+
 	//_ "github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/uid"
 	"io"
@@ -41,6 +43,42 @@ func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset 
 	}
 	return &parser, nil
 }
+
+// NewDCMFileParser creates new parser from input file path with default options or with user-specified options
+func NewDCMFileParser(filePath string, options ...func(*Parser)) (*Parser, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		panic(err)
+	}
+
+	fInfo, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	dcmReader := reader.NewDICOMReader(bufio.NewReader(f))
+	parser := &Parser{
+		reader:   dcmReader,
+		fileSize: fInfo.Size(),
+	}
+	for _, opt := range options {
+		opt(parser)
+	}
+	return parser, nil
+}
+
+func WithSkipPixelData(skipPixelData bool) func(*Parser) {
+	return func(s *Parser) {
+		s.skipPixelData = skipPixelData
+	}
+}
+
+func WithSkipDataset(skipPixelDataset bool) func(*Parser) {
+	return func(s *Parser) {
+		s.skipPixelData = skipPixelDataset
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 func (p *Parser) Parse() error {
 	defer func() error {
