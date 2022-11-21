@@ -36,6 +36,7 @@ func InitTagDict() {
 }
 
 // NewParser returns a new dicom parser
+// Deprecated: NewParser will be replaced by NewDCMFileParser
 func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset bool) (*Parser, error) {
 	dcmReader := reader.NewDcmReader(bufio.NewReader(fileReader), skipPixelData)
 	parser := Parser{
@@ -85,40 +86,27 @@ func WithSkipDataset(skipPixelDataset bool) func(*Parser) {
 //----------------------------------------------------------------------------------------------------------------------
 
 func (p *Parser) Parse() error {
-	defer func() error {
-		if r := recover(); r != nil {
-			return fmt.Errorf("handled panic caused by the library: %s", fmt.Sprint(r))
-		}
-		return nil
-	}()
-
-	p.setFileSize()
-	err := p.validateDicom()
-	if err != nil {
-		return err
-	}
-	err = p.parseMetadata()
-	if err != nil {
-		return err
-	}
-	if p.skipDataset {
-		return nil
-	}
-	err = p.parseDataset()
-	if err != nil {
-		return err
-	}
-	return nil
+	return p.parse()
 }
 
 // GetMetadata returns the file meta header
-func (p *Parser) GetMetadata() dataset.Dataset {
-	return p.metadata
+func (p *Parser) GetMetadata() (*dataset.Dataset, error) {
+	err := p.parse()
+	if err != nil {
+		return nil, err
+	}
+
+	return &p.metadata, nil
 }
 
 // GetDataset returns the dataset
-func (p *Parser) GetDataset() dataset.Dataset {
-	return p.dataset
+func (p *Parser) GetDataset() (*dataset.Dataset, error) {
+	err := p.parse()
+	if err != nil {
+		return nil, err
+	}
+
+	return &p.dataset, nil
 }
 
 // GetElementByTagString returns the element value of the input tag
@@ -146,6 +134,26 @@ func (p *Parser) GetElementByTagString(tagStr string) (interface{}, error) {
 //----------------------------------------------------------------------------------------------------------------------
 // Unexported methods
 //----------------------------------------------------------------------------------------------------------------------
+
+func (p *Parser) parse() error {
+	p.setFileSize()
+	err := p.validateDicom()
+	if err != nil {
+		return err
+	}
+	err = p.parseMetadata()
+	if err != nil {
+		return err
+	}
+	if p.skipDataset {
+		return nil
+	}
+	err = p.parseDataset()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // setFileSize sets the file size to the reader
 func (p *Parser) setFileSize() {
