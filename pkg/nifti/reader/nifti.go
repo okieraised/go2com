@@ -7,14 +7,12 @@ import (
 	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/pkg/matrix"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
-	"github.com/okieraised/go2com/pkg/nifti/nifti1"
-	"github.com/okieraised/go2com/pkg/nifti/nifti2"
 	"math"
 )
 
 type Nii struct {
-	n1Header *nifti1.Nii1Header
-	n2Header *nifti2.Nii2Header
+	n1Header *Nii1Header
+	n2Header *Nii2Header
 	Data     *NiiData
 }
 
