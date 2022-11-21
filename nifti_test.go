@@ -34,6 +34,10 @@ func TestNii1(t *testing.T) {
 	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural_brain.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/JHU_MNI_SS_T1.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/native_brain_mask.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/task001_run003/bold.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/113-02-FLAIR_processed_reg_withskull.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/ds107_sub001_highres.nii"
 
 	niiReader, err := reader.NewNiiReader(filePath)
 	assert.NoError(err)

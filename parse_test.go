@@ -416,7 +416,7 @@ func TestNewParser9(t *testing.T) {
 func TestNewParser10(t *testing.T) {
 	assert := assert.New(t)
 	InitTagDict()
-	file, err := os.Open("")
+	file, err := os.Open("/home/tripg/Downloads/11.10.1106.1133.119.1227.20190308102324.222.dicom_2515042_1668816281813791.dcm")
 	assert.NoError(err)
 
 	defer file.Close()
@@ -424,7 +424,7 @@ func TestNewParser10(t *testing.T) {
 	assert.NoError(err)
 	fileSize := info.Size()
 
-	parser, err := NewParser(file, fileSize, false, false)
+	parser, err := NewParser(file, fileSize, true, false)
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -434,9 +434,9 @@ func TestNewParser10(t *testing.T) {
 	//	fmt.Println(k, seriesTag[k])
 	//}
 
-	//for _, elem := range parser.dataset.Elements {
-	//	fmt.Println(elem)
-	//}
+	for _, elem := range parser.dataset.Elements {
+		fmt.Println(elem)
+	}
 
 	//pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
 	//pixelData.GetExpectedPixelData()
