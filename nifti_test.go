@@ -9,15 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNii2(t *testing.T) {
-	assert := assert.New(t)
-	filePath := "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
-	niiReader, err := nifti2.NewNii2Reader(filePath)
-	assert.NoError(err)
-	err = niiReader.Parse()
-	assert.NoError(err)
-}
-
 func TestNii1(t *testing.T) {
 	assert := assert.New(t)
 
