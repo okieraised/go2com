@@ -2,11 +2,11 @@ package go2com
 
 import (
 	"fmt"
-	"github.com/okieraised/go2com/pkg/nifti/nifti2"
-	"github.com/okieraised/go2com/pkg/nifti/reader"
-	"github.com/stretchr/testify/assert"
 	_ "image/jpeg"
 	"testing"
+
+	"github.com/okieraised/go2com/pkg/nifti/reader"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNii2(t *testing.T) {

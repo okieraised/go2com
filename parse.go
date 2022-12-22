@@ -4,18 +4,17 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+
 	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/dataset"
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
-	"os"
-
-	//_ "github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/uid"
-	"io"
-	"strings"
 )
 
 // Parser implements the field required to parse the dicom file
@@ -31,6 +30,7 @@ type Parser struct {
 	skipPixelData bool
 }
 
+// Deprecated: this initialization will be triggered by calling init() in tag pkg
 func InitTagDict() {
 	tag.InitTagDict()
 }
