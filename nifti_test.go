@@ -9,6 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNii2(t *testing.T) {
+	assert := assert.New(t)
+	filePath := "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
+	niiReader, err := nifti2.NewNii2Reader(filePath)
+	assert.NoError(err)
+	err = niiReader.Parse()
+	assert.NoError(err)
+}
+
 func TestNii1(t *testing.T) {
 	assert := assert.New(t)
 
@@ -25,7 +34,10 @@ func TestNii1(t *testing.T) {
 	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural_brain.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/JHU_MNI_SS_T1.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
-	filePath = "/Users/TriPham/Downloads/avg152T1_RL_nifti.nii"
+	filePath = "/home/tripg/Documents/nifti/native_brain_mask.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/task001_run003/bold.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/113-02-FLAIR_processed_reg_withskull.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/ds107_sub001_highres.nii"
 
 	niiReader, err := reader.NewNiiReader(filePath)
 	assert.NoError(err)

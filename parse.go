@@ -4,20 +4,24 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+
 	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/dataset"
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
-	//_ "github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/uid"
-	"io"
-	"strings"
 )
 
 // Parser implements the field required to parse the dicom file
 type Parser struct {
+	filePath      string
+	fileContent   []byte
+	fileReader    *io.Reader
 	reader        reader.DcmReader
 	dataset       dataset.Dataset
 	metadata      dataset.Dataset
@@ -26,11 +30,13 @@ type Parser struct {
 	skipPixelData bool
 }
 
+// Deprecated: this initialization will be triggered by calling init() in tag pkg
 func InitTagDict() {
 	tag.InitTagDict()
 }
 
 // NewParser returns a new dicom parser
+// Deprecated: NewParser will be replaced by NewDCMFileParser
 func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset bool) (*Parser, error) {
 	dcmReader := reader.NewDcmReader(bufio.NewReader(fileReader), skipPixelData)
 	parser := Parser{
@@ -42,41 +48,65 @@ func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset 
 	return &parser, nil
 }
 
-func (p *Parser) Parse() error {
-	defer func() error {
-		if r := recover(); r != nil {
-			return fmt.Errorf("handled panic caused by the library: %s", fmt.Sprint(r))
-		}
-		return nil
-	}()
+// NewDCMFileParser creates new parser from input file path with default options or with user-specified options
+func NewDCMFileParser(filePath string, options ...func(*Parser)) (*Parser, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		panic(err)
+	}
 
-	p.setFileSize()
-	err := p.validateDicom()
+	fInfo, err := f.Stat()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = p.parseMetadata()
-	if err != nil {
-		return err
+	dcmReader := reader.NewDICOMReader(bufio.NewReader(f))
+	parser := &Parser{
+		reader:   dcmReader,
+		fileSize: fInfo.Size(),
 	}
-	if p.skipDataset {
-		return nil
+	for _, opt := range options {
+		opt(parser)
 	}
-	err = p.parseDataset()
-	if err != nil {
-		return err
+
+	return parser, nil
+}
+
+func WithSkipPixelData(skipPixelData bool) func(*Parser) {
+	return func(s *Parser) {
+		s.skipPixelData = skipPixelData
 	}
-	return nil
+}
+
+func WithSkipDataset(skipPixelDataset bool) func(*Parser) {
+	return func(s *Parser) {
+		s.skipPixelData = skipPixelDataset
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (p *Parser) Parse() error {
+	return p.parse()
 }
 
 // GetMetadata returns the file meta header
-func (p *Parser) GetMetadata() dataset.Dataset {
-	return p.metadata
+func (p *Parser) GetMetadata() (*dataset.Dataset, error) {
+	err := p.parse()
+	if err != nil {
+		return nil, err
+	}
+
+	return &p.metadata, nil
 }
 
 // GetDataset returns the dataset
-func (p *Parser) GetDataset() dataset.Dataset {
-	return p.dataset
+func (p *Parser) GetDataset() (*dataset.Dataset, error) {
+	err := p.parse()
+	if err != nil {
+		return nil, err
+	}
+
+	return &p.dataset, nil
 }
 
 // GetElementByTagString returns the element value of the input tag
@@ -104,6 +134,26 @@ func (p *Parser) GetElementByTagString(tagStr string) (interface{}, error) {
 //----------------------------------------------------------------------------------------------------------------------
 // Unexported methods
 //----------------------------------------------------------------------------------------------------------------------
+
+func (p *Parser) parse() error {
+	p.setFileSize()
+	err := p.validateDicom()
+	if err != nil {
+		return err
+	}
+	err = p.parseMetadata()
+	if err != nil {
+		return err
+	}
+	if p.skipDataset {
+		return nil
+	}
+	err = p.parseDataset()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // setFileSize sets the file size to the reader
 func (p *Parser) setFileSize() {
