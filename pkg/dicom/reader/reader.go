@@ -44,6 +44,19 @@ type dcmReader struct {
 	fileSize          int64
 }
 
+func NewDICOMReader(reader *bufio.Reader, options ...func(*dcmReader)) DcmReader {
+	parser := &dcmReader{
+		reader:        reader,
+		binaryOrder:   binary.LittleEndian,
+		isImplicit:    false,
+		skipPixelData: false,
+	}
+	for _, opt := range options {
+		opt(parser)
+	}
+	return parser
+}
+
 func NewDcmReader(reader *bufio.Reader, skipPixelData bool) DcmReader {
 	return &dcmReader{
 		reader:        reader,
