@@ -15,3 +15,5 @@
 # vendor/
 test_data
 .idea
+
+.DS_Store
