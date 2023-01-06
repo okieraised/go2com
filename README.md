@@ -1,5 +1,11 @@
 # go2com (DICOM image parser)
 
+## Installation
+You can install go2com with
+```shell
+go get "github.com/okieraised/go2com"
+```
+
 ## Example
 To parse a DICOM file, import the package as `github.com/okieraised/go2com`
 ```go
