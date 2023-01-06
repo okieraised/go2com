@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/okieraised/go2com/pkg/dicom/vr"
 	"io"
 	"os"
 	"strings"
@@ -211,6 +212,7 @@ func (p *Parser) parseMetadata() error {
 			transferSyntaxUID = (res.Value.RawValue).(string)
 		}
 		metadata = append(metadata, res)
+		fmt.Println(res)
 	}
 	dicomMetadata := dataset.Dataset{Elements: metadata}
 	p.metadata = dicomMetadata
@@ -224,6 +226,19 @@ func (p *Parser) parseMetadata() error {
 		return err
 	}
 	p.reader.SetTransferSyntax(binOrder, isImplicit)
+
+	// We will need additional check here since there is case where explicit VR is expected from the header,
+	// but implicit VR is used in the body
+	if transferSyntaxUID == uid.ExplicitVRLittleEndian {
+		firstElem, err := p.reader.Peek(6)
+		if err != nil {
+			return err
+		}
+		if !vr.VRMapper[string(firstElem[4:6])] {
+			p.reader.SetTransferSyntax(binOrder, true)
+		}
+	}
+
 	p.reader.SetOverallImplicit(isImplicit)
 	return nil
 }
@@ -241,7 +256,7 @@ func (p *Parser) parseDataset() error {
 			}
 		}
 		data = append(data, res)
-		//fmt.Println(res)
+		fmt.Println(res)
 	}
 	dicomDataset := dataset.Dataset{Elements: data}
 	p.dataset = dicomDataset

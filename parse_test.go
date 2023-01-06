@@ -416,7 +416,7 @@ func TestNewParser9(t *testing.T) {
 func TestNewParser10(t *testing.T) {
 	assert := assert.New(t)
 	InitTagDict()
-	file, err := os.Open("/home/tripg/Downloads/11.10.1106.1133.119.1227.20190308102324.222.dicom_2515042_1668816281813791.dcm")
+	file, err := os.Open("/home/tripg/Downloads/123.241606668321866.1722978010541148/DICOM/1.2.840.113619.2.427.84108138632.1643160612.111.dicom")
 	assert.NoError(err)
 
 	defer file.Close()
