@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/constants"
-	"github.com/okieraised/go2com/pkg/matrix"
+	"github.com/okieraised/go2com/internal/math"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 	"math"
 )

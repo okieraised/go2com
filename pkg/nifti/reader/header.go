@@ -2,7 +2,7 @@ package reader
 
 import (
 	"encoding/binary"
-	"github.com/okieraised/go2com/pkg/matrix"
+	"github.com/okieraised/go2com/internal/math"
 )
 
 // Nii1Header defines the structure of the NIFTI-1 header

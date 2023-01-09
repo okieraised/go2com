@@ -37,7 +37,7 @@ func InitTagDict() {
 }
 
 // NewParser returns a new dicom parser
-// Deprecated: NewParser will be replaced by NewDCMFileParser
+// Deprecated: NewParser will be replaced by NewDCMFileParser in future release
 func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset bool) (*Parser, error) {
 	dcmReader := reader.NewDcmReader(bufio.NewReader(fileReader), skipPixelData)
 	parser := Parser{
@@ -49,11 +49,13 @@ func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset 
 	return &parser, nil
 }
 
-// NewDCMFileParser creates new parser from input file path with default options or with user-specified options
+//----------------------------------------------------------------------------------------------------------------------
+
+// NewDCMFileParser creates new parser from input file path with default options and/or with user-specified options
 func NewDCMFileParser(filePath string, options ...func(*Parser)) (*Parser, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	fInfo, err := f.Stat()
@@ -68,16 +70,19 @@ func NewDCMFileParser(filePath string, options ...func(*Parser)) (*Parser, error
 	for _, opt := range options {
 		opt(parser)
 	}
-
 	return parser, nil
 }
 
+// WithSkipPixelData provides option to skip reading pixel data (7FE0,0010).
+// If true, pixel data is skipped. If false, pixel data will be read
 func WithSkipPixelData(skipPixelData bool) func(*Parser) {
 	return func(s *Parser) {
 		s.skipPixelData = skipPixelData
 	}
 }
 
+// WithSkipDataset provides option to read only the metadata header.
+// If true, only the meta header is read, else, the dataset will be read
 func WithSkipDataset(skipPixelDataset bool) func(*Parser) {
 	return func(s *Parser) {
 		s.skipPixelData = skipPixelDataset
@@ -132,13 +137,25 @@ func (p *Parser) GetElementByTagString(tagStr string) (interface{}, error) {
 	}
 }
 
+// IsValidDICOM checks if the dicom file follows the standard by having 128 bytes preamble followed by the magic string 'DICM'
+func (p *Parser) IsValidDICOM() error {
+	preamble, err := p.reader.Peek(128 + 4)
+	if err != nil {
+		return fmt.Errorf("cannot read the first 132 bytes: %v", err)
+	}
+	if string(preamble[128:]) != constants.MagicString {
+		return fmt.Errorf("file is not in valid dicom format")
+	}
+	_ = p.reader.Skip(132)
+	return nil
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 // Unexported methods
 //----------------------------------------------------------------------------------------------------------------------
-
 func (p *Parser) parse() error {
-	p.setFileSize()
-	err := p.validateDicom()
+	//p.setFileSize()
+	err := p.IsValidDICOM()
 	if err != nil {
 		return err
 	}
@@ -156,23 +173,10 @@ func (p *Parser) parse() error {
 	return nil
 }
 
-// setFileSize sets the file size to the reader
-func (p *Parser) setFileSize() {
-	_ = p.reader.SetFileSize(p.fileSize)
-}
-
-// validateDicom checks if the dicom file follows the standard by having 128 bytes preamble followed by the magic string 'DICM'
-func (p *Parser) validateDicom() error {
-	preamble, err := p.reader.Peek(128 + 4)
-	if err != nil {
-		return fmt.Errorf("cannot read the first 132 bytes: %v", err)
-	}
-	if string(preamble[128:]) != constants.MagicString {
-		return fmt.Errorf("file is not in valid dicom format")
-	}
-	_ = p.reader.Skip(132)
-	return nil
-}
+//// setFileSize sets the file size to the reader
+//func (p *Parser) setFileSize() {
+//	_ = p.reader.SetFileSize(p.fileSize)
+//}
 
 // parseMetadata parses the file meta information according to
 // https://dicom.nema.org/dicom/2013/output/chtml/part10/chapter_7.html
@@ -212,7 +216,7 @@ func (p *Parser) parseMetadata() error {
 			transferSyntaxUID = (res.Value.RawValue).(string)
 		}
 		metadata = append(metadata, res)
-		fmt.Println(res)
+		//fmt.Println(res)
 	}
 	dicomMetadata := dataset.Dataset{Elements: metadata}
 	p.metadata = dicomMetadata
@@ -227,8 +231,9 @@ func (p *Parser) parseMetadata() error {
 	}
 	p.reader.SetTransferSyntax(binOrder, isImplicit)
 
-	// We will need additional check here since there is case where explicit VR is expected from the header,
-	// but implicit VR is used in the body
+	//
+	// Additional check is needed here since there are few instances where the DICOM meta header is registered
+	// as Explicit Little-Endian, but Implicit Little-Endian is used in the body
 	if transferSyntaxUID == uid.ExplicitVRLittleEndian {
 		firstElem, err := p.reader.Peek(6)
 		if err != nil {
@@ -256,7 +261,7 @@ func (p *Parser) parseDataset() error {
 			}
 		}
 		data = append(data, res)
-		fmt.Println(res)
+		//fmt.Println(res)
 	}
 	dicomDataset := dataset.Dataset{Elements: data}
 	p.dataset = dicomDataset
