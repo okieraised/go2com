@@ -3,10 +3,9 @@ package reader
 import (
 	"bufio"
 	"encoding/binary"
-	"io"
-
 	"github.com/okieraised/go2com/internal/system"
 	_ "github.com/okieraised/go2com/internal/system"
+	"io"
 )
 
 type DcmReader interface {
@@ -42,6 +41,19 @@ type dcmReader struct {
 	keepTrackImplicit bool
 	skipPixelData     bool
 	fileSize          int64
+}
+
+func NewDICOMReader(reader *bufio.Reader, options ...func(*dcmReader)) DcmReader {
+	parser := &dcmReader{
+		reader:        reader,
+		binaryOrder:   binary.LittleEndian,
+		isImplicit:    false,
+		skipPixelData: false,
+	}
+	for _, opt := range options {
+		opt(parser)
+	}
+	return parser
 }
 
 func NewDcmReader(reader *bufio.Reader, skipPixelData bool) DcmReader {

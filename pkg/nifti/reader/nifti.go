@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/okieraised/go2com/internal/matrix"
 	"math"
 
 	"github.com/okieraised/go2com/internal/constants"
-	"github.com/okieraised/go2com/pkg/matrix"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 )
 

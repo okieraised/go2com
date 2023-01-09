@@ -316,11 +316,14 @@ func TestNewParser6(t *testing.T) {
 
 func TestNewParser7(t *testing.T) {
 	assert := assert.New(t)
-	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/test_full")
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/test_full")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		InitTagDict()
 		fmt.Println("process:", fPath)
+		if strings.Contains(fPath, "1706") {
+			continue
+		}
 		file, err := os.Open(fPath)
 		assert.NoError(err)
 
@@ -348,7 +351,7 @@ func TestNewParser7(t *testing.T) {
 func TestNewParser8(t *testing.T) {
 	assert := assert.New(t)
 	InitTagDict()
-	file, err := os.Open("/home/tripg/Documents/dicom/10142022/ALI_Technologies/UltraPACS/studies/w0019837/view0001")
+	file, err := os.Open("/home/tripg/workspace/10142022/ALI_Technologies/UltraPACS/studies/w0019837/view0001")
 	assert.NoError(err)
 
 	defer file.Close()
@@ -384,7 +387,7 @@ func TestNewParser8(t *testing.T) {
 
 func TestNewParser9(t *testing.T) {
 	assert := assert.New(t)
-	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/vinlab/Mini-batch0")
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/vinlab/Mini-batch0")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		InitTagDict()
@@ -416,7 +419,7 @@ func TestNewParser9(t *testing.T) {
 func TestNewParser10(t *testing.T) {
 	assert := assert.New(t)
 	InitTagDict()
-	file, err := os.Open("")
+	file, err := os.Open("/home/tripg/workspace/dicom/test_full/1706.dcm")
 	assert.NoError(err)
 
 	defer file.Close()

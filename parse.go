@@ -10,6 +10,8 @@ import (
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
+	"os"
+
 	//_ "github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/uid"
 	"io"
@@ -18,6 +20,9 @@ import (
 
 // Parser implements the field required to parse the dicom file
 type Parser struct {
+	filePath      string
+	fileContent   []byte
+	fileReader    *io.Reader
 	reader        reader.DcmReader
 	dataset       dataset.Dataset
 	metadata      dataset.Dataset
@@ -26,11 +31,13 @@ type Parser struct {
 	skipPixelData bool
 }
 
+// Deprecated: this initialization will be triggered by calling init() in tag pkg
 func InitTagDict() {
 	tag.InitTagDict()
 }
 
 // NewParser returns a new dicom parser
+// Deprecated: NewParser will be replaced by NewDCMFileParser in future release
 func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset bool) (*Parser, error) {
 	dcmReader := reader.NewDcmReader(bufio.NewReader(fileReader), skipPixelData)
 	parser := Parser{
@@ -42,27 +49,63 @@ func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset 
 	return &parser, nil
 }
 
-func (p *Parser) Parse() error {
-	defer func() error {
-		if r := recover(); r != nil {
-			return fmt.Errorf("handled panic caused by the library: %s", fmt.Sprint(r))
-		}
-		return nil
-	}()
+//----------------------------------------------------------------------------------------------------------------------
 
-	p.setFileSize()
-	err := p.validateDicom()
+// NewDCMFileParser creates new parser from input file path with default options and/or with user-specified options
+func NewDCMFileParser(filePath string, options ...func(*Parser)) (*Parser, error) {
+	f, err := os.Open(filePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = p.parseMetadata()
+
+	fInfo, err := f.Stat()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if p.skipDataset {
-		return nil
+	dcmReader := reader.NewDICOMReader(bufio.NewReader(f))
+	parser := &Parser{
+		reader:   dcmReader,
+		fileSize: fInfo.Size(),
 	}
-	err = p.parseDataset()
+	for _, opt := range options {
+		opt(parser)
+	}
+	return parser, nil
+}
+
+// WithSkipPixelData provides option to skip reading pixel data (7FE0,0010).
+// If true, pixel data is skipped. If false, pixel data will be read
+func WithSkipPixelData(skipPixelData bool) func(*Parser) {
+	return func(s *Parser) {
+		s.skipPixelData = skipPixelData
+	}
+}
+
+// WithSkipDataset provides option to read only the metadata header.
+// If true, only the meta header is read, else, the dataset will be read
+func WithSkipDataset(skipPixelDataset bool) func(*Parser) {
+	return func(s *Parser) {
+		s.skipPixelData = skipPixelDataset
+	}
+}
+
+// IsValidDICOM checks if the dicom file follows the standard by having 128 bytes preamble followed by the magic string 'DICM'
+func (p *Parser) IsValidDICOM() error {
+	preamble, err := p.reader.Peek(128 + 4)
+	if err != nil {
+		return fmt.Errorf("cannot read the first 132 bytes: %v", err)
+	}
+	if string(preamble[128:]) != constants.MagicString {
+		return fmt.Errorf("file is not in valid dicom format")
+	}
+	_ = p.reader.Skip(132)
+	return nil
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (p *Parser) Parse() error {
+	err := p.parse()
 	if err != nil {
 		return err
 	}
@@ -104,23 +147,28 @@ func (p *Parser) GetElementByTagString(tagStr string) (interface{}, error) {
 //----------------------------------------------------------------------------------------------------------------------
 // Unexported methods
 //----------------------------------------------------------------------------------------------------------------------
+func (p *Parser) parse() error {
+	err := p.IsValidDICOM()
+	if err != nil {
+		return err
+	}
+	err = p.parseMetadata()
+	if err != nil {
+		return err
+	}
+	if p.skipDataset {
+		return nil
+	}
+	err = p.parseDataset()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // setFileSize sets the file size to the reader
 func (p *Parser) setFileSize() {
 	_ = p.reader.SetFileSize(p.fileSize)
-}
-
-// validateDicom checks if the dicom file follows the standard by having 128 bytes preamble followed by the magic string 'DICM'
-func (p *Parser) validateDicom() error {
-	preamble, err := p.reader.Peek(128 + 4)
-	if err != nil {
-		return fmt.Errorf("cannot read the first 132 bytes: %v", err)
-	}
-	if string(preamble[128:]) != constants.MagicString {
-		return fmt.Errorf("file is not in valid dicom format")
-	}
-	_ = p.reader.Skip(132)
-	return nil
 }
 
 // parseMetadata parses the file meta information according to

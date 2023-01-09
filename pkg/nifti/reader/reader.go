@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"github.com/okieraised/go2com/internal/matrix"
 	"io"
 	"net/http"
 	"os"
 
 	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/internal/utils"
-	"github.com/okieraised/go2com/pkg/matrix"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 )
 
