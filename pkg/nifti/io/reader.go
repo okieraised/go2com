@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 )
@@ -76,8 +75,8 @@ func NewNiiReader(filePath string) (NiiReader, error) {
 	}, nil
 }
 
-// checkNiiVersion checks the header to determine the NIFTI version
-func (r *niiReader) checkNiiVersion() error {
+// niftiVersion checks the header to determine the NIFTI version
+func (r *niiReader) niftiVersion() error {
 	var hSize int32
 
 	err := binary.Read(r.reader, r.binaryOrder, &hSize)
@@ -86,11 +85,10 @@ func (r *niiReader) checkNiiVersion() error {
 	}
 
 	switch hSize {
-	case constants.NII1HeaderSize:
-		r.version = constants.NIIVersion1
-
-	case constants.NII2HeaderSize:
-		r.version = constants.NIIVersion2
+	case NII1HeaderSize:
+		r.version = NIIVersion1
+	case NII2HeaderSize:
+		r.version = NIIVersion2
 	default:
 		r.binaryOrder = binary.BigEndian
 		_, err := r.reader.Seek(0, 0)
@@ -103,14 +101,15 @@ func (r *niiReader) checkNiiVersion() error {
 			return err
 		}
 		switch hSize {
-		case constants.NII1HeaderSize:
-			r.version = constants.NIIVersion1
-		case constants.NII2HeaderSize:
-			r.version = constants.NIIVersion2
+		case NII1HeaderSize:
+			r.version = NIIVersion1
+		case NII2HeaderSize:
+			r.version = NIIVersion2
 		default:
 			return errors.New("invalid NIFTI file format")
 		}
 	}
+	r.niiData.Data.Version = r.version
 	return nil
 }
 
@@ -180,7 +179,7 @@ func (r *niiReader) GetBinaryOrder() binary.ByteOrder {
 
 // Parse returns the raw byte array into NIFTI-1 header and dataset structure
 func (r *niiReader) Parse() error {
-	err := r.checkNiiVersion()
+	err := r.niftiVersion()
 	if err != nil {
 		return err
 	}
@@ -208,7 +207,7 @@ func (r *niiReader) parseHeader() error {
 	var dim0 int64
 
 	switch r.version {
-	case constants.NIIVersion1:
+	case NIIVersion1:
 		header := new(Nii1Header)
 		err = binary.Read(r.reader, r.binaryOrder, header)
 		if err != nil {
@@ -219,7 +218,7 @@ func (r *niiReader) parseHeader() error {
 		}
 		r.niiData.n1Header = header
 		dim0 = int64(header.Dim[0])
-	case constants.NIIVersion2:
+	case NIIVersion2:
 		header := new(Nii2Header)
 		err = binary.Read(r.reader, r.binaryOrder, header)
 		if err != nil {
@@ -248,13 +247,13 @@ func (r *niiReader) parseHeader() error {
 func (r *niiReader) setDatatypeSize() {
 	var NByPerVoxel int32 = 0
 	var SwapSize int32 = 0
-	var datatype int16
+	var datatype int32
 
 	switch r.version {
-	case constants.NIIVersion1:
-		datatype = r.niiData.n1Header.Datatype
-	case constants.NIIVersion2:
-		datatype = r.niiData.n2Header.Datatype
+	case NIIVersion1:
+		datatype = int32(r.niiData.n1Header.Datatype)
+	case NIIVersion2:
+		datatype = int32(r.niiData.n2Header.Datatype)
 	}
 
 	switch datatype {
@@ -309,7 +308,7 @@ func (r *niiReader) parseData() error {
 	var freqDim, phaseDim, sliceDim int32
 
 	switch r.version {
-	case constants.NIIVersion1:
+	case NIIVersion1:
 		freqDim = int32(dimInfoToFreqDim(r.niiData.n1Header.DimInfo))
 		phaseDim = int32(dimInfoToPhaseDim(r.niiData.n1Header.DimInfo))
 		sliceDim = int32(dimInfoToSliceDim(r.niiData.n1Header.DimInfo))
@@ -373,7 +372,7 @@ func (r *niiReader) parseData() error {
 
 		bitpix = r.niiData.n1Header.Bitpix
 
-	case constants.NIIVersion2:
+	case NIIVersion2:
 		freqDim = int32(dimInfoToFreqDim(r.niiData.n2Header.DimInfo))
 		phaseDim = int32(dimInfoToPhaseDim(r.niiData.n2Header.DimInfo))
 		sliceDim = int32(dimInfoToSliceDim(r.niiData.n2Header.DimInfo))

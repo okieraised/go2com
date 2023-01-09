@@ -84,6 +84,7 @@ type NiiData struct {
 	Nifti1Ext     []Nifti1Ext      // array of extension structs (with data)
 	IJKOrtient    [3]int32         // self-add. Orientation ini, j, k coordinate
 	Affine        matrix.DMat44    // self-add. Affine matrix
+	Version       int              // self-add. Used for version identification when writing
 }
 
 type Nifti1Ext struct {
@@ -130,7 +131,7 @@ func (n *Nii) getSFormCode() string {
 }
 
 func (n *Nii) getDatatype() string {
-	switch int16(n.Data.Datatype) {
+	switch n.Data.Datatype {
 	case constant.DT_UNKNOWN:
 		return "UNKNOWN"
 	case constant.DT_BINARY:

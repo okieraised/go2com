@@ -10,6 +10,7 @@ import (
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
+	"github.com/okieraised/go2com/pkg/dicom/vr"
 	"os"
 
 	//_ "github.com/okieraised/go2com/pkg/dicom/tag"
@@ -49,6 +50,8 @@ func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset 
 	return &parser, nil
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// New implementation of DICOM parser
 //----------------------------------------------------------------------------------------------------------------------
 
 // NewDCMFileParser creates new parser from input file path with default options and/or with user-specified options
@@ -98,7 +101,6 @@ func (p *Parser) IsValidDICOM() error {
 	if string(preamble[128:]) != constants.MagicString {
 		return fmt.Errorf("file is not in valid dicom format")
 	}
-	_ = p.reader.Skip(132)
 	return nil
 }
 
@@ -153,6 +155,7 @@ func (p *Parser) parse() error {
 	if err != nil {
 		return err
 	}
+	_ = p.reader.Skip(132)
 	err = p.parseMetadata()
 	if err != nil {
 		return err
@@ -227,15 +230,15 @@ func (p *Parser) parseMetadata() error {
 
 	// IMPORTANT: Additional check is needed here since there are few instances where the DICOM meta header is registered
 	// as Explicit Little-Endian, but Implicit Little-Endian is used in the body
-	//if transferSyntaxUID == uid.ExplicitVRLittleEndian {
-	//	firstElem, err := p.reader.Peek(6)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	if !vr.VRMapper[string(firstElem[4:6])] {
-	//		p.reader.SetTransferSyntax(binOrder, true)
-	//	}
-	//}
+	if transferSyntaxUID == uid.ExplicitVRLittleEndian {
+		firstElem, err := p.reader.Peek(6)
+		if err != nil {
+			return err
+		}
+		if !vr.VRMapper[string(firstElem[4:6])] {
+			p.reader.SetTransferSyntax(binOrder, true)
+		}
+	}
 
 	return nil
 }

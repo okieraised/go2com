@@ -44,6 +44,7 @@ fpath = '/home/tripg/Documents/x2.dcm'
 fpath = '/home/tripg/Documents/dicom/test_full/023.dcm'
 fpath = '/home/tripg/Documents/dicom/10142022/ALI_Technologies/UltraPACS/studies/w0019837/view0001'
 fpath = '/home/tripg/Documents/dicom/vinlab/Mini-batch0/1.3.12.2.1107.5.1.7.112561.30000019122607094739800003704/DICOM/1.3.12.2.1107.5.1.7.112561.30000019122622575003400000100.dcm'
+fpath = '/home/tripg/Downloads/123.241606668321866.1722978010541148/DICOM/1.2.840.113619.2.427.84108138632.1643160910.120.dicom'
 
 ds = dcmread(fpath, force=True)
 print(ds)

@@ -91,35 +91,50 @@ var OrietationToString = map[int]string{
 }
 
 const (
-	DT_UNKNOWN       int16 = 0 // what it says, dude
-	DT_BINARY        int16 = 1 // binary (1 bit/voxel)
-	DT_UNSIGNED_CHAR int16 = 2 // unsigned char (8 bits/voxel)
-	DT_UINT8         int16 = 2
-	DT_SIGNED_SHORT  int16 = 4 // signed short (16 bits/voxel)
-	DT_INT16         int16 = 4
-	DT_SIGNED_INT    int16 = 8 // signed int (32 bits/voxel)
-	DT_INT32         int16 = 8
-	DT_FLOAT         int16 = 16 // float (32 bits/voxel)
-	DT_FLOAT32       int16 = 16
-	DT_COMPLEX       int16 = 32 // complex (64 bits/voxel)
-	DT_COMPLEX64     int16 = 32
-	DT_DOUBLE        int16 = 64 // double (64 bits/voxel)
-	DT_FLOAT64       int16 = 64
-	DT_RGB           int16 = 128 // RGB triple (24 bits/voxel)
-	DT_RGB24         int16 = 128
-	DT_ALL           int16 = 255  // not very useful (?)
-	DT_INT8          int16 = 256  // signed char (8 bits)
-	DT_UINT16        int16 = 512  // unsigned short (16 bits)
-	DT_UINT32        int16 = 768  // unsigned int (32 bits)
-	DT_INT64         int16 = 1024 // long long (64 bits)
-	DT_UINT64        int16 = 1280 // unsigned long long (64 bits)
-	DT_FLOAT128      int16 = 1536 // long double (128 bits)
-	DT_COMPLEX128    int16 = 1792 // double pair (128 bits)
-	DT_COMPLEX256    int16 = 2048 // long double pair (256 bits)
-	DT_RGBA32        int16 = 2304
+	DT_UNKNOWN    int32 = 0    // what it says, dude
+	DT_BINARY     int32 = 1    // binary (1 bit/voxel)
+	DT_UINT8      int32 = 2    // unsigned char (8 bits/voxel)
+	DT_INT16      int32 = 4    // signed short (16 bits/voxel)
+	DT_INT32      int32 = 8    // signed int (32 bits/voxel)
+	DT_FLOAT32    int32 = 16   // float (32 bits/voxel)
+	DT_COMPLEX64  int32 = 32   // complex (64 bits/voxel)
+	DT_FLOAT64    int32 = 64   // double (64 bits/voxel)
+	DT_RGB24      int32 = 128  // RGB triple (24 bits/voxel)
+	DT_ALL        int32 = 255  // not very useful (?)
+	DT_INT8       int32 = 256  // signed char (8 bits)
+	DT_UINT16     int32 = 512  // unsigned short (16 bits)
+	DT_UINT32     int32 = 768  // unsigned int (32 bits)
+	DT_INT64      int32 = 1024 // long long (64 bits)
+	DT_UINT64     int32 = 1280 // unsigned long long (64 bits)
+	DT_FLOAT128   int32 = 1536 // long double (128 bits)
+	DT_COMPLEX128 int32 = 1792 // double pair (128 bits)
+	DT_COMPLEX256 int32 = 2048 // long double pair (256 bits)
+	DT_RGBA32     int32 = 2304
 )
 
-var IsDatatypeInt = map[int16]bool{
+var ValidDatatype = map[int32]bool{
+	DT_UNKNOWN:    true,
+	DT_BINARY:     true,
+	DT_INT8:       true,
+	DT_UINT8:      true,
+	DT_INT16:      true,
+	DT_UINT16:     true,
+	DT_INT32:      true,
+	DT_UINT32:     true,
+	DT_INT64:      true,
+	DT_UINT64:     true,
+	DT_FLOAT32:    true,
+	DT_FLOAT64:    true,
+	DT_ALL:        true,
+	DT_FLOAT128:   true,
+	DT_COMPLEX64:  true,
+	DT_COMPLEX128: true,
+	DT_COMPLEX256: true,
+	DT_RGB24:      true,
+	DT_RGBA32:     true,
+}
+
+var IsDatatypeInt = map[int32]bool{
 	DT_UNKNOWN:    false,
 	DT_BINARY:     false,
 	DT_INT8:       true,

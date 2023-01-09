@@ -431,24 +431,25 @@ func TestNewParser10(t *testing.T) {
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
+}
 
-	//seriesTag := parser.ExportSeriesTags()
-	//for k := range seriesTag {
-	//	fmt.Println(k, seriesTag[k])
-	//}
+func TestNewParser11(t *testing.T) {
+	assert := assert.New(t)
+	InitTagDict()
+	file, err := os.Open("/home/tripg/Downloads/123.241606668321866.1722978010541148/DICOM/1.2.840.113619.2.427.84108138632.1643160910.120.dicom")
+	assert.NoError(err)
 
-	//for _, elem := range parser.dataset.Elements {
-	//	fmt.Println(elem)
-	//}
+	defer file.Close()
+	info, err := file.Stat()
+	assert.NoError(err)
+	fileSize := info.Size()
 
-	//pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
-	//pixelData.GetExpectedPixelData()
-	//valid := pixelData.ValidatePixelData()
-	//fmt.Println(valid)
+	parser, err := NewParser(file, fileSize, true, false)
+	assert.NoError(err)
+	err = parser.Parse()
+	assert.NoError(err)
 
-	//tt := parser.Export(false)
-	//for k := range tt {
-	//	fmt.Println(k, tt[k])
-	//}
-
+	for _, elem := range parser.dataset.Elements {
+		fmt.Println(elem)
+	}
 }
