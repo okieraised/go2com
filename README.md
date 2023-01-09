@@ -6,8 +6,17 @@ You can install go2com with
 go get "github.com/okieraised/go2com"
 ```
 
+## Test dataset
+Multiple sources of DICOM dataset is used for validation/testing during the development. The (incomplete) list of websites
+and sources is provided below:
+* https://www.aliza-dicom-viewer.com/download/datasets
+* https://www.rubomedical.com/dicom_files/
+* https://www.dicomlibrary.com/
+* https://www.kaggle.com
+
 ## Example
-To parse a DICOM file, import the package as `github.com/okieraised/go2com`
+import the package as `github.com/okieraised/go2com`
+To parse a DICOM file: 
 ```go
 package main
 
@@ -36,6 +45,10 @@ func main() {
 	}
 	err = parser.Parse()
 }
+```
+To parse a NIFTI file:
+```go
+
 ```
 
 ## Supported Transfer Syntaxes

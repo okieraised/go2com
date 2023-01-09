@@ -154,7 +154,6 @@ func (p *Parser) IsValidDICOM() error {
 // Unexported methods
 //----------------------------------------------------------------------------------------------------------------------
 func (p *Parser) parse() error {
-	//p.setFileSize()
 	err := p.IsValidDICOM()
 	if err != nil {
 		return err
@@ -173,33 +172,34 @@ func (p *Parser) parse() error {
 	return nil
 }
 
-//// setFileSize sets the file size to the reader
-//func (p *Parser) setFileSize() {
-//	_ = p.reader.SetFileSize(p.fileSize)
-//}
-
 // parseMetadata parses the file meta information according to
 // https://dicom.nema.org/dicom/2013/output/chtml/part10/chapter_7.html
 // the File Meta Information shall be encoded using the Explicit VR Little Endian Transfer Syntax
 // (UID=1.2.840.10008.1.2.1)
 func (p *Parser) parseMetadata() error {
-	var transferSyntaxUID string
-	var metadata []*element.Element
-	res, err := element.ReadElement(p.reader, p.reader.IsImplicit(), p.reader.ByteOrder())
+
+	var metaHeader []*element.Element
+	headerElem, err := element.ReadElement(p.reader, p.reader.IsImplicit(), p.reader.ByteOrder())
 	if err != nil {
 		return err
 	}
-	metaGroupLength, ok := (res.Value.RawValue).(int)
+	metaGroupLength, ok := (headerElem.Value.RawValue).(int)
 	if !ok {
-		return fmt.Errorf("invalid value for tag (0x%x, 0x%x)", res.Tag.Group, res.Tag.Element)
+		return fmt.Errorf("invalid value for tag (0x%x, 0x%x)", headerElem.Tag.Group, headerElem.Tag.Element)
 	}
-	metadata = append(metadata, res)
+	metaHeader = append(metaHeader, headerElem)
 	pBytes, err := p.reader.Peek(metaGroupLength)
 	if err != nil {
 		return err
 	}
+
+	// Create a new reader with byte length equals the meta group length tag
 	br := bytes.NewReader(pBytes)
 	subRd := reader.NewDcmReader(bufio.NewReader(br), p.skipPixelData)
+
+	// Keep reading the element until we exhaust the all bytes (i.g: EOF error). If the error is not EOF,
+	// we return the error immediately
+	var transferSyntaxUID string
 	for {
 		res, err := element.ReadElement(subRd, p.reader.IsImplicit(), p.reader.ByteOrder())
 		if err != nil {
@@ -215,15 +215,16 @@ func (p *Parser) parseMetadata() error {
 		}) == 0 {
 			transferSyntaxUID = (res.Value.RawValue).(string)
 		}
-		metadata = append(metadata, res)
-		//fmt.Println(res)
+		metaHeader = append(metaHeader, res)
+		//fmt.Println(headerElem)
 	}
-	dicomMetadata := dataset.Dataset{Elements: metadata}
+	dicomMetadata := dataset.Dataset{Elements: metaHeader}
 	p.metadata = dicomMetadata
 	err = p.reader.Skip(int64(metaGroupLength))
 	if err != nil {
 		return err
 	}
+
 	// Set transfer syntax here for the dataset parser
 	binOrder, isImplicit, err := uid.ParseTransferSyntaxUID(transferSyntaxUID)
 	if err != nil {
@@ -231,8 +232,7 @@ func (p *Parser) parseMetadata() error {
 	}
 	p.reader.SetTransferSyntax(binOrder, isImplicit)
 
-	//
-	// Additional check is needed here since there are few instances where the DICOM meta header is registered
+	// IMPORTANT: Additional check is needed here since there are few instances where the DICOM meta header is registered
 	// as Explicit Little-Endian, but Implicit Little-Endian is used in the body
 	if transferSyntaxUID == uid.ExplicitVRLittleEndian {
 		firstElem, err := p.reader.Peek(6)
