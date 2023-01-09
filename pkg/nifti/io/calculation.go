@@ -1,4 +1,4 @@
-package reader
+package io
 
 import (
 	"github.com/okieraised/go2com/internal/matrix"

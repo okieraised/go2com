@@ -1,4 +1,4 @@
-package reader
+package io
 
 // Nii1Header defines the structure of the NIFTI-1 header
 type Nii1Header struct {

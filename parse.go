@@ -148,6 +148,7 @@ func (p *Parser) GetElementByTagString(tagStr string) (interface{}, error) {
 // Unexported methods
 //----------------------------------------------------------------------------------------------------------------------
 func (p *Parser) parse() error {
+	p.setFileSize()
 	err := p.IsValidDICOM()
 	if err != nil {
 		return err
@@ -223,6 +224,19 @@ func (p *Parser) parseMetadata() error {
 	}
 	p.reader.SetTransferSyntax(binOrder, isImplicit)
 	p.reader.SetOverallImplicit(isImplicit)
+
+	// IMPORTANT: Additional check is needed here since there are few instances where the DICOM meta header is registered
+	// as Explicit Little-Endian, but Implicit Little-Endian is used in the body
+	//if transferSyntaxUID == uid.ExplicitVRLittleEndian {
+	//	firstElem, err := p.reader.Peek(6)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	if !vr.VRMapper[string(firstElem[4:6])] {
+	//		p.reader.SetTransferSyntax(binOrder, true)
+	//	}
+	//}
+
 	return nil
 }
 

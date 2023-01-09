@@ -1,4 +1,4 @@
-package reader
+package io
 
 import (
 	"encoding/binary"

@@ -44,6 +44,45 @@ const (
 	OtherByteOrOtherWord        = "OX"
 )
 
+var VRMapper = map[string]bool{
+	ApplicationEntity:           true,
+	AgeString:                   true,
+	AttributeTag:                true,
+	CodeString:                  true,
+	Date:                        true,
+	DecimalString:               true,
+	DateTime:                    true,
+	FloatingPointSingle:         true,
+	FloatingPointDouble:         true,
+	IntegerString:               true,
+	LongString:                  true,
+	LongText:                    true,
+	OtherByte:                   true,
+	OtherDouble:                 true,
+	OtherFloat:                  true,
+	OtherLong:                   true,
+	OtherVeryLong:               true,
+	OtherWord:                   true,
+	PersonName:                  true,
+	ShortString:                 true,
+	SignedLong:                  true,
+	SequenceOfItems:             true,
+	SignedShort:                 true,
+	ShortText:                   true,
+	SignedVeryLong:              true,
+	Time:                        true,
+	UnlimitedCharacters:         true,
+	UniqueIdentifier:            true,
+	UnsignedLong:                true,
+	Unknown:                     true,
+	UniversalResourceIdentifier: true,
+	UnsignedShort:               true,
+	UnlimitedText:               true,
+	UnsignedVeryLong:            true,
+	SignedShortOrUnsignedShort:  true,
+	OtherByteOrOtherWord:        true,
+}
+
 type VRKind int
 
 const (
