@@ -439,9 +439,11 @@ func TestNewParser11(t *testing.T) {
 	file, err := os.Open("/home/tripg/Downloads/123.241606668321866.1722978010541148/DICOM/1.2.840.113619.2.427.84108138632.1643160910.120.dicom")
 	file, err = os.Open("/home/tripg/workspace/10142022/ALI_Technologies/UltraPACS/studies/w0055053/view0013")
 	file, err = os.Open("/home/tripg/workspace/10142022/Acuson/Sequoia/EXAMS/EXAM0000/CLIPS/CLIP0031")
-	file, err = os.Open("/home/tripg/workspace/10142022/Hamamatsu/Dog_15x15_20x.dcm")
-	file, err = os.Open("/home/tripg/Downloads/N2D0027.dcm")
-	file, err = os.Open("/home/tripg/Downloads/123.241606668321866.1724728615648318_en.dcm")
+	//file, err = os.Open("/home/tripg/workspace/10142022/Hamamatsu/Dog_15x15_20x.dcm")
+	//file, err = os.Open("/home/tripg/Downloads/N2D0027.dcm")
+	//file, err = os.Open("/home/tripg/Downloads/123.241606668321866.1724728615648318_en.dcm")
+	//file, err = os.Open("/home/tripg/Downloads/1-1.dcm")
+	//file, err = os.Open("/home/tripg/workspace/dicom2/PrivateGEImplicitVRBigEndianTransferSyntax16Bits.dcm")
 	assert.NoError(err)
 
 	defer file.Close()
@@ -449,7 +451,7 @@ func TestNewParser11(t *testing.T) {
 	assert.NoError(err)
 	fileSize := info.Size()
 
-	parser, err := NewParser(file, fileSize, false, false)
+	parser, err := NewParser(file, fileSize, true, false)
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)

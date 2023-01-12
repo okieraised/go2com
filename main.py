@@ -50,6 +50,9 @@ fpath = '/home/tripg/workspace/10142022/Acuson/Sequoia/EXAMS/EXAM0000/CLIPS/CLIP
 fpath = '/home/tripg/workspace/10142022/Hamamatsu/Dog_15x15_20x.dcm'
 fpath = '/home/tripg/Downloads/N2D0027.dcm'
 fpath = '/home/tripg/Downloads/123.241606668321866.1724728615648318_en.dcm'
+fpath = '/home/tripg/Downloads/1-1.dcm'
+fpath = '/home/tripg/workspace/dicom3/winter.dcm'
+fpath = '/home/tripg/Downloads/PrivateGEImplicitVRBigEndianTransferSyntax16Bits.dcm'
 
 ds = dcmread(fpath, force=True)
 print(ds)

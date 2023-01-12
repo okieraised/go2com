@@ -182,21 +182,53 @@ func (p *Parser) setFileSize() {
 func (p *Parser) parseMetadata() error {
 	var transferSyntaxUID string
 	var metadata []*element.Element
+
+	//// File meta header is mostly always explicit (except for 1.2.840.113619.5.2 [Implicit VR Big Endian DLX (G.E Private)])
+	//// where the header is implicit
+	//firstHeaderElemBytes, err := p.reader.Peek(4 + 2 + 2 + 4) // 4 bytes tag + 2 bytes VR + 2 bytes VL + 4 bytes value length
+	//if err != nil {
+	//	return err
+	//}
+	//subRd1 := reader.NewDcmReader(bufio.NewReader(bytes.NewReader(firstHeaderElemBytes)), p.skipPixelData)
+	//res, err := element.ReadElement(subRd1, p.reader.IsImplicit(), p.reader.ByteOrder())
+	//if err != nil {
+	//	return err
+	//}
+	//metaGroupLength, ok := (res.Value.RawValue).(int)
+	//if !ok {
+	//	//fmt.Println("GOT HERE")
+	//	p.reader.SetTransferSyntax(p.reader.ByteOrder(), true)
+	//	res, err = element.ReadElement(p.reader, p.reader.IsImplicit(), p.reader.ByteOrder())
+	//	if err != nil {
+	//		return err
+	//	}
+	//	metaGroupLength, ok = (res.Value.RawValue).(int)
+	//	if !ok {
+	//		return fmt.Errorf("invalid value for tag (0x%x, 0x%x)", res.Tag.Group, res.Tag.Element)
+	//	}
+	//} else {
+	//	p.reader.Skip(12)
+	//}
+
+	//------------------------------------------------------------------------------------------------------------------
 	res, err := element.ReadElement(p.reader, p.reader.IsImplicit(), p.reader.ByteOrder())
 	if err != nil {
 		return err
 	}
+
 	metaGroupLength, ok := (res.Value.RawValue).(int)
 	if !ok {
 		return fmt.Errorf("invalid value for tag (0x%x, 0x%x)", res.Tag.Group, res.Tag.Element)
 	}
+	//------------------------------------------------------------------------------------------------------------------
+
 	metadata = append(metadata, res)
+	// Keep reading the remaining header based on metaGroupLength
 	pBytes, err := p.reader.Peek(metaGroupLength)
 	if err != nil {
 		return err
 	}
-	br := bytes.NewReader(pBytes)
-	subRd := reader.NewDcmReader(bufio.NewReader(br), p.skipPixelData)
+	subRd := reader.NewDcmReader(bufio.NewReader(bytes.NewReader(pBytes)), p.skipPixelData)
 	for {
 		res, err := element.ReadElement(subRd, p.reader.IsImplicit(), p.reader.ByteOrder())
 		if err != nil {
@@ -213,6 +245,7 @@ func (p *Parser) parseMetadata() error {
 			transferSyntaxUID = (res.Value.RawValue).(string)
 		}
 		metadata = append(metadata, res)
+		fmt.Println(res)
 	}
 	dicomMetadata := dataset.Dataset{Elements: metadata}
 	p.metadata = dicomMetadata
@@ -256,7 +289,7 @@ func (p *Parser) parseDataset() error {
 			}
 		}
 		data = append(data, res)
-		//fmt.Println(res)
+		fmt.Println(res)
 	}
 	dicomDataset := dataset.Dataset{Elements: data}
 	p.dataset = dicomDataset
