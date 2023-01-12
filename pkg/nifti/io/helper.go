@@ -108,18 +108,30 @@ func needHeaderSwap(dim0 int16, headerSize int) int {
 
 // Swap byte array
 
+// niftiSwap2Bytes swaps 2 bytes at a time
 func niftiSwap2Bytes(size int, arr []uint8) {
+	for i := 0; i < size; i++ {
 
+	}
 }
 
+// niftiSwap4Bytes swaps 4 bytes at a time
 func niftiSwap4Bytes(size int, arr []uint8) {
+	for i := 0; i < size; i++ {
 
+	}
 }
 
+// niftiSwap8Bytes swaps 8 bytes at a time
 func niftiSwap8Bytes(size int, arr []uint8) {
+	for i := 0; i < size; i++ {
 
+	}
 }
 
+// niftiSwap16Bytes swaps 16 bytes at a time
 func niftiSwap16Bytes(size int, arr []uint8) {
+	for i := 0; i < size; i++ {
 
+	}
 }

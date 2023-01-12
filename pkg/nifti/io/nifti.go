@@ -259,7 +259,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 	}
 
 	if n.Data.SclSlope != 0 {
-		value = float64(n.Data.SclSlope)*value + float64(n.Data.SclInter)
+		value = n.Data.SclSlope*value + n.Data.SclInter
 	}
 
 	return value
