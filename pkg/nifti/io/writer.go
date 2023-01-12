@@ -20,7 +20,7 @@ func (w *niiWriter) makeNewHeader() {
 
 }
 
-func (w *niiWriter) makeNewNii1Header(inDim *[8]int16, inDatatype int32) {
+func MakeNewNii1Header(inDim *[8]int16, inDatatype int32) *Nii1Header {
 
 	// Default Dim value
 	defaultDim := [8]int16{3, 1, 1, 1, 0, 0, 0, 0}
@@ -68,52 +68,20 @@ func (w *niiWriter) makeNewNii1Header(inDim *[8]int16, inDatatype int32) {
 
 	header.Datatype = int16(datatype)
 
-	nByper, _ := w.assignDatatypeSize(datatype)
+	nByper, _ := assignDatatypeSize(datatype)
 	header.Bitpix = 8 * nByper
 	header.Magic = [4]byte{110, 43, 49, 0}
 
-	w.niiData.n1Header = header
+	return header
 }
 
-// assignDatatypeSize sets the number of bytes per voxel and the swapsize based on a datatype code
-func (w *niiWriter) assignDatatypeSize(datatype int32) (int16, int16) {
-	var nByper, swapSize int16
-	switch datatype {
-	case constant.DT_INT8, constant.DT_UINT8:
-		nByper = 1
-		swapSize = 0
-	case constant.DT_INT16, constant.DT_UINT16:
-		nByper = 2
-		swapSize = 2
-	case constant.DT_RGB24:
-		nByper = 3
-		swapSize = 0
-	case constant.DT_RGBA32:
-		nByper = 4
-		swapSize = 0
-	case constant.DT_INT32, constant.DT_UINT32, constant.DT_FLOAT32:
-		nByper = 4
-		swapSize = 4
-	case constant.DT_COMPLEX64:
-		nByper = 8
-		swapSize = 4
-	case constant.DT_FLOAT64, constant.DT_INT64, constant.DT_UINT64:
-		nByper = 8
-		swapSize = 8
-	case constant.DT_FLOAT128:
-		nByper = 16
-		swapSize = 16
-	case constant.DT_COMPLEX128:
-		nByper = 16
-		swapSize = 8
-	case constant.DT_COMPLEX256:
-		nByper = 32
-		swapSize = 16
-	default:
-	}
-	return nByper, swapSize
+func MakeNewImage(inDim *[8]int16, inDatatype int32, dataFill int) {
+	//header := MakeNewNii1Header(inDim, inDatatype)
+
 }
 
-func (w *niiWriter) makeNewImage() {
+func NiftiHeaderToImage(header *Nii1Header) {
+	//var ii, doSwap, iOff int
+	//var isNIFTI, isOneFile int
 
 }
