@@ -21,11 +21,11 @@ func TestNii1(t *testing.T) {
 	filePath = "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
 	filePath = "/home/tripg/Documents/nifti/knee.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/ExBox11/fmri.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/ExBox11/structural.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural_brain.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/JHU_MNI_SS_T1.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
-	filePath = "/Users/TriPham/Downloads/avg152T1_RL_nifti.nii"
+	//filePath = "/Users/TriPham/Downloads/nifti/avg152T1_RL_nifti.nii"
 
 	niiReader, err := io.NewNiiReader(filePath)
 	assert.NoError(err)

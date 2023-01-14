@@ -51,7 +51,7 @@ type NiiReader interface {
 type niiReader struct {
 	reader      *bytes.Reader
 	binaryOrder binary.ByteOrder
-	niiData     *Nii
+	data        *Nii
 	version     int
 }
 
@@ -68,10 +68,14 @@ func NewNiiReader(filePath string) (NiiReader, error) {
 			return nil, err
 		}
 	}
+
+	niiData := &Nii{}
+	niiData.Data = &NiiData{}
+
 	return &niiReader{
 		binaryOrder: binary.LittleEndian,
 		reader:      bytes.NewReader(bData),
-		niiData:     &Nii{},
+		data:        niiData,
 	}, nil
 }
 
@@ -109,68 +113,68 @@ func (r *niiReader) niftiVersion() error {
 			return errors.New("invalid NIFTI file format")
 		}
 	}
-	r.niiData.Data.Version = r.version
+	r.data.Data.Version = r.version
 	return nil
 }
 
 func (r *niiReader) MatrixToOrientation(R matrix.DMat44) {
-	r.niiData.matrixToOrientation(R)
+	r.data.matrixToOrientation(R)
 }
 
 func (r *niiReader) QuaternToMatrix() matrix.DMat44 {
-	return r.niiData.quaternToMatrix()
+	return r.data.quaternToMatrix()
 }
 
 func (r *niiReader) GetSliceCode() string {
-	return r.niiData.getSliceCode()
+	return r.data.getSliceCode()
 }
 
 func (r *niiReader) GetOrientation() [3]string {
-	return r.niiData.getOrientation()
+	return r.data.getOrientation()
 }
 
 func (r *niiReader) GetDatatype() string {
-	return r.niiData.getDatatype()
+	return r.data.getDatatype()
 }
 
 func (r *niiReader) GetSlice(z, t int64) ([][]float64, error) {
-	return r.niiData.getSlice(z, t)
+	return r.data.getSlice(z, t)
 }
 
 func (r *niiReader) GetTimeSeries(x, y, z int64) ([]float64, error) {
-	return r.niiData.getTimeSeries(x, y, z)
+	return r.data.getTimeSeries(x, y, z)
 }
 
 func (r *niiReader) GetVolume(t int64) ([][][]float64, error) {
-	return r.niiData.getVolume(t)
+	return r.data.getVolume(t)
 }
 
 func (r *niiReader) GetAt(x, y, z, t int64) float64 {
-	return r.niiData.getAt(x, y, z, t)
+	return r.data.getAt(x, y, z, t)
 }
 
 func (r *niiReader) GetUnitsOfMeasurements() ([2]string, error) {
-	return r.niiData.getUnitsOfMeasurements()
+	return r.data.getUnitsOfMeasurements()
 }
 
 func (r *niiReader) GetAffine() matrix.DMat44 {
-	return r.niiData.getAffine()
+	return r.data.getAffine()
 }
 
 func (r *niiReader) GetImgShape() [4]int64 {
-	return r.niiData.getImgShape()
+	return r.data.getImgShape()
 }
 
 func (r *niiReader) GetQFormCode() string {
-	return r.niiData.getQFormCode()
+	return r.data.getQFormCode()
 }
 
 func (r *niiReader) GetSFormCode() string {
-	return r.niiData.getSFormCode()
+	return r.data.getSFormCode()
 }
 
 func (r *niiReader) GetNiiData() *Nii {
-	return r.niiData
+	return r.data
 }
 
 func (r *niiReader) GetBinaryOrder() binary.ByteOrder {
@@ -216,7 +220,7 @@ func (r *niiReader) parseHeader() error {
 		if header.Magic != [4]byte{110, 43, 49, 0} && header.Magic != [4]byte{110, 105, 49, 0} {
 			return errors.New("invalid NIFTI-1 magic string")
 		}
-		r.niiData.n1Header = header
+		r.data.n1Header = header
 		dim0 = int64(header.Dim[0])
 	case NIIVersion2:
 		header := new(Nii2Header)
@@ -227,7 +231,7 @@ func (r *niiReader) parseHeader() error {
 		if header.Magic != [8]byte{110, 43, 50, 0, 13, 10, 26, 10} {
 			return errors.New("invalid NIFTI-2 magic string")
 		}
-		r.niiData.n2Header = header
+		r.data.n2Header = header
 		dim0 = header.Dim[0]
 	default:
 		return errors.New("invalid version")
@@ -251,9 +255,9 @@ func (r *niiReader) setDatatypeSize() {
 
 	switch r.version {
 	case NIIVersion1:
-		datatype = int32(r.niiData.n1Header.Datatype)
+		datatype = int32(r.data.n1Header.Datatype)
 	case NIIVersion2:
-		datatype = int32(r.niiData.n2Header.Datatype)
+		datatype = int32(r.data.n2Header.Datatype)
 	}
 
 	switch datatype {
@@ -288,13 +292,13 @@ func (r *niiReader) setDatatypeSize() {
 		NByPerVoxel = 32
 		SwapSize = 16
 	}
-	r.niiData.Data.NByPer = NByPerVoxel
-	r.niiData.Data.SwapSize = SwapSize
+	r.data.Data.NByPer = NByPerVoxel
+	r.data.Data.SwapSize = SwapSize
 }
 
 // parseData parse the raw byte array into NIFTI-1 data structure
 func (r *niiReader) parseData() error {
-	r.niiData.Data = &NiiData{}
+	r.data.Data = &NiiData{}
 	var offset int64
 	var statDim int64 = 1
 	var bitpix int16
@@ -309,271 +313,271 @@ func (r *niiReader) parseData() error {
 
 	switch r.version {
 	case NIIVersion1:
-		freqDim = int32(dimInfoToFreqDim(r.niiData.n1Header.DimInfo))
-		phaseDim = int32(dimInfoToPhaseDim(r.niiData.n1Header.DimInfo))
-		sliceDim = int32(dimInfoToSliceDim(r.niiData.n1Header.DimInfo))
+		freqDim = int32(dimInfoToFreqDim(r.data.n1Header.DimInfo))
+		phaseDim = int32(dimInfoToPhaseDim(r.data.n1Header.DimInfo))
+		sliceDim = int32(dimInfoToSliceDim(r.data.n1Header.DimInfo))
 
-		voxOffset = int64(r.niiData.n1Header.VoxOffset)
-		datatype = int32(r.niiData.n1Header.Datatype)
+		voxOffset = int64(r.data.n1Header.VoxOffset)
+		datatype = int32(r.data.n1Header.Datatype)
 
 		// The bits 1-3 are used to store the spatial dimensions, the bits 4-6 are for temporal dimensions,
 		// and the bits 6 and 7 are not used
-		r.niiData.Data.XYZUnits = int32(r.niiData.n1Header.XyztUnits % 8)
-		r.niiData.Data.TimeUnits = int32(r.niiData.n1Header.XyztUnits) - r.niiData.Data.XYZUnits
+		r.data.Data.XYZUnits = int32(r.data.n1Header.XyztUnits % 8)
+		r.data.Data.TimeUnits = int32(r.data.n1Header.XyztUnits) - r.data.Data.XYZUnits
 
-		sliceCode = int32(r.niiData.n1Header.SliceCode)
-		sliceStart = int64(r.niiData.n1Header.SliceStart)
-		sliceEnd = int64(r.niiData.n1Header.SliceEnd)
-		sliceDuration = float64(r.niiData.n1Header.SliceDuration)
+		sliceCode = int32(r.data.n1Header.SliceCode)
+		sliceStart = int64(r.data.n1Header.SliceStart)
+		sliceEnd = int64(r.data.n1Header.SliceEnd)
+		sliceDuration = float64(r.data.n1Header.SliceDuration)
 
-		calMin = float64(r.niiData.n1Header.CalMin)
-		calMax = float64(r.niiData.n1Header.CalMax)
+		calMin = float64(r.data.n1Header.CalMin)
+		calMax = float64(r.data.n1Header.CalMax)
 
-		qFormCode = int32(r.niiData.n1Header.QformCode)
-		sFormCode = int32(r.niiData.n1Header.SformCode)
-		pixDim0 = float64(r.niiData.n1Header.Pixdim[0])
+		qFormCode = int32(r.data.n1Header.QformCode)
+		sFormCode = int32(r.data.n1Header.SformCode)
+		pixDim0 = float64(r.data.n1Header.Pixdim[0])
 
-		sRowX = ConvertToF64(r.niiData.n1Header.SrowX)
-		sRowY = ConvertToF64(r.niiData.n1Header.SrowY)
-		sRowZ = ConvertToF64(r.niiData.n1Header.SrowZ)
+		sRowX = ConvertToF64(r.data.n1Header.SrowX)
+		sRowY = ConvertToF64(r.data.n1Header.SrowY)
+		sRowZ = ConvertToF64(r.data.n1Header.SrowZ)
 
-		sclSlope = float64(r.niiData.n1Header.SclSlope)
-		sclInter = float64(r.niiData.n1Header.SclInter)
+		sclSlope = float64(r.data.n1Header.SclSlope)
+		sclInter = float64(r.data.n1Header.SclInter)
 
-		intentName = r.niiData.n1Header.IntentName
-		intentCode = int32(r.niiData.n1Header.IntentCode)
-		intentP1 = float64(r.niiData.n1Header.IntentP1)
-		intentP2 = float64(r.niiData.n1Header.IntentP2)
-		intentP3 = float64(r.niiData.n1Header.IntentP3)
+		intentName = r.data.n1Header.IntentName
+		intentCode = int32(r.data.n1Header.IntentCode)
+		intentP1 = float64(r.data.n1Header.IntentP1)
+		intentP2 = float64(r.data.n1Header.IntentP2)
+		intentP3 = float64(r.data.n1Header.IntentP3)
 
-		quaternB = float64(r.niiData.n1Header.QuaternB)
-		quaternC = float64(r.niiData.n1Header.QuaternC)
-		quaternD = float64(r.niiData.n1Header.QuaternD)
-		descrip = r.niiData.n1Header.Descrip
+		quaternB = float64(r.data.n1Header.QuaternB)
+		quaternC = float64(r.data.n1Header.QuaternC)
+		quaternD = float64(r.data.n1Header.QuaternD)
+		descrip = r.data.n1Header.Descrip
 
 		// Set the dimension of data array
-		r.niiData.Data.NDim, r.niiData.Data.Dim[0] = int64(r.niiData.n1Header.Dim[0]), int64(r.niiData.n1Header.Dim[0])
-		r.niiData.Data.Nx, r.niiData.Data.Dim[1] = int64(r.niiData.n1Header.Dim[1]), int64(r.niiData.n1Header.Dim[1])
-		r.niiData.Data.Ny, r.niiData.Data.Dim[2] = int64(r.niiData.n1Header.Dim[2]), int64(r.niiData.n1Header.Dim[2])
-		r.niiData.Data.Nz, r.niiData.Data.Dim[3] = int64(r.niiData.n1Header.Dim[3]), int64(r.niiData.n1Header.Dim[3])
-		r.niiData.Data.Nt, r.niiData.Data.Dim[4] = int64(r.niiData.n1Header.Dim[4]), int64(r.niiData.n1Header.Dim[4])
-		r.niiData.Data.Nu, r.niiData.Data.Dim[5] = int64(r.niiData.n1Header.Dim[5]), int64(r.niiData.n1Header.Dim[5])
-		r.niiData.Data.Nv, r.niiData.Data.Dim[6] = int64(r.niiData.n1Header.Dim[6]), int64(r.niiData.n1Header.Dim[6])
-		r.niiData.Data.Nw, r.niiData.Data.Dim[7] = int64(r.niiData.n1Header.Dim[7]), int64(r.niiData.n1Header.Dim[7])
+		r.data.Data.NDim, r.data.Data.Dim[0] = int64(r.data.n1Header.Dim[0]), int64(r.data.n1Header.Dim[0])
+		r.data.Data.Nx, r.data.Data.Dim[1] = int64(r.data.n1Header.Dim[1]), int64(r.data.n1Header.Dim[1])
+		r.data.Data.Ny, r.data.Data.Dim[2] = int64(r.data.n1Header.Dim[2]), int64(r.data.n1Header.Dim[2])
+		r.data.Data.Nz, r.data.Data.Dim[3] = int64(r.data.n1Header.Dim[3]), int64(r.data.n1Header.Dim[3])
+		r.data.Data.Nt, r.data.Data.Dim[4] = int64(r.data.n1Header.Dim[4]), int64(r.data.n1Header.Dim[4])
+		r.data.Data.Nu, r.data.Data.Dim[5] = int64(r.data.n1Header.Dim[5]), int64(r.data.n1Header.Dim[5])
+		r.data.Data.Nv, r.data.Data.Dim[6] = int64(r.data.n1Header.Dim[6]), int64(r.data.n1Header.Dim[6])
+		r.data.Data.Nw, r.data.Data.Dim[7] = int64(r.data.n1Header.Dim[7]), int64(r.data.n1Header.Dim[7])
 
 		// Set the grid spacing
-		r.niiData.Data.Dx, r.niiData.Data.PixDim[1] = float64(r.niiData.n1Header.Pixdim[1]), float64(r.niiData.n1Header.Pixdim[1])
-		r.niiData.Data.Dy, r.niiData.Data.PixDim[2] = float64(r.niiData.n1Header.Pixdim[2]), float64(r.niiData.n1Header.Pixdim[2])
-		r.niiData.Data.Dz, r.niiData.Data.PixDim[3] = float64(r.niiData.n1Header.Pixdim[3]), float64(r.niiData.n1Header.Pixdim[3])
-		r.niiData.Data.Dt, r.niiData.Data.PixDim[4] = float64(r.niiData.n1Header.Pixdim[4]), float64(r.niiData.n1Header.Pixdim[4])
-		r.niiData.Data.Du, r.niiData.Data.PixDim[5] = float64(r.niiData.n1Header.Pixdim[5]), float64(r.niiData.n1Header.Pixdim[5])
-		r.niiData.Data.Dv, r.niiData.Data.PixDim[6] = float64(r.niiData.n1Header.Pixdim[6]), float64(r.niiData.n1Header.Pixdim[6])
-		r.niiData.Data.Dw, r.niiData.Data.PixDim[7] = float64(r.niiData.n1Header.Pixdim[7]), float64(r.niiData.n1Header.Pixdim[7])
+		r.data.Data.Dx, r.data.Data.PixDim[1] = float64(r.data.n1Header.Pixdim[1]), float64(r.data.n1Header.Pixdim[1])
+		r.data.Data.Dy, r.data.Data.PixDim[2] = float64(r.data.n1Header.Pixdim[2]), float64(r.data.n1Header.Pixdim[2])
+		r.data.Data.Dz, r.data.Data.PixDim[3] = float64(r.data.n1Header.Pixdim[3]), float64(r.data.n1Header.Pixdim[3])
+		r.data.Data.Dt, r.data.Data.PixDim[4] = float64(r.data.n1Header.Pixdim[4]), float64(r.data.n1Header.Pixdim[4])
+		r.data.Data.Du, r.data.Data.PixDim[5] = float64(r.data.n1Header.Pixdim[5]), float64(r.data.n1Header.Pixdim[5])
+		r.data.Data.Dv, r.data.Data.PixDim[6] = float64(r.data.n1Header.Pixdim[6]), float64(r.data.n1Header.Pixdim[6])
+		r.data.Data.Dw, r.data.Data.PixDim[7] = float64(r.data.n1Header.Pixdim[7]), float64(r.data.n1Header.Pixdim[7])
 
-		bitpix = r.niiData.n1Header.Bitpix
+		bitpix = r.data.n1Header.Bitpix
 
 	case NIIVersion2:
-		freqDim = int32(dimInfoToFreqDim(r.niiData.n2Header.DimInfo))
-		phaseDim = int32(dimInfoToPhaseDim(r.niiData.n2Header.DimInfo))
-		sliceDim = int32(dimInfoToSliceDim(r.niiData.n2Header.DimInfo))
+		freqDim = int32(dimInfoToFreqDim(r.data.n2Header.DimInfo))
+		phaseDim = int32(dimInfoToPhaseDim(r.data.n2Header.DimInfo))
+		sliceDim = int32(dimInfoToSliceDim(r.data.n2Header.DimInfo))
 
-		voxOffset = r.niiData.n2Header.VoxOffset
-		datatype = int32(r.niiData.n2Header.Datatype)
+		voxOffset = r.data.n2Header.VoxOffset
+		datatype = int32(r.data.n2Header.Datatype)
 
 		// The bits 1-3 are used to store the spatial dimensions, the bits 4-6 are for temporal dimensions,
 		// and the bits 6 and 7 are not used
-		r.niiData.Data.XYZUnits = r.niiData.n2Header.XyztUnits % 8
-		r.niiData.Data.TimeUnits = r.niiData.n2Header.XyztUnits - r.niiData.Data.XYZUnits
+		r.data.Data.XYZUnits = r.data.n2Header.XyztUnits % 8
+		r.data.Data.TimeUnits = r.data.n2Header.XyztUnits - r.data.Data.XYZUnits
 
-		sliceCode = r.niiData.n2Header.SliceCode
-		sliceStart = r.niiData.n2Header.SliceStart
-		sliceEnd = r.niiData.n2Header.SliceEnd
-		sliceDuration = r.niiData.n2Header.SliceDuration
+		sliceCode = r.data.n2Header.SliceCode
+		sliceStart = r.data.n2Header.SliceStart
+		sliceEnd = r.data.n2Header.SliceEnd
+		sliceDuration = r.data.n2Header.SliceDuration
 
-		calMin = r.niiData.n2Header.CalMin
-		calMax = r.niiData.n2Header.CalMax
+		calMin = r.data.n2Header.CalMin
+		calMax = r.data.n2Header.CalMax
 
-		qFormCode = r.niiData.n2Header.QformCode
-		pixDim0 = r.niiData.n2Header.Pixdim[0]
-		sFormCode = r.niiData.n2Header.SformCode
+		qFormCode = r.data.n2Header.QformCode
+		pixDim0 = r.data.n2Header.Pixdim[0]
+		sFormCode = r.data.n2Header.SformCode
 
-		sclSlope = r.niiData.n2Header.SclSlope
-		sclInter = r.niiData.n2Header.SclInter
+		sclSlope = r.data.n2Header.SclSlope
+		sclInter = r.data.n2Header.SclInter
 
-		intentName = r.niiData.n2Header.IntentName
-		intentCode = r.niiData.n2Header.IntentCode
-		r.niiData.Data.IntentP1 = r.niiData.n2Header.IntentP1
-		r.niiData.Data.IntentP2 = r.niiData.n2Header.IntentP2
-		r.niiData.Data.IntentP3 = r.niiData.n2Header.IntentP3
+		intentName = r.data.n2Header.IntentName
+		intentCode = r.data.n2Header.IntentCode
+		r.data.Data.IntentP1 = r.data.n2Header.IntentP1
+		r.data.Data.IntentP2 = r.data.n2Header.IntentP2
+		r.data.Data.IntentP3 = r.data.n2Header.IntentP3
 
-		r.niiData.Data.QuaternB = r.niiData.n2Header.QuaternB
-		r.niiData.Data.QuaternC = r.niiData.n2Header.QuaternC
-		r.niiData.Data.QuaternD = r.niiData.n2Header.QuaternD
-		descrip = r.niiData.n2Header.Descrip
+		r.data.Data.QuaternB = r.data.n2Header.QuaternB
+		r.data.Data.QuaternC = r.data.n2Header.QuaternC
+		r.data.Data.QuaternD = r.data.n2Header.QuaternD
+		descrip = r.data.n2Header.Descrip
 
 		// Set the dimension of data array
-		r.niiData.Data.NDim, r.niiData.Data.Dim[0] = r.niiData.n2Header.Dim[0], r.niiData.n2Header.Dim[0]
-		r.niiData.Data.Nx, r.niiData.Data.Dim[1] = r.niiData.n2Header.Dim[1], r.niiData.n2Header.Dim[1]
-		r.niiData.Data.Ny, r.niiData.Data.Dim[2] = r.niiData.n2Header.Dim[2], r.niiData.n2Header.Dim[2]
-		r.niiData.Data.Nz, r.niiData.Data.Dim[3] = r.niiData.n2Header.Dim[3], r.niiData.n2Header.Dim[3]
-		r.niiData.Data.Nt, r.niiData.Data.Dim[4] = r.niiData.n2Header.Dim[4], r.niiData.n2Header.Dim[4]
-		r.niiData.Data.Nu, r.niiData.Data.Dim[5] = r.niiData.n2Header.Dim[5], r.niiData.n2Header.Dim[5]
-		r.niiData.Data.Nv, r.niiData.Data.Dim[6] = r.niiData.n2Header.Dim[6], r.niiData.n2Header.Dim[6]
-		r.niiData.Data.Nw, r.niiData.Data.Dim[7] = r.niiData.n2Header.Dim[7], r.niiData.n2Header.Dim[7]
+		r.data.Data.NDim, r.data.Data.Dim[0] = r.data.n2Header.Dim[0], r.data.n2Header.Dim[0]
+		r.data.Data.Nx, r.data.Data.Dim[1] = r.data.n2Header.Dim[1], r.data.n2Header.Dim[1]
+		r.data.Data.Ny, r.data.Data.Dim[2] = r.data.n2Header.Dim[2], r.data.n2Header.Dim[2]
+		r.data.Data.Nz, r.data.Data.Dim[3] = r.data.n2Header.Dim[3], r.data.n2Header.Dim[3]
+		r.data.Data.Nt, r.data.Data.Dim[4] = r.data.n2Header.Dim[4], r.data.n2Header.Dim[4]
+		r.data.Data.Nu, r.data.Data.Dim[5] = r.data.n2Header.Dim[5], r.data.n2Header.Dim[5]
+		r.data.Data.Nv, r.data.Data.Dim[6] = r.data.n2Header.Dim[6], r.data.n2Header.Dim[6]
+		r.data.Data.Nw, r.data.Data.Dim[7] = r.data.n2Header.Dim[7], r.data.n2Header.Dim[7]
 
 		// Set the grid spacing
-		r.niiData.Data.Dx, r.niiData.Data.PixDim[1] = r.niiData.n2Header.Pixdim[1], r.niiData.n2Header.Pixdim[1]
-		r.niiData.Data.Dy, r.niiData.Data.PixDim[2] = r.niiData.n2Header.Pixdim[2], r.niiData.n2Header.Pixdim[2]
-		r.niiData.Data.Dz, r.niiData.Data.PixDim[3] = r.niiData.n2Header.Pixdim[3], r.niiData.n2Header.Pixdim[3]
-		r.niiData.Data.Dt, r.niiData.Data.PixDim[4] = r.niiData.n2Header.Pixdim[4], r.niiData.n2Header.Pixdim[4]
-		r.niiData.Data.Du, r.niiData.Data.PixDim[5] = r.niiData.n2Header.Pixdim[5], r.niiData.n2Header.Pixdim[5]
-		r.niiData.Data.Dv, r.niiData.Data.PixDim[6] = r.niiData.n2Header.Pixdim[6], r.niiData.n2Header.Pixdim[6]
-		r.niiData.Data.Dw, r.niiData.Data.PixDim[7] = r.niiData.n2Header.Pixdim[7], r.niiData.n2Header.Pixdim[7]
+		r.data.Data.Dx, r.data.Data.PixDim[1] = r.data.n2Header.Pixdim[1], r.data.n2Header.Pixdim[1]
+		r.data.Data.Dy, r.data.Data.PixDim[2] = r.data.n2Header.Pixdim[2], r.data.n2Header.Pixdim[2]
+		r.data.Data.Dz, r.data.Data.PixDim[3] = r.data.n2Header.Pixdim[3], r.data.n2Header.Pixdim[3]
+		r.data.Data.Dt, r.data.Data.PixDim[4] = r.data.n2Header.Pixdim[4], r.data.n2Header.Pixdim[4]
+		r.data.Data.Du, r.data.Data.PixDim[5] = r.data.n2Header.Pixdim[5], r.data.n2Header.Pixdim[5]
+		r.data.Data.Dv, r.data.Data.PixDim[6] = r.data.n2Header.Pixdim[6], r.data.n2Header.Pixdim[6]
+		r.data.Data.Dw, r.data.Data.PixDim[7] = r.data.n2Header.Pixdim[7], r.data.n2Header.Pixdim[7]
 
-		bitpix = r.niiData.n2Header.Bitpix
+		bitpix = r.data.n2Header.Bitpix
 
 		// SRowX, SRowY, SRowZ
-		sRowX, sRowY, sRowZ = r.niiData.n2Header.SrowX, r.niiData.n2Header.SrowY, r.niiData.n2Header.SrowZ
+		sRowX, sRowY, sRowZ = r.data.n2Header.SrowX, r.data.n2Header.SrowY, r.data.n2Header.SrowZ
 	}
 
 	// Fix bad value in header
-	if r.niiData.Data.Nz <= 0 && r.niiData.Data.Dim[3] <= 0 {
-		r.niiData.Data.Nz = 1
-		r.niiData.Data.Dim[3] = 1
+	if r.data.Data.Nz <= 0 && r.data.Data.Dim[3] <= 0 {
+		r.data.Data.Nz = 1
+		r.data.Data.Dim[3] = 1
 	}
-	if r.niiData.Data.Nt <= 0 && r.niiData.Data.Dim[4] <= 0 {
-		r.niiData.Data.Nt = 1
-		r.niiData.Data.Dim[4] = 1
+	if r.data.Data.Nt <= 0 && r.data.Data.Dim[4] <= 0 {
+		r.data.Data.Nt = 1
+		r.data.Data.Dim[4] = 1
 	}
-	if r.niiData.Data.Nu <= 0 && r.niiData.Data.Dim[5] <= 0 {
-		r.niiData.Data.Nu = 1
-		r.niiData.Data.Dim[5] = 1
+	if r.data.Data.Nu <= 0 && r.data.Data.Dim[5] <= 0 {
+		r.data.Data.Nu = 1
+		r.data.Data.Dim[5] = 1
 	}
-	if r.niiData.Data.Nv <= 0 && r.niiData.Data.Dim[6] <= 0 {
-		r.niiData.Data.Nv = 1
-		r.niiData.Data.Dim[6] = 1
+	if r.data.Data.Nv <= 0 && r.data.Data.Dim[6] <= 0 {
+		r.data.Data.Nv = 1
+		r.data.Data.Dim[6] = 1
 	}
-	if r.niiData.Data.Nw <= 0 && r.niiData.Data.Dim[7] <= 0 {
-		r.niiData.Data.Nw = 1
-		r.niiData.Data.Dim[7] = 1
+	if r.data.Data.Nw <= 0 && r.data.Data.Dim[7] <= 0 {
+		r.data.Data.Nw = 1
+		r.data.Data.Dim[7] = 1
 	}
 
 	// Set the byte order
-	r.niiData.Data.ByteOrder = r.binaryOrder
+	r.data.Data.ByteOrder = r.binaryOrder
 
 	if bitpix == 0 {
 		return errors.New("number of bits per voxel value (bitpix) is zero")
 	}
 
-	r.niiData.Data.NVox = 1
-	for i := int64(1); i <= r.niiData.Data.NDim; i++ {
-		r.niiData.Data.NVox *= r.niiData.Data.Dim[i]
+	r.data.Data.NVox = 1
+	for i := int64(1); i <= r.data.Data.NDim; i++ {
+		r.data.Data.NVox *= r.data.Data.Dim[i]
 	}
 
 	r.setDatatypeSize()
 
 	// compute QToXYK transformation from pixel indexes (i,j,k) to (x,y,z)
 	if qFormCode <= 0 {
-		r.niiData.Data.QtoXYZ.M[0][0] = r.niiData.Data.Dx
-		r.niiData.Data.QtoXYZ.M[1][1] = r.niiData.Data.Dy
-		r.niiData.Data.QtoXYZ.M[2][2] = r.niiData.Data.Dz
+		r.data.Data.QtoXYZ.M[0][0] = r.data.Data.Dx
+		r.data.Data.QtoXYZ.M[1][1] = r.data.Data.Dy
+		r.data.Data.QtoXYZ.M[2][2] = r.data.Data.Dz
 
 		// off diagonal is zero
-		r.niiData.Data.QtoXYZ.M[0][1] = 0
-		r.niiData.Data.QtoXYZ.M[0][2] = 0
-		r.niiData.Data.QtoXYZ.M[0][3] = 0
+		r.data.Data.QtoXYZ.M[0][1] = 0
+		r.data.Data.QtoXYZ.M[0][2] = 0
+		r.data.Data.QtoXYZ.M[0][3] = 0
 
-		r.niiData.Data.QtoXYZ.M[1][0] = 0
-		r.niiData.Data.QtoXYZ.M[1][2] = 0
-		r.niiData.Data.QtoXYZ.M[1][3] = 0
+		r.data.Data.QtoXYZ.M[1][0] = 0
+		r.data.Data.QtoXYZ.M[1][2] = 0
+		r.data.Data.QtoXYZ.M[1][3] = 0
 
-		r.niiData.Data.QtoXYZ.M[2][0] = 0
-		r.niiData.Data.QtoXYZ.M[2][1] = 0
-		r.niiData.Data.QtoXYZ.M[2][3] = 0
+		r.data.Data.QtoXYZ.M[2][0] = 0
+		r.data.Data.QtoXYZ.M[2][1] = 0
+		r.data.Data.QtoXYZ.M[2][3] = 0
 
 		// last row is [0, 0, 0, 1]
-		r.niiData.Data.QtoXYZ.M[3][0] = 0
-		r.niiData.Data.QtoXYZ.M[3][1] = 0
-		r.niiData.Data.QtoXYZ.M[3][2] = 0
-		r.niiData.Data.QtoXYZ.M[3][3] = 1.0
+		r.data.Data.QtoXYZ.M[3][0] = 0
+		r.data.Data.QtoXYZ.M[3][1] = 0
+		r.data.Data.QtoXYZ.M[3][2] = 0
+		r.data.Data.QtoXYZ.M[3][3] = 1.0
 
-		r.niiData.Data.QformCode = constant.NIFTI_XFORM_UNKNOWN
+		r.data.Data.QformCode = constant.NIFTI_XFORM_UNKNOWN
 	} else {
 		if pixDim0 < 0 {
-			r.niiData.Data.QFac = -1
+			r.data.Data.QFac = -1
 		} else {
-			r.niiData.Data.QFac = 1
+			r.data.Data.QFac = 1
 		}
-		r.niiData.Data.QtoXYZ = r.QuaternToMatrix()
-		r.niiData.Data.QformCode = qFormCode
+		r.data.Data.QtoXYZ = r.QuaternToMatrix()
+		r.data.Data.QformCode = qFormCode
 	}
 
 	// Set QToIJK
-	r.niiData.Data.QtoIJK = matrix.Mat44Inverse(r.niiData.Data.QtoXYZ)
+	r.data.Data.QtoIJK = matrix.Mat44Inverse(r.data.Data.QtoXYZ)
 
 	if sFormCode <= 0 {
-		r.niiData.Data.SformCode = constant.NIFTI_XFORM_UNKNOWN
+		r.data.Data.SformCode = constant.NIFTI_XFORM_UNKNOWN
 	} else {
-		r.niiData.Data.StoXYZ.M[0][0] = sRowX[0]
-		r.niiData.Data.StoXYZ.M[0][1] = sRowX[1]
-		r.niiData.Data.StoXYZ.M[0][2] = sRowX[2]
-		r.niiData.Data.StoXYZ.M[0][3] = sRowX[3]
+		r.data.Data.StoXYZ.M[0][0] = sRowX[0]
+		r.data.Data.StoXYZ.M[0][1] = sRowX[1]
+		r.data.Data.StoXYZ.M[0][2] = sRowX[2]
+		r.data.Data.StoXYZ.M[0][3] = sRowX[3]
 
-		r.niiData.Data.StoXYZ.M[1][0] = sRowY[0]
-		r.niiData.Data.StoXYZ.M[1][1] = sRowY[1]
-		r.niiData.Data.StoXYZ.M[1][2] = sRowY[2]
-		r.niiData.Data.StoXYZ.M[1][3] = sRowY[3]
+		r.data.Data.StoXYZ.M[1][0] = sRowY[0]
+		r.data.Data.StoXYZ.M[1][1] = sRowY[1]
+		r.data.Data.StoXYZ.M[1][2] = sRowY[2]
+		r.data.Data.StoXYZ.M[1][3] = sRowY[3]
 
-		r.niiData.Data.StoXYZ.M[2][0] = sRowZ[0]
-		r.niiData.Data.StoXYZ.M[2][1] = sRowZ[0]
-		r.niiData.Data.StoXYZ.M[2][2] = sRowZ[0]
-		r.niiData.Data.StoXYZ.M[2][3] = sRowZ[0]
+		r.data.Data.StoXYZ.M[2][0] = sRowZ[0]
+		r.data.Data.StoXYZ.M[2][1] = sRowZ[0]
+		r.data.Data.StoXYZ.M[2][2] = sRowZ[0]
+		r.data.Data.StoXYZ.M[2][3] = sRowZ[0]
 
-		r.niiData.Data.StoXYZ.M[3][0] = 0
-		r.niiData.Data.StoXYZ.M[3][1] = 0
-		r.niiData.Data.StoXYZ.M[3][2] = 0
-		r.niiData.Data.StoXYZ.M[3][3] = 1
+		r.data.Data.StoXYZ.M[3][0] = 0
+		r.data.Data.StoXYZ.M[3][1] = 0
+		r.data.Data.StoXYZ.M[3][2] = 0
+		r.data.Data.StoXYZ.M[3][3] = 1
 
-		r.niiData.Data.StoIJK = matrix.Mat44Inverse(r.niiData.Data.StoXYZ)
+		r.data.Data.StoIJK = matrix.Mat44Inverse(r.data.Data.StoXYZ)
 
-		r.niiData.Data.SformCode = sFormCode
+		r.data.Data.SformCode = sFormCode
 	}
 
 	// Other stuff
-	r.niiData.Data.SclSlope = sclSlope
-	r.niiData.Data.SclInter = sclInter
+	r.data.Data.SclSlope = sclSlope
+	r.data.Data.SclInter = sclInter
 
-	r.niiData.Data.IntentName = intentName
-	r.niiData.Data.IntentCode = intentCode
-	r.niiData.Data.IntentP1 = intentP1
-	r.niiData.Data.IntentP2 = intentP2
-	r.niiData.Data.IntentP3 = intentP3
+	r.data.Data.IntentName = intentName
+	r.data.Data.IntentCode = intentCode
+	r.data.Data.IntentP1 = intentP1
+	r.data.Data.IntentP2 = intentP2
+	r.data.Data.IntentP3 = intentP3
 
-	r.niiData.Data.QuaternB = quaternB
-	r.niiData.Data.QuaternC = quaternC
-	r.niiData.Data.QuaternD = quaternD
-	r.niiData.Data.Descrip = descrip
+	r.data.Data.QuaternB = quaternB
+	r.data.Data.QuaternC = quaternC
+	r.data.Data.QuaternD = quaternD
+	r.data.Data.Descrip = descrip
 
 	// Frequency dimension, phase dimension, slice dimension
-	r.niiData.Data.FreqDim = freqDim
-	r.niiData.Data.PhaseDim = phaseDim
-	r.niiData.Data.SliceDim = sliceDim
+	r.data.Data.FreqDim = freqDim
+	r.data.Data.PhaseDim = phaseDim
+	r.data.Data.SliceDim = sliceDim
 
-	r.niiData.Data.SliceCode = sliceCode
-	r.niiData.Data.SliceStart = sliceStart
-	r.niiData.Data.SliceEnd = sliceEnd
-	r.niiData.Data.SliceDuration = sliceDuration
+	r.data.Data.SliceCode = sliceCode
+	r.data.Data.SliceStart = sliceStart
+	r.data.Data.SliceEnd = sliceEnd
+	r.data.Data.SliceDuration = sliceDuration
 
-	r.niiData.Data.CalMin = calMin
-	r.niiData.Data.CalMax = calMax
+	r.data.Data.CalMin = calMin
+	r.data.Data.CalMax = calMax
 
-	r.niiData.Data.Datatype = datatype
+	r.data.Data.Datatype = datatype
 
-	if r.niiData.Data.Dim[5] > 1 {
-		statDim = r.niiData.Data.Dim[5]
+	if r.data.Data.Dim[5] > 1 {
+		statDim = r.data.Data.Dim[5]
 	}
 	offset = voxOffset
-	dataSize := r.niiData.Data.Dim[1] * r.niiData.Data.Dim[2] * r.niiData.Data.Dim[3] * r.niiData.Data.Dim[4] * statDim * (int64(bitpix) / 8)
+	dataSize := r.data.Data.Dim[1] * r.data.Data.Dim[2] * r.data.Data.Dim[3] * r.data.Data.Dim[4] * statDim * (int64(bitpix) / 8)
 
 	_, err := r.reader.Seek(int64(offset), 0)
 	if err != nil {
@@ -585,7 +589,7 @@ func (r *niiReader) parseData() error {
 	if err != nil {
 		return err
 	}
-	r.niiData.Data.Data = buf
+	r.data.Data.Data = buf
 
 	affine := matrix.DMat44{}
 	affine.M[0] = sRowX
@@ -593,8 +597,8 @@ func (r *niiReader) parseData() error {
 	affine.M[2] = sRowZ
 	affine.M[3] = [4]float64{0, 0, 0, 1}
 
-	r.niiData.Data.Affine = affine
-	r.niiData.matrixToOrientation(affine)
+	r.data.Data.Affine = affine
+	r.data.matrixToOrientation(affine)
 
 	return nil
 }

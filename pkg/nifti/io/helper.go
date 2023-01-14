@@ -1,6 +1,13 @@
 package io
 
-import "github.com/okieraised/go2com/pkg/nifti/constant"
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"github.com/okieraised/go2com/internal/system"
+	"github.com/okieraised/go2com/pkg/nifti/constant"
+	"math"
+)
 
 // IsValidDatatype checks whether the datatype is valid for NIFTI format
 func IsValidDatatype(datatype int32) bool {
@@ -10,7 +17,128 @@ func IsValidDatatype(datatype int32) bool {
 	return false
 }
 
+// swapNIFTI1Header swaps all NIFTI fields
+func swapNIFTI1Header(header *Nii1Header) (*Nii1Header, error) {
+	newHeader := new(Nii1Header)
+	var err error
+
+	newHeader.SizeofHdr = swapInt32(header.SizeofHdr)
+	newHeader.Extents = swapInt32(header.Extents)
+	newHeader.SessionError = swapInt16(header.SessionError)
+	for i := 0; i < 8; i++ {
+		newHeader.Dim[i] = swapInt16(header.Dim[i])
+	}
+
+	newHeader.IntentP1, err = swapFloat32(header.IntentP1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap IntentP1: %v", err)
+	}
+	newHeader.IntentP2, err = swapFloat32(header.IntentP2)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap IntentP2: %v", err)
+	}
+	newHeader.IntentP3, err = swapFloat32(header.IntentP3)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap IntentP3: %v", err)
+	}
+
+	newHeader.IntentCode = swapInt16(header.IntentCode)
+	newHeader.Datatype = swapInt16(header.Datatype)
+	newHeader.Bitpix = swapInt16(header.Bitpix)
+	newHeader.SliceStart = swapInt16(header.SliceStart)
+
+	for i := 0; i < 8; i++ {
+		newHeader.Pixdim[i], err = swapFloat32(header.Pixdim[i])
+		if err != nil {
+			return nil, fmt.Errorf("failed to byte swap Pixdim[%d]: %v", i, err)
+		}
+	}
+
+	newHeader.VoxOffset, err = swapFloat32(header.VoxOffset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap VoxOffset: %v", err)
+	}
+
+	newHeader.SclSlope, err = swapFloat32(header.SclSlope)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap SclSlope: %v", err)
+	}
+
+	newHeader.SclInter, err = swapFloat32(header.SclInter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap SclInter: %v", err)
+	}
+
+	newHeader.SliceEnd = swapInt16(header.SliceEnd)
+
+	newHeader.CalMin, err = swapFloat32(header.CalMin)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap CalMin: %v", err)
+	}
+
+	newHeader.CalMax, err = swapFloat32(header.CalMax)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap CalMax: %v", err)
+	}
+
+	newHeader.SliceDuration, err = swapFloat32(header.SliceDuration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap SliceDuration: %v", err)
+	}
+
+	newHeader.Glmin = swapInt32(header.Glmin)
+	newHeader.Glmax = swapInt32(header.Glmax)
+
+	newHeader.QformCode = swapInt16(header.QformCode)
+	newHeader.SformCode = swapInt16(header.SformCode)
+
+	newHeader.QuaternB, err = swapFloat32(header.QuaternB)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap QuaternB: %v", err)
+	}
+
+	newHeader.QuaternC, err = swapFloat32(header.QuaternC)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap QuaternC: %v", err)
+	}
+
+	newHeader.QuaternD, err = swapFloat32(header.QuaternD)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap QuaternD: %v", err)
+	}
+
+	newHeader.QoffsetX, err = swapFloat32(header.QoffsetX)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap QoffsetX: %v", err)
+	}
+	newHeader.QoffsetY, err = swapFloat32(header.QoffsetY)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap QoffsetY: %v", err)
+	}
+	newHeader.QoffsetZ, err = swapFloat32(header.QoffsetZ)
+	if err != nil {
+		return nil, fmt.Errorf("failed to byte swap QoffsetZ: %v", err)
+	}
+
+	for i := 0; i < 4; i++ {
+		newHeader.SrowX[i], err = swapFloat32(header.SrowX[i])
+		if err != nil {
+			return nil, fmt.Errorf("failed to byte swap SrowX[%d]: %v", i, err)
+		}
+		newHeader.SrowY[i], err = swapFloat32(header.SrowY[i])
+		if err != nil {
+			return nil, fmt.Errorf("failed to byte swap SrowY[%d]: %v", i, err)
+		}
+		newHeader.SrowZ[i], err = swapFloat32(header.SrowZ[i])
+		if err != nil {
+			return nil, fmt.Errorf("failed to byte swap SrowZ[%d]: %v", i, err)
+		}
+	}
+	return newHeader, nil
+}
+
 // assignDatatypeSize sets the number of bytes per voxel and the swapsize based on a datatype code
+// returns nByper and swapSize
 func assignDatatypeSize(datatype int32) (int16, int16) {
 	var nByper, swapSize int16
 	switch datatype {
@@ -58,80 +186,108 @@ func assignDatatypeSize(datatype int32) (int16, int16) {
 // = 0 : does not need swap
 //
 // < 0 : error condition
-func needHeaderSwap(dim0 int16, headerSize int) int {
-	//d0 := dim0
-	//hSize := headerSize
-	//
-	//if d0 != 0 {
-	//	if d0 > 0 && d0 < 7 {
-	//		return 0
-	//	}
-	//
-	//}
+func needHeaderSwap(dim0 int16) int {
+	d0 := dim0
+	if d0 != 0 {
+		if d0 > 0 && d0 < 7 {
+			return 0
+		}
+
+		d0 = swapInt16(d0)
+		if d0 > 0 && d0 < 7 {
+			return 1
+		}
+		return -1
+	}
 	return -2
 }
 
-// static int need_nhdr_swap( short dim0, int hdrsize )
-//{
-//   short d0    = dim0;     /* so we won't have to swap them on the stack */
-//   int   hsize = hdrsize;
-//
-//   if( d0 != 0 ){     /* then use it for the check */
-//      if( d0 > 0 && d0 <= 7 ) return 0;
-//
-//      nifti_swap_2bytes(1, &d0);        /* swap? */
-//      if( d0 > 0 && d0 <= 7 ) return 1;
-//
-//      if( g_opts.debug > 1 ){
-//         fprintf(stderr,"** NIFTI: bad swapped d0 = %d, unswapped = ", d0);
-//         nifti_swap_2bytes(1, &d0);        /* swap? */
-//         fprintf(stderr,"%d\n", d0);
-//      }
-//
-//      return -1;        /* bad, naughty d0 */
-//   }
-//
-//   /* dim[0] == 0 should not happen, but could, so try hdrsize */
-//   if( hsize == sizeof(nifti_1_header) ) return 0;
-//
-//   nifti_swap_4bytes(1, &hsize);     /* swap? */
-//   if( hsize == sizeof(nifti_1_header) ) return 1;
-//
-//   if( g_opts.debug > 1 ){
-//      fprintf(stderr,"** NIFTI: bad swapped hsize = %d, unswapped = ", hsize);
-//      nifti_swap_4bytes(1, &hsize);        /* swap? */
-//      fprintf(stderr,"%d\n", hsize);
-//   }
-//
-//   return -2;     /* bad, naughty hsize */
-//}
+// swapInt16 swaps int16 from native endian to the other
+func swapInt16(in int16) int16 {
+	b := make([]byte, 2)
 
-// Swap byte array
-
-// niftiSwap2Bytes swaps 2 bytes at a time
-func niftiSwap2Bytes(size int, arr []uint8) {
-	for i := 0; i < size; i++ {
-
+	switch system.NativeEndian {
+	case binary.LittleEndian:
+		binary.LittleEndian.PutUint16(b, uint16(in))
+		return int16(binary.BigEndian.Uint16(b))
+	default:
+		binary.BigEndian.PutUint16(b, uint16(in))
+		return int16(binary.LittleEndian.Uint16(b))
 	}
 }
 
-// niftiSwap4Bytes swaps 4 bytes at a time
-func niftiSwap4Bytes(size int, arr []uint8) {
-	for i := 0; i < size; i++ {
+// swapInt32 swaps int32 from native endian to the other
+func swapInt32(in int32) int32 {
+	b := make([]byte, 4)
 
+	switch system.NativeEndian {
+	case binary.LittleEndian:
+		binary.LittleEndian.PutUint32(b, uint32(in))
+		return int32(binary.BigEndian.Uint16(b))
+	default:
+		binary.BigEndian.PutUint32(b, uint32(in))
+		return int32(binary.LittleEndian.Uint32(b))
 	}
 }
 
-// niftiSwap8Bytes swaps 8 bytes at a time
-func niftiSwap8Bytes(size int, arr []uint8) {
-	for i := 0; i < size; i++ {
+// swapInt64 swaps int64 from native endian to the other
+func swapInt64(in int64) int64 {
+	b := make([]byte, 8)
 
+	switch system.NativeEndian {
+	case binary.LittleEndian:
+		binary.LittleEndian.PutUint64(b, uint64(in))
+		return int64(binary.BigEndian.Uint64(b))
+	default:
+		binary.BigEndian.PutUint64(b, uint64(in))
+		return int64(binary.LittleEndian.Uint64(b))
 	}
 }
 
-// niftiSwap16Bytes swaps 16 bytes at a time
-func niftiSwap16Bytes(size int, arr []uint8) {
-	for i := 0; i < size; i++ {
+// swapFloat32 swaps float32 from native endian to the other
+func swapFloat32(in float32) (float32, error) {
+	buf := new(bytes.Buffer)
 
+	switch system.NativeEndian {
+	case binary.LittleEndian:
+		err := binary.Write(buf, binary.LittleEndian, in)
+		if err != nil {
+			return 0, err
+		}
+		bits := binary.BigEndian.Uint32(buf.Bytes())
+		res := math.Float32frombits(bits)
+		return res, nil
+	default:
+		err := binary.Write(buf, binary.BigEndian, in)
+		if err != nil {
+			return 0, err
+		}
+		bits := binary.LittleEndian.Uint32(buf.Bytes())
+		res := math.Float32frombits(bits)
+		return res, nil
+	}
+}
+
+// swapFloat64 swaps float64 from native endian to the other
+func swapFloat64(in float64) (float64, error) {
+	buf := new(bytes.Buffer)
+
+	switch system.NativeEndian {
+	case binary.LittleEndian:
+		err := binary.Write(buf, binary.LittleEndian, in)
+		if err != nil {
+			return 0, err
+		}
+		bits := binary.BigEndian.Uint64(buf.Bytes())
+		res := math.Float64frombits(bits)
+		return res, nil
+	default:
+		err := binary.Write(buf, binary.BigEndian, in)
+		if err != nil {
+			return 0, err
+		}
+		bits := binary.LittleEndian.Uint64(buf.Bytes())
+		res := math.Float64frombits(bits)
+		return res, nil
 	}
 }

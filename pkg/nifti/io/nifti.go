@@ -323,7 +323,7 @@ func (n *Nii) getVolume(t int64) ([][][]float64, error) {
 	sliceZ := n.Data.Nz
 	sliceT := n.Data.Nt
 
-	if t >= int64(sliceT) || t < 0 {
+	if t >= sliceT || t < 0 {
 		return nil, errors.New("invalid time value")
 	}
 	volume := make([][][]float64, sliceX)

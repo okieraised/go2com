@@ -1,12 +1,15 @@
 package go2com
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/iod"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/stretchr/testify/assert"
 	_ "image/jpeg"
+	"math"
 	"os"
 	"strings"
 	"testing"
@@ -459,4 +462,21 @@ func TestNewParser11(t *testing.T) {
 	for _, elem := range parser.dataset.Elements {
 		fmt.Println(elem)
 	}
+}
+
+func TestSwapByte(t *testing.T) {
+	buf := new(bytes.Buffer)
+	var pi float64 = math.Pi
+	err := binary.Write(buf, binary.BigEndian, pi)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+	fmt.Printf("% x", buf.Bytes())
+
+	bits := binary.LittleEndian.Uint64(buf.Bytes())
+
+	res := math.Float64frombits(bits)
+
+	fmt.Println("res", res)
+
 }
