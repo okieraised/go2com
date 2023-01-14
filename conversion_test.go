@@ -3,22 +3,13 @@ package go2com
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
 
 func TestParser_Export(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
-	file, err := os.Open("./test_data/026.dcm")
-	assert.NoError(err)
-
-	defer file.Close()
-	info, err := file.Stat()
-	assert.NoError(err)
-	fileSize := info.Size()
-
-	parser, err := NewParser(file, fileSize, false, false)
+	fPath := "./test_data/026.dcm"
+	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)

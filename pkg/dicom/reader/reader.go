@@ -3,7 +3,6 @@ package reader
 import (
 	"bufio"
 	"encoding/binary"
-	"github.com/okieraised/go2com/internal/system"
 	_ "github.com/okieraised/go2com/internal/system"
 	"io"
 )
@@ -57,12 +56,11 @@ func NewDICOMReader(reader *bufio.Reader, options ...func(*dcmReader)) DcmReader
 	return parser
 }
 
-func NewDcmReader(reader *bufio.Reader, skipPixelData bool) DcmReader {
-	return &dcmReader{
-		reader:        reader,
-		binaryOrder:   system.NativeEndian,
-		isImplicit:    false,
-		skipPixelData: skipPixelData,
+// WithSkipPixelData provides option to skip reading pixel data (7FE0,0010).
+// If true, pixel data is skipped. If false, pixel data will be read
+func WithSkipPixelData(skipPixelData bool) func(*dcmReader) {
+	return func(s *dcmReader) {
+		s.skipPixelData = skipPixelData
 	}
 }
 

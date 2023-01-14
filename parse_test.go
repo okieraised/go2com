@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	_ "image/jpeg"
 	"math"
-	"os"
 	"strings"
 	"testing"
 )
@@ -18,16 +17,7 @@ import (
 func TestProfilingParse1(t *testing.T) {
 	assert := assert.New(t)
 	fn := func() {
-		InitTagDict()
-		file, err := os.Open("./test_data/01.dcm")
-		assert.NoError(err)
-
-		defer file.Close()
-		info, err := file.Stat()
-		assert.NoError(err)
-		fileSize := info.Size()
-
-		parser, err := NewParser(file, fileSize, false, false)
+		parser, err := NewDCMFileParser("./test_data/01.dcm", WithSkipPixelData(false), WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
@@ -39,28 +29,11 @@ func TestProfilingParse1(t *testing.T) {
 func TestProfilingParse2(t *testing.T) {
 	assert := assert.New(t)
 	fn := func() {
-		InitTagDict()
-		filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/mammo_dicoms")
+		filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/mammo_dicoms")
 		assert.NoError(err)
 		for _, fPath := range filePaths {
 			fmt.Println("process:", fPath)
-			file, err := os.Open(fPath)
-			assert.NoError(err)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			defer file.Close()
-			info, err := file.Stat()
-			assert.NoError(err)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			fileSize := info.Size()
-
-			parser, err := NewParser(file, fileSize, false, false)
+			parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
 			assert.NoError(err)
 			err = parser.Parse()
 			assert.NoError(err)
@@ -77,28 +50,11 @@ func TestProfilingParse2(t *testing.T) {
 func TestProfilingParse3(t *testing.T) {
 	assert := assert.New(t)
 	fn := func() {
-		InitTagDict()
 		filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/test_data")
 		assert.NoError(err)
 		for _, fPath := range filePaths {
 			fmt.Println("process:", fPath)
-			file, err := os.Open(fPath)
-			assert.NoError(err)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			defer file.Close()
-			info, err := file.Stat()
-			assert.NoError(err)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			fileSize := info.Size()
-
-			parser, err := NewParser(file, fileSize, false, false)
+			parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
 			assert.NoError(err)
 			err = parser.Parse()
 			assert.NoError(err)
@@ -114,16 +70,8 @@ func TestProfilingParse3(t *testing.T) {
 
 func TestNewParser1(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
-	file, err := os.Open("/home/tripg/Documents/dicom/mammo_dicoms/1.2.840.113619.2.255.10452022879169.3670200508103440.2701.dicom")
-	assert.NoError(err)
-
-	defer file.Close()
-	info, err := file.Stat()
-	assert.NoError(err)
-	fileSize := info.Size()
-
-	parser, err := NewParser(file, fileSize, true, false)
+	fPath := "/home/tripg/workspace/dicom/mammo_dicoms/1.2.840.113619.2.255.10452022879169.3670200508103440.2701.dicom"
+	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -141,20 +89,11 @@ func TestNewParser1(t *testing.T) {
 
 func TestNewParser2(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
-	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/test_data")
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/test_data")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		fmt.Println("process:", fPath)
-		file, err := os.Open(fPath)
-		assert.NoError(err)
-
-		defer file.Close()
-		info, err := file.Stat()
-		assert.NoError(err)
-		fileSize := info.Size()
-
-		parser, err := NewParser(file, fileSize, false, false)
+		parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		if err != nil && !strings.Contains(err.Error(), "could not find tag") {
@@ -174,20 +113,10 @@ func TestNewParser2(t *testing.T) {
 
 func TestNewParser3(t *testing.T) {
 	assert := assert.New(t)
-	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/mammo_dicoms")
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/mammo_dicoms")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
-		InitTagDict()
-		fmt.Println("process:", fPath)
-		file, err := os.Open(fPath)
-		assert.NoError(err)
-
-		defer file.Close()
-		info, err := file.Stat()
-		assert.NoError(err)
-		fileSize := info.Size()
-
-		parser, err := NewParser(file, fileSize, false, false)
+		parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
@@ -206,16 +135,8 @@ func TestNewParser3(t *testing.T) {
 
 func TestNewParser4(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
-	file, err := os.Open("/home/tripg/Documents/dicom/oct/1.dcm")
-	assert.NoError(err)
-
-	defer file.Close()
-	info, err := file.Stat()
-	assert.NoError(err)
-	fileSize := info.Size()
-
-	parser, err := NewParser(file, fileSize, true, false)
+	fPath := "/home/tripg/workspace/dicom/oct/1.dcm"
+	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -227,7 +148,6 @@ func TestNewParser4(t *testing.T) {
 
 func TestNewParser5(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
 	//file, err := os.Open("/home/tripg/Documents/dicom/ptt1.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/dicoms_mr_func/MR.1.3.46.670589.11.38317.5.0.4476.2014042516042547586")
 	//file, err := os.Open("/home/tripg/Documents/dicom/dicoms_struct/N2D_0001.dcm")
@@ -261,19 +181,12 @@ func TestNewParser5(t *testing.T) {
 	//file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73100000 [MG - R CC Tomosynthesis Reconstruction]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.589.0.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/test_full/063.dcm")
 	//file, err := os.Open("/home/tripg/Documents/dicom/test_full/068.dcm")
-	file, err := os.Open("/home/tripg/Documents/dicom/10142022/Acuson/Sequoia/EXAMS/EXAM0003/CLIPS/CLIP0039")
-	assert.NoError(err)
+	fPath := "/home/tripg/Documents/dicom/10142022/Acuson/Sequoia/EXAMS/EXAM0003/CLIPS/CLIP0039"
 
-	defer file.Close()
-	info, err := file.Stat()
-	assert.NoError(err)
-	fileSize := info.Size()
-
-	parser, err := NewParser(file, fileSize, false, false)
+	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
-
 	for _, elem := range parser.dataset.Elements {
 		if elem.Tag == tag.BluePaletteColorLookupTableData || elem.Tag == tag.RedPaletteColorLookupTableData || elem.Tag == tag.GreenPaletteColorLookupTableData {
 			continue
@@ -287,16 +200,9 @@ func TestNewParser5(t *testing.T) {
 
 func TestNewParser6(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
-	file, err := os.Open("/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73200000 [MG - R CC Breast Tomosynthesis Image]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.597.0.dcm")
-	assert.NoError(err)
+	fPath := "/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73200000 [MG - R CC Breast Tomosynthesis Image]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.597.0.dcm"
 
-	defer file.Close()
-	info, err := file.Stat()
-	assert.NoError(err)
-	fileSize := info.Size()
-
-	parser, err := NewParser(file, fileSize, false, false)
+	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -322,20 +228,11 @@ func TestNewParser7(t *testing.T) {
 	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/test_full")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
-		InitTagDict()
 		fmt.Println("process:", fPath)
 		if strings.Contains(fPath, "1706") {
 			continue
 		}
-		file, err := os.Open(fPath)
-		assert.NoError(err)
-
-		defer file.Close()
-		info, err := file.Stat()
-		assert.NoError(err)
-		fileSize := info.Size()
-
-		parser, err := NewParser(file, fileSize, false, false)
+		parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
@@ -353,16 +250,9 @@ func TestNewParser7(t *testing.T) {
 
 func TestNewParser8(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
-	file, err := os.Open("/home/tripg/workspace/10142022/ALI_Technologies/UltraPACS/studies/w0019837/view0001")
-	assert.NoError(err)
+	fPath := "/home/tripg/workspace/10142022/ALI_Technologies/UltraPACS/studies/w0019837/view0001"
 
-	defer file.Close()
-	info, err := file.Stat()
-	assert.NoError(err)
-	fileSize := info.Size()
-
-	parser, err := NewParser(file, fileSize, false, false)
+	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -393,17 +283,8 @@ func TestNewParser9(t *testing.T) {
 	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/vinlab/Mini-batch0")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
-		InitTagDict()
-		fmt.Println("process:", fPath)
-		file, err := os.Open(fPath)
-		assert.NoError(err)
-
-		defer file.Close()
-		info, err := file.Stat()
-		assert.NoError(err)
-		fileSize := info.Size()
-
-		parser, err := NewParser(file, fileSize, false, false)
+		fmt.Println("Process", fPath)
+		parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
@@ -421,16 +302,9 @@ func TestNewParser9(t *testing.T) {
 
 func TestNewParser10(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
-	file, err := os.Open("/home/tripg/workspace/dicom/test_full/1706.dcm")
-	assert.NoError(err)
+	fPath := "/home/tripg/workspace/dicom/test_full/1706.dcm"
 
-	defer file.Close()
-	info, err := file.Stat()
-	assert.NoError(err)
-	fileSize := info.Size()
-
-	parser, err := NewParser(file, fileSize, true, false)
+	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -438,23 +312,16 @@ func TestNewParser10(t *testing.T) {
 
 func TestNewParser11(t *testing.T) {
 	assert := assert.New(t)
-	InitTagDict()
-	file, err := os.Open("/home/tripg/Downloads/123.241606668321866.1722978010541148/DICOM/1.2.840.113619.2.427.84108138632.1643160910.120.dicom")
-	file, err = os.Open("/home/tripg/workspace/10142022/ALI_Technologies/UltraPACS/studies/w0055053/view0013")
-	file, err = os.Open("/home/tripg/workspace/10142022/Acuson/Sequoia/EXAMS/EXAM0000/CLIPS/CLIP0031")
+	fPath := "/home/tripg/Downloads/123.241606668321866.1722978010541148/DICOM/1.2.840.113619.2.427.84108138632.1643160910.120.dicom"
+	//file, err = os.Open("/home/tripg/workspace/10142022/ALI_Technologies/UltraPACS/studies/w0055053/view0013")
+	//file, err = os.Open("/home/tripg/workspace/10142022/Acuson/Sequoia/EXAMS/EXAM0000/CLIPS/CLIP0031")
 	//file, err = os.Open("/home/tripg/workspace/10142022/Hamamatsu/Dog_15x15_20x.dcm")
 	//file, err = os.Open("/home/tripg/Downloads/N2D0027.dcm")
 	//file, err = os.Open("/home/tripg/Downloads/123.241606668321866.1724728615648318_en.dcm")
 	//file, err = os.Open("/home/tripg/Downloads/1-1.dcm")
 	//file, err = os.Open("/home/tripg/workspace/dicom2/PrivateGEImplicitVRBigEndianTransferSyntax16Bits.dcm")
-	assert.NoError(err)
 
-	defer file.Close()
-	info, err := file.Stat()
-	assert.NoError(err)
-	fileSize := info.Size()
-
-	parser, err := NewParser(file, fileSize, true, false)
+	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)

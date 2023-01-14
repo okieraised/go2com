@@ -2,7 +2,6 @@ package go2com
 
 import (
 	"log"
-	"os"
 	"testing"
 )
 
@@ -13,19 +12,9 @@ func BenchmarkNewParser(b *testing.B) {
 }
 
 func sampleParser() {
-	InitTagDict()
-	file, err := os.Open("./test_data/01.dcm")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	info, err := file.Stat()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fileSize := info.Size()
+	fPath := "./test_data/01.dcm"
 
-	parser, err := NewParser(file, fileSize, false, false)
+	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
 	if err != nil {
 		log.Fatal(err)
 	}

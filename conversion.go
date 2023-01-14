@@ -15,7 +15,7 @@ import (
 type MappedTag map[string]tag.TagBrowser
 
 // Export returns the mapped tag/(vr,value) dictionary
-func (p *Parser) Export(exportMeta bool) MappedTag {
+func (p *DcmParser) Export(exportMeta bool) MappedTag {
 	res := make(MappedTag, len(p.metadata.Elements)+len(p.dataset.Elements))
 	if exportMeta {
 		mt := p.metadata
