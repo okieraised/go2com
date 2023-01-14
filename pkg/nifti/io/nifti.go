@@ -1,13 +1,13 @@
-package reader
+package io
 
 import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/okieraised/go2com/internal/constants"
-	"github.com/okieraised/go2com/pkg/matrix"
-	"github.com/okieraised/go2com/pkg/nifti/constant"
+	"github.com/okieraised/go2com/internal/matrix"
 	"math"
+
+	"github.com/okieraised/go2com/pkg/nifti/constant"
 )
 
 type Nii struct {
@@ -83,6 +83,7 @@ type NiiData struct {
 	Nifti1Ext     []Nifti1Ext      // array of extension structs (with data)
 	IJKOrtient    [3]int32         // self-add. Orientation ini, j, k coordinate
 	Affine        matrix.DMat44    // self-add. Affine matrix
+	Version       int              // self-add. Used for version identification when writing
 }
 
 type Nifti1Ext struct {
@@ -109,7 +110,7 @@ func (n *Nii) getSliceCode() string {
 		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC2]
 	}
 
-	return constants.COMMON_UNKNOWN
+	return "UNKNOWN"
 }
 
 func (n *Nii) getQFormCode() string {
@@ -129,7 +130,7 @@ func (n *Nii) getSFormCode() string {
 }
 
 func (n *Nii) getDatatype() string {
-	switch int16(n.Data.Datatype) {
+	switch n.Data.Datatype {
 	case constant.DT_UNKNOWN:
 		return "UNKNOWN"
 	case constant.DT_BINARY:
@@ -257,7 +258,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 	}
 
 	if n.Data.SclSlope != 0 {
-		value = float64(n.Data.SclSlope)*value + float64(n.Data.SclInter)
+		value = n.Data.SclSlope*value + n.Data.SclInter
 	}
 
 	return value
@@ -321,7 +322,7 @@ func (n *Nii) getVolume(t int64) ([][][]float64, error) {
 	sliceZ := n.Data.Nz
 	sliceT := n.Data.Nt
 
-	if t >= int64(sliceT) || t < 0 {
+	if t >= sliceT || t < 0 {
 		return nil, errors.New("invalid time value")
 	}
 	volume := make([][][]float64, sliceX)

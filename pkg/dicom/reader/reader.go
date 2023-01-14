@@ -3,10 +3,9 @@ package reader
 import (
 	"bufio"
 	"encoding/binary"
-	"io"
-
 	"github.com/okieraised/go2com/internal/system"
 	_ "github.com/okieraised/go2com/internal/system"
+	"io"
 )
 
 type DcmReader interface {
@@ -44,6 +43,7 @@ type dcmReader struct {
 	fileSize          int64
 }
 
+// NewDICOMReader returns a new reader
 func NewDICOMReader(reader *bufio.Reader, options ...func(*dcmReader)) DcmReader {
 	parser := &dcmReader{
 		reader:        reader,

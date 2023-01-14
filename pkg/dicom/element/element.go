@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/internal/system"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
@@ -19,6 +18,10 @@ import (
 
 const (
 	VLUndefinedLength uint32 = 0xFFFFFFFF
+)
+
+const (
+	PrivateTag = "PrivateTag"
 )
 
 // Element defines the struct for each dicom tag element info. Ordered as below to decrease the memory footprint
@@ -102,7 +105,7 @@ func readTag(r reader.DcmReader) (*tag.DicomTag, *tag.TagInfo, error) {
 	if int(group)%2 != 0 {
 		tagInfo := tag.TagInfo{
 			VR:     "",
-			Name:   constants.PrivateTag,
+			Name:   PrivateTag,
 			VM:     "",
 			Status: "",
 		}

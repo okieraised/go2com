@@ -1,12 +1,15 @@
 package go2com
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/iod"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/stretchr/testify/assert"
 	_ "image/jpeg"
+	"math"
 	"os"
 	"strings"
 	"testing"
@@ -316,11 +319,14 @@ func TestNewParser6(t *testing.T) {
 
 func TestNewParser7(t *testing.T) {
 	assert := assert.New(t)
-	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/test_full")
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/test_full")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		InitTagDict()
 		fmt.Println("process:", fPath)
+		if strings.Contains(fPath, "1706") {
+			continue
+		}
 		file, err := os.Open(fPath)
 		assert.NoError(err)
 
@@ -348,7 +354,7 @@ func TestNewParser7(t *testing.T) {
 func TestNewParser8(t *testing.T) {
 	assert := assert.New(t)
 	InitTagDict()
-	file, err := os.Open("/home/tripg/Documents/dicom/10142022/ALI_Technologies/UltraPACS/studies/w0019837/view0001")
+	file, err := os.Open("/home/tripg/workspace/10142022/ALI_Technologies/UltraPACS/studies/w0019837/view0001")
 	assert.NoError(err)
 
 	defer file.Close()
@@ -384,7 +390,7 @@ func TestNewParser8(t *testing.T) {
 
 func TestNewParser9(t *testing.T) {
 	assert := assert.New(t)
-	filePaths, err := utils.ReadDirRecursively("/home/tripg/Documents/dicom/vinlab/Mini-batch0")
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/vinlab/Mini-batch0")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		InitTagDict()
@@ -416,7 +422,31 @@ func TestNewParser9(t *testing.T) {
 func TestNewParser10(t *testing.T) {
 	assert := assert.New(t)
 	InitTagDict()
-	file, err := os.Open("/home/tripg/Downloads/11.10.1106.1133.119.1227.20190308102324.222.dicom_2515042_1668816281813791.dcm")
+	file, err := os.Open("/home/tripg/workspace/dicom/test_full/1706.dcm")
+	assert.NoError(err)
+
+	defer file.Close()
+	info, err := file.Stat()
+	assert.NoError(err)
+	fileSize := info.Size()
+
+	parser, err := NewParser(file, fileSize, true, false)
+	assert.NoError(err)
+	err = parser.Parse()
+	assert.NoError(err)
+}
+
+func TestNewParser11(t *testing.T) {
+	assert := assert.New(t)
+	InitTagDict()
+	file, err := os.Open("/home/tripg/Downloads/123.241606668321866.1722978010541148/DICOM/1.2.840.113619.2.427.84108138632.1643160910.120.dicom")
+	file, err = os.Open("/home/tripg/workspace/10142022/ALI_Technologies/UltraPACS/studies/w0055053/view0013")
+	file, err = os.Open("/home/tripg/workspace/10142022/Acuson/Sequoia/EXAMS/EXAM0000/CLIPS/CLIP0031")
+	//file, err = os.Open("/home/tripg/workspace/10142022/Hamamatsu/Dog_15x15_20x.dcm")
+	//file, err = os.Open("/home/tripg/Downloads/N2D0027.dcm")
+	//file, err = os.Open("/home/tripg/Downloads/123.241606668321866.1724728615648318_en.dcm")
+	//file, err = os.Open("/home/tripg/Downloads/1-1.dcm")
+	//file, err = os.Open("/home/tripg/workspace/dicom2/PrivateGEImplicitVRBigEndianTransferSyntax16Bits.dcm")
 	assert.NoError(err)
 
 	defer file.Close()
@@ -429,23 +459,24 @@ func TestNewParser10(t *testing.T) {
 	err = parser.Parse()
 	assert.NoError(err)
 
-	//seriesTag := parser.ExportSeriesTags()
-	//for k := range seriesTag {
-	//	fmt.Println(k, seriesTag[k])
-	//}
-
 	for _, elem := range parser.dataset.Elements {
 		fmt.Println(elem)
 	}
+}
 
-	//pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
-	//pixelData.GetExpectedPixelData()
-	//valid := pixelData.ValidatePixelData()
-	//fmt.Println(valid)
+func TestSwapByte(t *testing.T) {
+	buf := new(bytes.Buffer)
+	var pi float64 = math.Pi
+	err := binary.Write(buf, binary.BigEndian, pi)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+	fmt.Printf("% x", buf.Bytes())
 
-	//tt := parser.Export(false)
-	//for k := range tt {
-	//	fmt.Println(k, tt[k])
-	//}
+	bits := binary.LittleEndian.Uint64(buf.Bytes())
+
+	res := math.Float64frombits(bits)
+
+	fmt.Println("res", res)
 
 }

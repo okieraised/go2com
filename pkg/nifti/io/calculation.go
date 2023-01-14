@@ -1,7 +1,7 @@
-package reader
+package io
 
 import (
-	"github.com/okieraised/go2com/pkg/matrix"
+	"github.com/okieraised/go2com/internal/matrix"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 	"math"
 )
