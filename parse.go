@@ -10,12 +10,12 @@ import (
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/vr"
+	"io"
 	"os"
+	"strings"
 
 	//_ "github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/uid"
-	"io"
-	"strings"
 )
 
 const (

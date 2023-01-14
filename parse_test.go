@@ -430,7 +430,7 @@ func TestNewParser10(t *testing.T) {
 	assert.NoError(err)
 	fileSize := info.Size()
 
-	parser, err := NewParser(file, fileSize, false, false)
+	parser, err := NewParser(file, fileSize, true, false)
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)

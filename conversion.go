@@ -96,9 +96,15 @@ func (m MappedTag) mapElement(elem *element.Element) {
 	} else {
 		//value = switchStringToNumeric(elem)
 		//value = utils.AppendToSlice(value)
-		value = utils.AppendToSlice(elem.Value)
-	}
+		if elem.ValueRepresentationStr == vr.PersonName {
+			value = utils.AppendToSlice(map[string]interface{}{
+				"Alphabetic": elem.Value.RawValue,
+			})
+		} else {
+			value = utils.AppendToSlice(elem.Value.RawValue)
+		}
 
+	}
 	m[tagStr] = tag.TagBrowser{
 		VR:    vrStr,
 		Value: value,

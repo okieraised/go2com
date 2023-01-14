@@ -110,11 +110,16 @@ func FindByName(name string) (TagInfo, error) {
 	return TagInfo{}, fmt.Errorf("could not find tag %s", name)
 }
 
-var lock = &sync.RWMutex{}
+var once = sync.Once{}
+
+// init generates pre-defined tags as a dictionary
+func init() {
+	once.Do(func() {
+		InitTagDict()
+	})
+}
 
 func InitTagDict() map[DicomTag]TagInfo {
-	lock.Lock()
-	defer lock.Unlock()
 	if TagDict == nil {
 		initTag()
 	}
