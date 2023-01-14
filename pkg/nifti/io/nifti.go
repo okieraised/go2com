@@ -7,7 +7,6 @@ import (
 	"github.com/okieraised/go2com/internal/matrix"
 	"math"
 
-	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 )
 
@@ -111,7 +110,7 @@ func (n *Nii) getSliceCode() string {
 		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC2]
 	}
 
-	return constants.COMMON_UNKNOWN
+	return "UNKNOWN"
 }
 
 func (n *Nii) getQFormCode() string {

@@ -43,6 +43,7 @@ type dcmReader struct {
 	fileSize          int64
 }
 
+// NewDICOMReader returns a new reader
 func NewDICOMReader(reader *bufio.Reader, options ...func(*dcmReader)) DcmReader {
 	parser := &dcmReader{
 		reader:        reader,

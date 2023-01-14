@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/okieraised/go2com/internal/constants"
 	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/dicom/dataset"
 	"github.com/okieraised/go2com/pkg/dicom/element"
@@ -17,6 +16,10 @@ import (
 	"github.com/okieraised/go2com/pkg/dicom/uid"
 	"io"
 	"strings"
+)
+
+const (
+	MagicString = "DICM"
 )
 
 // Parser implements the field required to parse the dicom file
@@ -98,7 +101,7 @@ func (p *Parser) IsValidDICOM() error {
 	if err != nil {
 		return fmt.Errorf("cannot read the first 132 bytes: %v", err)
 	}
-	if string(preamble[128:]) != constants.MagicString {
+	if string(preamble[128:]) != MagicString {
 		return fmt.Errorf("file is not in valid dicom format")
 	}
 	return nil
@@ -106,6 +109,7 @@ func (p *Parser) IsValidDICOM() error {
 
 //----------------------------------------------------------------------------------------------------------------------
 
+// Parse reads the DICOM file and parses it into array of elements
 func (p *Parser) Parse() error {
 	err := p.parse()
 	if err != nil {
@@ -245,7 +249,7 @@ func (p *Parser) parseMetadata() error {
 			transferSyntaxUID = (res.Value.RawValue).(string)
 		}
 		metadata = append(metadata, res)
-		fmt.Println(res)
+		//fmt.Println(res)
 	}
 	dicomMetadata := dataset.Dataset{Elements: metadata}
 	p.metadata = dicomMetadata
@@ -261,8 +265,8 @@ func (p *Parser) parseMetadata() error {
 	p.reader.SetTransferSyntax(binOrder, isImplicit)
 	p.reader.SetOverallImplicit(isImplicit)
 
-	// IMPORTANT: Additional check is needed here since there are few instances where the DICOM meta header is registered
-	// as Explicit Little-Endian, but Implicit Little-Endian is used in the body
+	// IMPORTANT: Additional check is needed here since there are few instances where the DICOM
+	// meta header is registered as Explicit Little-Endian, but Implicit Little-Endian is used in the body
 	if transferSyntaxUID == uid.ExplicitVRLittleEndian {
 		firstElem, err := p.reader.Peek(6)
 		if err != nil {
@@ -289,7 +293,7 @@ func (p *Parser) parseDataset() error {
 			}
 		}
 		data = append(data, res)
-		fmt.Println(res)
+		//fmt.Println(res)
 	}
 	dicomDataset := dataset.Dataset{Elements: data}
 	p.dataset = dicomDataset
