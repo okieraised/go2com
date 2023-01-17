@@ -207,18 +207,19 @@ func (r *niiReader) parseNIfTI() error {
 	}
 
 	var dim0 int64
+	var header interface{}
 
 	switch r.version {
 	case constant.NIIVersion1:
-		header := new(Nii1Header)
-		err = binary.Read(r.reader, r.binaryOrder, header)
+		n1Header := new(Nii1Header)
+		err = binary.Read(r.reader, r.binaryOrder, n1Header)
 		if err != nil {
 			return err
 		}
-		if header.Magic != [4]byte{110, 43, 49, 0} && header.Magic != [4]byte{110, 105, 49, 0} {
+		if n1Header.Magic != [4]byte{110, 43, 49, 0} && n1Header.Magic != [4]byte{110, 105, 49, 0} {
 			return errors.New("invalid NIFTI-1 magic string")
 		}
-		dim0 = int64(header.Dim[0])
+		dim0 = int64(n1Header.Dim[0])
 
 		if dim0 < 0 || dim0 > 7 {
 			if r.binaryOrder == binary.LittleEndian {
@@ -227,21 +228,17 @@ func (r *niiReader) parseNIfTI() error {
 				r.binaryOrder = binary.LittleEndian
 			}
 		}
-		err = r.parseData(header, nil)
-		if err != nil {
-			return err
-		}
-
+		header = n1Header
 	case constant.NIIVersion2:
-		header := new(Nii2Header)
-		err = binary.Read(r.reader, r.binaryOrder, header)
+		n2Header := new(Nii2Header)
+		err = binary.Read(r.reader, r.binaryOrder, n2Header)
 		if err != nil {
 			return err
 		}
-		if header.Magic != [8]byte{110, 43, 50, 0, 13, 10, 26, 10} {
+		if n2Header.Magic != [8]byte{110, 43, 50, 0, 13, 10, 26, 10} {
 			return errors.New("invalid NIFTI-2 magic string")
 		}
-		dim0 = header.Dim[0]
+		dim0 = n2Header.Dim[0]
 
 		if dim0 < 0 || dim0 > 7 {
 			if r.binaryOrder == binary.LittleEndian {
@@ -250,21 +247,19 @@ func (r *niiReader) parseNIfTI() error {
 				r.binaryOrder = binary.LittleEndian
 			}
 		}
-		err = r.parseData(nil, header)
-		if err != nil {
-			return err
-		}
-
+		header = n2Header
 	default:
 		return errors.New("invalid version")
 	}
-
+	err = r.parseData(header)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // parseData parse the raw byte array into NIFTI-1 or NIFTI-2 data structure
-func (r *niiReader) parseData(n1Header *Nii1Header, n2Header *Nii2Header) error {
-	//r.data.Data = &NiiData{}
+func (r *niiReader) parseData(header interface{}) error {
 	var offset int64
 	var statDim int64 = 1
 	var bitpix int16
@@ -279,6 +274,8 @@ func (r *niiReader) parseData(n1Header *Nii1Header, n2Header *Nii2Header) error 
 
 	switch r.version {
 	case constant.NIIVersion1:
+		n1Header := header.(*Nii1Header)
+
 		freqDim = int32(dimInfoToFreqDim(n1Header.DimInfo))
 		phaseDim = int32(dimInfoToPhaseDim(n1Header.DimInfo))
 		sliceDim = int32(dimInfoToSliceDim(n1Header.DimInfo))
@@ -350,6 +347,8 @@ func (r *niiReader) parseData(n1Header *Nii1Header, n2Header *Nii2Header) error 
 		r.data.QoffsetX, r.data.QoffsetY, r.data.QoffsetZ = float64(n1Header.QoffsetX), float64(n1Header.QoffsetY), float64(n1Header.QoffsetZ)
 
 	case constant.NIIVersion2:
+		n2Header := header.(*Nii2Header)
+
 		freqDim = int32(dimInfoToFreqDim(n2Header.DimInfo))
 		phaseDim = int32(dimInfoToPhaseDim(n2Header.DimInfo))
 		sliceDim = int32(dimInfoToSliceDim(n2Header.DimInfo))
