@@ -51,6 +51,7 @@ type NiiReader interface {
 type niiReader struct {
 	reader      *bytes.Reader
 	binaryOrder binary.ByteOrder // Default system order
+	inMemory    bool             // Whether to read the whole NIfTI image to memory
 	data        *Nii             // Contains the NIFTI data structure
 	version     int              // Define the version of NIFTI image (1 or 2)
 }
@@ -58,7 +59,7 @@ type niiReader struct {
 // NewNiiReader receives a path to the NIFTI file and returns a new reader to parse the file
 //
 // TODO: this is not efficient when the file is large so we need to find better way to deal with large file size
-func NewNiiReader(filePath string) (NiiReader, error) {
+func NewNiiReader(filePath string, options ...func(*niiReader)) (NiiReader, error) {
 	// This is inefficient since it read the whole file to the memory
 	bData, err := os.ReadFile(filePath)
 	if err != nil {
@@ -74,14 +75,25 @@ func NewNiiReader(filePath string) (NiiReader, error) {
 		}
 	}
 
-	niiData := &Nii{}
+	reader := new(niiReader)
+	reader.binaryOrder = binary.LittleEndian
+	reader.reader = bytes.NewReader(bData)
+	reader.data = &Nii{}
 
-	return &niiReader{
-		binaryOrder: binary.LittleEndian,
-		reader:      bytes.NewReader(bData),
-		data:        niiData,
-	}, nil
+	for _, opt := range options {
+		opt(reader)
+	}
+
+	return reader, nil
 }
+
+func WithInMemory(inMemory bool) func(*niiReader) {
+	return func(w *niiReader) {
+		w.inMemory = inMemory
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 // getVersion checks the header to determine the NIFTI version
 func (r *niiReader) getVersion() error {
@@ -200,6 +212,7 @@ func (r *niiReader) Parse() error {
 	return nil
 }
 
+// parseNIfTI parse the NIfTI header and the data
 func (r *niiReader) parseNIfTI() error {
 	_, err := r.reader.Seek(0, 0)
 	if err != nil {

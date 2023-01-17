@@ -13,9 +13,9 @@ func TestNii1(t *testing.T) {
 	assert := assert.New(t)
 
 	filePath := "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
-	//filePath = "/home/tripg/Documents/nifti/RGB16_4D.nii.gz"
-	//filePath = "/home/tripg/Documents/nifti/someones_anatomy.nii.gz"
-	//filePath = "/home/tripg/Documents/nifti/someones_epi.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/RGB16_4D.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/someones_anatomy.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/someones_epi.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/RGB8_4D.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/jaw.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
@@ -25,9 +25,9 @@ func TestNii1(t *testing.T) {
 	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural_brain.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/JHU_MNI_SS_T1.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
-	//filePath = "/Users/TriPham/Downloads/nifti/avg152T1_RL_nifti.nii"
+	//filePath = "/Users/TriPham/Documents/nifti/avg152T1_RL_nifti.nii"
 
-	niiReader, err := nii_io.NewNiiReader(filePath)
+	niiReader, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
 	assert.NoError(err)
 	err = niiReader.Parse()
 	assert.NoError(err)
