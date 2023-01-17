@@ -59,6 +59,7 @@ type niiReader struct {
 //
 // TODO: this is not efficient when the file is large so we need to find better way to deal with large file size
 func NewNiiReader(filePath string) (NiiReader, error) {
+	// This is inefficient since it read the whole file to the memory
 	bData, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err

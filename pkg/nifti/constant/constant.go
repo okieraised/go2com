@@ -10,6 +10,9 @@ const (
 	NII2HeaderSize = 540
 )
 
+// Possible NIFTI image extension
+const ()
+
 const (
 	NIFTI_INTENT_CORREL                     int16 = 2
 	NIFTI_INTENT_TTEST                      int16 = 3

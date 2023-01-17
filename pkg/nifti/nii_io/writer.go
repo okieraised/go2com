@@ -10,17 +10,66 @@ import (
 type NiiWriter interface {
 }
 
+// niiWriter define the NIfTI writer structure.
+//
+// Parameters:
+//     - `filePath`         : Export file path to write NIfTI image
+//     - `writeHeaderFile`  : Whether to write NIfTI file pair (hdr + img file)
+//     - `compression`      : Whether the NIfTI volume will be compressed
+//     - `headerCompression`: Whether the NIfTI header will be compressed. This only works when the writeHeaderFile option is set to True
+//     - `niiData`          : Input NIfTI data to write to file
+//     - `header`           : Input NIfTI header to write to file. If nil, the default header will be constructed
 type niiWriter struct {
-	niiData *Nii
+	filePath          string      // Export file path to write NIfTI image
+	writeHeaderFile   bool        // Whether to write NIfTI file pair (hdr + img file)
+	compression       bool        // Whether the NIfTI volume will be compressed
+	headerCompression bool        // Whether the NIfTI header will be compressed. This only works when the writeHeaderFile option is set to True
+	niiData           *Nii        // Input NIfTI data to write to file
+	header            *Nii1Header // Input NIfTI header to write to file. If nil, the default header will be constructed
 }
 
-func (w *niiWriter) writeToFile(fileName string) {
+// NewNiiWriter returns a new write for export
+func NewNiiWriter(filePath string, options ...func(*niiWriter)) *niiWriter {
+	writer := new(niiWriter)
 
+	writer.filePath = filePath
+	for _, opt := range options {
+		opt(writer)
+	}
+	return writer
 }
 
-func (w *niiWriter) makeNewHeader() {
-
+func WithWriteHeaderFile(writeHeaderFile bool) func(*niiWriter) {
+	return func(w *niiWriter) {
+		w.writeHeaderFile = writeHeaderFile
+	}
 }
+
+func WithHeaderCompression(headerCompression bool) func(*niiWriter) {
+	return func(w *niiWriter) {
+		w.headerCompression = headerCompression
+	}
+}
+
+func WithCompression(withCompression bool) func(writer *niiWriter) {
+	return func(w *niiWriter) {
+		w.compression = withCompression
+	}
+}
+
+func WithHeader(header *Nii1Header) func(*niiWriter) {
+	return func(w *niiWriter) {
+		w.header = header
+	}
+}
+
+func WithNIfTIData(data *Nii) func(writer *niiWriter) {
+	return func(w *niiWriter) {
+		w.niiData = data
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 func MakeNewNii1Header(inDim *[8]int16, inDatatype int32) *Nii1Header {
 
