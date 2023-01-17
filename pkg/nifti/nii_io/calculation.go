@@ -10,20 +10,9 @@ import (
 func (n *Nii) quaternToMatrix() matrix.DMat44 {
 	var R matrix.DMat44
 
-	var QuaternB, QuaternC, QuaternD float64
-	var QoffsetX, QoffsetY, QoffsetZ float64
-
-	if n.n1Header != nil {
-		QuaternB, QuaternC, QuaternD = float64(n.n1Header.QuaternB), float64(n.n1Header.QuaternC), float64(n.n1Header.QuaternD)
-		QoffsetX, QoffsetY, QoffsetZ = float64(n.n1Header.QoffsetX), float64(n.n1Header.QoffsetY), float64(n.n1Header.QoffsetZ)
-	} else {
-		QuaternB, QuaternC, QuaternD = n.n2Header.QuaternB, n.n2Header.QuaternC, n.n2Header.QuaternD
-		QoffsetX, QoffsetY, QoffsetZ = n.n2Header.QoffsetX, n.n2Header.QoffsetY, n.n2Header.QoffsetZ
-	}
-
-	var b = QuaternB
-	var c = QuaternC
-	var d = QuaternD
+	var b = n.QuaternB
+	var c = n.QuaternC
+	var d = n.QuaternD
 	var a, xd, yd, zd float64
 
 	R.M[3] = [4]float64{0, 0, 0, 1}
@@ -40,25 +29,25 @@ func (n *Nii) quaternToMatrix() matrix.DMat44 {
 		a = math.Sqrt(a)
 	}
 
-	if n.Data.Dx > 0 {
-		xd = n.Data.Dx
+	if n.Dx > 0 {
+		xd = n.Dx
 	} else {
 		xd = 1.0
 	}
 
-	if n.Data.Dy > 0 {
-		yd = n.Data.Dy
+	if n.Dy > 0 {
+		yd = n.Dy
 	} else {
 		yd = 1.0
 	}
 
-	if n.Data.Dz > 0 {
-		zd = n.Data.Dz
+	if n.Dz > 0 {
+		zd = n.Dz
 	} else {
 		zd = 1.0
 	}
 
-	if n.Data.QFac < 0 {
+	if n.QFac < 0 {
 		zd = -zd
 	}
 
@@ -71,9 +60,9 @@ func (n *Nii) quaternToMatrix() matrix.DMat44 {
 	R.M[2][0] = 2.0 * (b*d - a*c) * xd
 	R.M[2][1] = 2.0 * (c*d + a*b) * yd
 	R.M[2][2] = (a*a + d*d - c*c - b*b) * zd
-	R.M[0][3] = QoffsetX
-	R.M[1][3] = QoffsetY
-	R.M[2][3] = QoffsetZ
+	R.M[0][3] = n.QoffsetX
+	R.M[1][3] = n.QoffsetY
+	R.M[2][3] = n.QoffsetZ
 
 	return R
 }
@@ -84,9 +73,9 @@ func (n *Nii) matrixToQuatern(R matrix.DMat44) {
 
 	var P, Q matrix.DMat33
 
-	n.Data.QOffsetX = R.M[0][3]
-	n.Data.QOffsetY = R.M[1][3]
-	n.Data.QOffsetZ = R.M[2][3]
+	n.QoffsetX = R.M[0][3]
+	n.QoffsetY = R.M[1][3]
+	n.QoffsetZ = R.M[2][3]
 
 	r11 = R.M[0][0]
 	r12 = R.M[0][1]
@@ -122,9 +111,9 @@ func (n *Nii) matrixToQuatern(R matrix.DMat44) {
 		zd = 1.0
 	}
 
-	n.Data.Dx = xd
-	n.Data.Dy = yd
-	n.Data.Dz = zd
+	n.Dx = xd
+	n.Dy = yd
+	n.Dz = zd
 
 	// normalize the column
 	r11 /= xd
@@ -177,9 +166,9 @@ func (n *Nii) matrixToQuatern(R matrix.DMat44) {
 	zd = r11*r22*r33 - r11*r32*r23 - r21*r12*r33 + r21*r32*r13 + r31*r12*r23 - r31*r22*r13
 
 	if zd > 0 {
-		n.Data.QFac = 1.0
+		n.QFac = 1.0
 	} else {
-		n.Data.QFac = -1.0
+		n.QFac = -1.0
 		r13 = -r13
 		r23 = -r23
 		r33 = -r33
@@ -219,9 +208,9 @@ func (n *Nii) matrixToQuatern(R matrix.DMat44) {
 		}
 	}
 
-	n.Data.QuaternB = b
-	n.Data.QuaternC = c
-	n.Data.QuaternD = d
+	n.QuaternB = b
+	n.QuaternC = c
+	n.QuaternD = d
 }
 
 func (n *Nii) matrixToOrientation(R matrix.DMat44) {
@@ -456,6 +445,6 @@ func (n *Nii) matrixToOrientation(R matrix.DMat44) {
 	}
 
 	res := [3]int32{i, j, k}
-	n.Data.IJKOrtient = res
+	n.IJKOrtient = res
 
 }

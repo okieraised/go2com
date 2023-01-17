@@ -36,7 +36,7 @@ func TestNii1(t *testing.T) {
 	fmt.Println("shape", shape)
 	fmt.Println(niiReader.GetUnitsOfMeasurements())
 	fmt.Println("dtype", niiReader.GetDatatype())
-	fmt.Println("nbyper", niiReader.GetNiiData().Data.NByPer)
+	fmt.Println("nbyper", niiReader.GetNiiData().NByPer)
 	fmt.Println("GetSFromCode()", niiReader.GetSFormCode())
 	fmt.Println("GetQFromCode()", niiReader.GetQFormCode())
 	fmt.Println(niiReader.GetOrientation())

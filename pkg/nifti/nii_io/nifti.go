@@ -16,14 +16,14 @@ const (
 	ILLEGAL = "ILLEGAL"
 )
 
-type Nii struct {
-	n1Header *Nii1Header
-	n2Header *Nii2Header
-	Data     *NiiData
-}
+//type Nii struct {
+//	//n1Header *Nii1Header
+//	//n2Header *Nii2Header
+//	Data     *NiiData
+//}
 
-// NiiData defines the structure of the NIFTI-1 data for I/O purpose
-type NiiData struct {
+// Nii defines the structure of the NIFTI-1 data for I/O purpose
+type Nii struct {
 	NDim          int64            // last dimension greater than 1 (1..7)
 	Nx            int64            // dimensions of grid array
 	Ny            int64            // dimensions of grid array
@@ -60,9 +60,9 @@ type NiiData struct {
 	QuaternB      float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
 	QuaternC      float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
 	QuaternD      float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
-	QOffsetX      float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
-	QOffsetY      float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
-	QOffsetZ      float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
+	QoffsetX      float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
+	QoffsetY      float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
+	QoffsetZ      float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
 	QFac          float64          // Quaternion transform parameters [when writing a dataset, these are used for qform, NOT qto_xyz]
 	QtoXYZ        matrix.DMat44    // qform: transform (i,j,k) to (x,y,z)
 	QtoIJK        matrix.DMat44    // qform: transform (x,y,z) to (i,j,k)
@@ -84,7 +84,7 @@ type NiiData struct {
 	INameOffset   int32            // offset into IName where data start
 	SwapSize      int32            // swap unit in image data (might be 0)
 	ByteOrder     binary.ByteOrder // byte order on disk (MSB_ or LSB_FIRST)
-	Data          []byte           // slice of data: nbyper*nvox bytes
+	Volume        []byte           // slice of data: nbyper*nvox bytes
 	NumExt        int32            // number of extensions in extList
 	Nifti1Ext     []Nifti1Ext      // array of extension structs (with data)
 	IJKOrtient    [3]int32         // self-add. Orientation ini, j, k coordinate
@@ -100,12 +100,12 @@ type Nifti1Ext struct {
 
 // getSliceCode returns the slice code of the NIFTI image
 func (n *Nii) getSliceCode() string {
-	return getSliceCode(n.Data.SliceCode)
+	return getSliceCode(n.SliceCode)
 }
 
 // getQFormCode returns the QForm code
 func (n *Nii) getQFormCode() string {
-	qForm, ok := constant.NiiPatientOrientationInfo[n.Data.QformCode]
+	qForm, ok := constant.NiiPatientOrientationInfo[n.QformCode]
 	if !ok {
 		return INVALID
 	}
@@ -114,7 +114,7 @@ func (n *Nii) getQFormCode() string {
 
 // getSFormCode returns the SForm code
 func (n *Nii) getSFormCode() string {
-	sForm, ok := constant.NiiPatientOrientationInfo[n.Data.SformCode]
+	sForm, ok := constant.NiiPatientOrientationInfo[n.SformCode]
 	if !ok {
 		return INVALID
 	}
@@ -122,13 +122,13 @@ func (n *Nii) getSFormCode() string {
 }
 
 func (n *Nii) getDatatype() string {
-	return getDatatype(n.Data.Datatype)
+	return getDatatype(n.Datatype)
 }
 
 func (n *Nii) getOrientation() [3]string {
 	res := [3]string{}
 
-	ijk := n.Data.IJKOrtient
+	ijk := n.IJKOrtient
 
 	iOrient, ok := constant.OrietationToString[int(ijk[0])]
 	if !ok {
@@ -154,24 +154,24 @@ func (n *Nii) getOrientation() [3]string {
 // GetAt returns the value at (x, y, z, t) location
 func (n *Nii) getAt(x, y, z, t int64) float64 {
 
-	tIndex := t * n.Data.Nx * n.Data.Ny * n.Data.Nz
-	zIndex := n.Data.Nx * n.Data.Ny * z
-	yIndex := n.Data.Nx * y
+	tIndex := t * n.Nx * n.Ny * n.Nz
+	zIndex := n.Nx * n.Ny * z
+	yIndex := n.Nx * y
 	xIndex := x
 	index := tIndex + zIndex + yIndex + xIndex
-	nByPer := int64(n.Data.NByPer)
+	nByPer := int64(n.NByPer)
 
-	dataPoint := n.Data.Data[index*nByPer : (index+1)*nByPer]
+	dataPoint := n.Volume[index*nByPer : (index+1)*nByPer]
 
 	var value float64
-	switch n.Data.NByPer {
+	switch n.NByPer {
 	case 0, 1:
 		if len(dataPoint) > 0 {
 			value = float64(dataPoint[0])
 		}
 	case 2: // This fits Uint16
 		var v uint16
-		switch n.Data.ByteOrder {
+		switch n.ByteOrder {
 		case binary.LittleEndian:
 			v = binary.LittleEndian.Uint16(dataPoint)
 		case binary.BigEndian:
@@ -180,7 +180,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 		value = float64(v)
 	case 3, 4: // This fits Uint32
 		var v uint32
-		switch n.Data.ByteOrder {
+		switch n.ByteOrder {
 		case binary.LittleEndian:
 			switch len(dataPoint) {
 			case 3:
@@ -199,7 +199,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 		value = float64(math.Float32frombits(v))
 	case 8:
 		var v uint64
-		switch n.Data.ByteOrder {
+		switch n.ByteOrder {
 		case binary.LittleEndian:
 			v = binary.LittleEndian.Uint64(dataPoint)
 		case binary.BigEndian:
@@ -211,19 +211,19 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 	default:
 	}
 
-	if n.Data.SclSlope != 0 {
-		value = n.Data.SclSlope*value + n.Data.SclInter
+	if n.SclSlope != 0 {
+		value = n.SclSlope*value + n.SclInter
 	}
 
 	return value
 }
 
 func (n *Nii) getTimeSeries(x, y, z int64) ([]float64, error) {
-	timeSeries := make([]float64, 0, n.Data.Dim[4])
+	timeSeries := make([]float64, 0, n.Dim[4])
 
-	sliceX := n.Data.Nx
-	sliceY := n.Data.Ny
-	sliceZ := n.Data.Nx
+	sliceX := n.Nx
+	sliceY := n.Ny
+	sliceZ := n.Nx
 
 	if x >= sliceX {
 		return nil, errors.New("invalid x value")
@@ -237,7 +237,7 @@ func (n *Nii) getTimeSeries(x, y, z int64) ([]float64, error) {
 		return nil, errors.New("invalid z value")
 	}
 
-	for t := 0; t < int(n.Data.Dim[4]); t++ {
+	for t := 0; t < int(n.Dim[4]); t++ {
 		timeSeries = append(timeSeries, n.getAt(x, y, z, int64(t)))
 	}
 	return timeSeries, nil
@@ -245,10 +245,10 @@ func (n *Nii) getTimeSeries(x, y, z int64) ([]float64, error) {
 
 // getSlice returns the image in x-y dimension
 func (n *Nii) getSlice(z, t int64) ([][]float64, error) {
-	sliceX := n.Data.Nx
-	sliceY := n.Data.Ny
-	sliceZ := n.Data.Nz
-	sliceT := n.Data.Nt
+	sliceX := n.Nx
+	sliceY := n.Ny
+	sliceZ := n.Nz
+	sliceT := n.Nt
 
 	if z >= sliceZ {
 		return nil, errors.New("invalid z value")
@@ -272,10 +272,10 @@ func (n *Nii) getSlice(z, t int64) ([][]float64, error) {
 
 // getVolume return the whole image volume at time t
 func (n *Nii) getVolume(t int64) ([][][]float64, error) {
-	sliceX := n.Data.Nx
-	sliceY := n.Data.Ny
-	sliceZ := n.Data.Nz
-	sliceT := n.Data.Nt
+	sliceX := n.Nx
+	sliceY := n.Ny
+	sliceZ := n.Nz
+	sliceT := n.Nt
 
 	if t >= sliceT || t < 0 {
 		return nil, errors.New("invalid time value")
@@ -300,14 +300,14 @@ func (n *Nii) getVolume(t int64) ([][][]float64, error) {
 // getUnitsOfMeasurements returns the spatial and temporal units of measurements
 func (n *Nii) getUnitsOfMeasurements() ([2]string, error) {
 	units := [2]string{}
-	spatialUnit, ok := constant.NiiMeasurementUnits[uint8(n.Data.XYZUnits)]
+	spatialUnit, ok := constant.NiiMeasurementUnits[uint8(n.XYZUnits)]
 	if !ok {
-		return units, fmt.Errorf("invalid spatial unit %d", n.Data.XYZUnits)
+		return units, fmt.Errorf("invalid spatial unit %d", n.XYZUnits)
 	}
 
-	temporalUnit, ok := constant.NiiMeasurementUnits[uint8(n.Data.TimeUnits)]
+	temporalUnit, ok := constant.NiiMeasurementUnits[uint8(n.TimeUnits)]
 	if !ok {
-		return units, fmt.Errorf("invalid temporal unit %d", n.Data.TimeUnits)
+		return units, fmt.Errorf("invalid temporal unit %d", n.TimeUnits)
 	}
 
 	units[0] = spatialUnit
@@ -318,7 +318,7 @@ func (n *Nii) getUnitsOfMeasurements() ([2]string, error) {
 
 // getAffine returns the 4x4 affine matrix
 func (n *Nii) getAffine() matrix.DMat44 {
-	return n.Data.Affine
+	return n.Affine
 }
 
 // getImgShape returns the image shape in terms of x, y, z, t
@@ -326,7 +326,7 @@ func (n *Nii) getImgShape() [4]int64 {
 	dim := [4]int64{}
 
 	for index, _ := range dim {
-		dim[index] = n.Data.Dim[index+1]
+		dim[index] = n.Dim[index+1]
 	}
 	return dim
 }
@@ -335,7 +335,7 @@ func (n *Nii) getImgShape() [4]int64 {
 func (n *Nii) getVoxelSize() [4]float64 {
 	size := [4]float64{}
 	for index, _ := range size {
-		size[index] = n.Data.PixDim[index+1]
+		size[index] = n.PixDim[index+1]
 	}
 	return size
 }
