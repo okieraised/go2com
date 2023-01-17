@@ -180,6 +180,27 @@ func getDatatype(datatype int32) string {
 	return ILLEGAL
 }
 
+func getSliceCode(sliceCode int32) string {
+	switch sliceCode {
+	case constant.NIFTI_SLICE_UNKNOWN:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_UNKNOWN]
+	case constant.NIFTI_SLICE_SEQ_INC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_INC]
+	case constant.NIFTI_SLICE_SEQ_DEC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_DEC]
+	case constant.NIFTI_SLICE_ALT_INC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC]
+	case constant.NIFTI_SLICE_ALT_DEC:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC]
+	case constant.NIFTI_SLICE_ALT_INC2:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC2]
+	case constant.NIFTI_SLICE_ALT_DEC2:
+		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC2]
+	}
+
+	return "UNKNOWN"
+}
+
 // assignDatatypeSize sets the number of bytes per voxel and the swapsize based on a datatype code
 // returns nByper and swapSize
 func assignDatatypeSize(datatype int32) (int16, int16) {
@@ -343,4 +364,16 @@ func convertToF64(ar [4]float32) [4]float64 {
 		newar[i] = float64(v)
 	}
 	return newar
+}
+
+func dimInfoToFreqDim(DimInfo uint8) uint8 {
+	return DimInfo & 0x03
+}
+
+func dimInfoToPhaseDim(DimInfo uint8) uint8 {
+	return (DimInfo >> 2) & 0x03
+}
+
+func dimInfoToSliceDim(DimInfo uint8) uint8 {
+	return (DimInfo >> 4) & 0x03
 }

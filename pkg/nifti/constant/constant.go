@@ -152,7 +152,7 @@ const (
 	NIFTI_XFORM_MNI_152      = 4
 )
 
-var NiiPatientOrientationInfo = map[uint8]string{
+var NiiPatientOrientationInfo = map[int32]string{
 	NIFTI_XFORM_UNKNOWN:      "0: Unknown",
 	NIFTI_XFORM_SCANNER_ANAT: "1: Scanner Anat",
 	NIFTI_XFORM_ALIGNED_ANAT: "2: Aligned Anat",

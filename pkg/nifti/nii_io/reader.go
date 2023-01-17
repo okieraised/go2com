@@ -549,7 +549,7 @@ func (r *niiReader) parseData() error {
 	offset = voxOffset
 	dataSize := r.data.Data.Dim[1] * r.data.Data.Dim[2] * r.data.Data.Dim[3] * r.data.Data.Dim[4] * statDim * (int64(bitpix) / 8)
 
-	_, err := r.reader.Seek(int64(offset), 0)
+	_, err := r.reader.Seek(offset, 0)
 	if err != nil {
 		return err
 	}
@@ -571,16 +571,4 @@ func (r *niiReader) parseData() error {
 	r.data.matrixToOrientation(affine)
 
 	return nil
-}
-
-func dimInfoToFreqDim(DimInfo uint8) uint8 {
-	return DimInfo & 0x03
-}
-
-func dimInfoToPhaseDim(DimInfo uint8) uint8 {
-	return (DimInfo >> 2) & 0x03
-}
-
-func dimInfoToSliceDim(DimInfo uint8) uint8 {
-	return (DimInfo >> 4) & 0x03
 }

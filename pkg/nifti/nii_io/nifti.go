@@ -100,29 +100,12 @@ type Nifti1Ext struct {
 
 // getSliceCode returns the slice code of the NIFTI image
 func (n *Nii) getSliceCode() string {
-	switch n.Data.SliceCode {
-	case constant.NIFTI_SLICE_UNKNOWN:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_UNKNOWN]
-	case constant.NIFTI_SLICE_SEQ_INC:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_INC]
-	case constant.NIFTI_SLICE_SEQ_DEC:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_SEQ_DEC]
-	case constant.NIFTI_SLICE_ALT_INC:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC]
-	case constant.NIFTI_SLICE_ALT_DEC:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC]
-	case constant.NIFTI_SLICE_ALT_INC2:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_INC2]
-	case constant.NIFTI_SLICE_ALT_DEC2:
-		return constant.NiiSliceAcquistionInfo[constant.NIFTI_SLICE_ALT_DEC2]
-	}
-
-	return "UNKNOWN"
+	return getSliceCode(n.Data.SliceCode)
 }
 
 // getQFormCode returns the QForm code
 func (n *Nii) getQFormCode() string {
-	qForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.QformCode)]
+	qForm, ok := constant.NiiPatientOrientationInfo[n.Data.QformCode]
 	if !ok {
 		return INVALID
 	}
@@ -131,7 +114,7 @@ func (n *Nii) getQFormCode() string {
 
 // getSFormCode returns the SForm code
 func (n *Nii) getSFormCode() string {
-	sForm, ok := constant.NiiPatientOrientationInfo[uint8(n.Data.SformCode)]
+	sForm, ok := constant.NiiPatientOrientationInfo[n.Data.SformCode]
 	if !ok {
 		return INVALID
 	}
@@ -260,6 +243,7 @@ func (n *Nii) getTimeSeries(x, y, z int64) ([]float64, error) {
 	return timeSeries, nil
 }
 
+// getSlice returns the image in x-y dimension
 func (n *Nii) getSlice(z, t int64) ([][]float64, error) {
 	sliceX := n.Data.Nx
 	sliceY := n.Data.Ny
@@ -286,7 +270,7 @@ func (n *Nii) getSlice(z, t int64) ([][]float64, error) {
 	return slice, nil
 }
 
-// getVolume
+// getVolume return the whole image volume at time t
 func (n *Nii) getVolume(t int64) ([][][]float64, error) {
 	sliceX := n.Data.Nx
 	sliceY := n.Data.Ny
