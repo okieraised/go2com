@@ -57,7 +57,7 @@ func MakeNewNii1Header(inDim *[8]int16, inDatatype int32) *Nii1Header {
 	}
 
 	// Populate the header struct
-	header.SizeofHdr = NII1HeaderSize
+	header.SizeofHdr = constant.NII1HeaderSize
 	header.Regular = 'r'
 
 	// Init dim and pixdim

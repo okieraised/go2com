@@ -180,6 +180,7 @@ func getDatatype(datatype int32) string {
 	return ILLEGAL
 }
 
+// getSliceCode returns the name of the slice code
 func getSliceCode(sliceCode int32) string {
 	switch sliceCode {
 	case constant.NIFTI_SLICE_UNKNOWN:
