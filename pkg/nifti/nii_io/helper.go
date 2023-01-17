@@ -1,4 +1,4 @@
-package io
+package nii_io
 
 import (
 	"bytes"
@@ -290,4 +290,14 @@ func swapFloat64(in float64) (float64, error) {
 		res := math.Float64frombits(bits)
 		return res, nil
 	}
+}
+
+func convertToF64(ar [4]float32) [4]float64 {
+	newar := [4]float64{}
+	var v float32
+	var i int
+	for i, v = range ar {
+		newar[i] = float64(v)
+	}
+	return newar
 }

@@ -1,8 +1,8 @@
-package io
+package nii_io
 
 const (
-	NIIVersion1 = 1
-	NIIVersion2 = 2
+	NIIVersion1 = iota + 1
+	NIIVersion2
 )
 
 const (

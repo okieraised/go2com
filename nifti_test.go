@@ -5,7 +5,7 @@ import (
 	_ "image/jpeg"
 	"testing"
 
-	"github.com/okieraised/go2com/pkg/nifti/io"
+	"github.com/okieraised/go2com/pkg/nifti/nii_io"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +27,7 @@ func TestNii1(t *testing.T) {
 	//filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
 	//filePath = "/Users/TriPham/Downloads/nifti/avg152T1_RL_nifti.nii"
 
-	niiReader, err := io.NewNiiReader(filePath)
+	niiReader, err := nii_io.NewNiiReader(filePath)
 	assert.NoError(err)
 	err = niiReader.Parse()
 	assert.NoError(err)

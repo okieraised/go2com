@@ -1,4 +1,4 @@
-package io
+package nii_io
 
 import (
 	"github.com/okieraised/go2com/internal/matrix"

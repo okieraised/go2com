@@ -1,4 +1,4 @@
-package io
+package nii_io
 
 import (
 	"encoding/binary"
@@ -92,6 +92,7 @@ type Nifti1Ext struct {
 	ESize int32
 }
 
+// getSliceCode returns the slice code of the NIFTI image
 func (n *Nii) getSliceCode() string {
 	switch n.Data.SliceCode {
 	case constant.NIFTI_SLICE_UNKNOWN:

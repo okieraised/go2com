@@ -1,4 +1,4 @@
-package io
+package nii_io
 
 import (
 	"bytes"
@@ -50,17 +50,21 @@ type NiiReader interface {
 
 type niiReader struct {
 	reader      *bytes.Reader
-	binaryOrder binary.ByteOrder
-	data        *Nii
-	version     int
+	binaryOrder binary.ByteOrder // Default system order
+	data        *Nii             // Contains the NIFTI data structure
+	version     int              // Define the version of NIFTI image (1 or 2)
 }
 
+// NewNiiReader receives a path to the NIFTI file and returns a new reader to parse the file
+//
+// TODO: this is not efficient when the file is large so we need to find better way to deal with large file size
 func NewNiiReader(filePath string) (NiiReader, error) {
 	bData, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
+	// Check the content type to see if the file is gzipped. Do not depend on just the extensions of the file
 	mimeType := http.DetectContentType(bData[:512])
 	if mimeType == "application/x-gzip" {
 		bData, err = utils.DeflateGzip(bData)
@@ -247,10 +251,8 @@ func (r *niiReader) parseHeader() error {
 	return nil
 }
 
-// setDatatypeSize sets number of bytes per voxel and the swapsize for the header datatype
+// setDatatypeSize sets number of bytes per voxel and the swap size for the header datatype
 func (r *niiReader) setDatatypeSize() {
-	var NByPerVoxel int32 = 0
-	var SwapSize int32 = 0
 	var datatype int32
 
 	switch r.version {
@@ -259,44 +261,12 @@ func (r *niiReader) setDatatypeSize() {
 	case NIIVersion2:
 		datatype = int32(r.data.n2Header.Datatype)
 	}
-
-	switch datatype {
-	case constant.DT_INT8, constant.DT_UINT8:
-		NByPerVoxel = 1
-		SwapSize = 0
-	case constant.DT_INT16, constant.DT_UINT16:
-		NByPerVoxel = 2
-		SwapSize = 2
-	case constant.DT_RGB24:
-		NByPerVoxel = 3
-		SwapSize = 0
-	case constant.DT_RGBA32:
-		NByPerVoxel = 4
-		SwapSize = 0
-	case constant.DT_INT32, constant.DT_UINT32, constant.DT_FLOAT32:
-		NByPerVoxel = 4
-		SwapSize = 4
-	case constant.DT_COMPLEX64:
-		NByPerVoxel = 8
-		SwapSize = 4
-	case constant.DT_FLOAT64, constant.DT_INT64, constant.DT_UINT64:
-		NByPerVoxel = 8
-		SwapSize = 8
-	case constant.DT_FLOAT128:
-		NByPerVoxel = 16
-		SwapSize = 16
-	case constant.DT_COMPLEX128:
-		NByPerVoxel = 16
-		SwapSize = 8
-	case constant.DT_COMPLEX256:
-		NByPerVoxel = 32
-		SwapSize = 16
-	}
-	r.data.Data.NByPer = NByPerVoxel
-	r.data.Data.SwapSize = SwapSize
+	NByPerVoxel, SwapSize := assignDatatypeSize(datatype)
+	r.data.Data.NByPer = int32(NByPerVoxel)
+	r.data.Data.SwapSize = int32(SwapSize)
 }
 
-// parseData parse the raw byte array into NIFTI-1 data structure
+// parseData parse the raw byte array into NIFTI-1 or NIFTI-2 data structure
 func (r *niiReader) parseData() error {
 	r.data.Data = &NiiData{}
 	var offset int64
@@ -337,9 +307,9 @@ func (r *niiReader) parseData() error {
 		sFormCode = int32(r.data.n1Header.SformCode)
 		pixDim0 = float64(r.data.n1Header.Pixdim[0])
 
-		sRowX = ConvertToF64(r.data.n1Header.SrowX)
-		sRowY = ConvertToF64(r.data.n1Header.SrowY)
-		sRowZ = ConvertToF64(r.data.n1Header.SrowZ)
+		sRowX = convertToF64(r.data.n1Header.SrowX)
+		sRowY = convertToF64(r.data.n1Header.SrowY)
+		sRowZ = convertToF64(r.data.n1Header.SrowZ)
 
 		sclSlope = float64(r.data.n1Header.SclSlope)
 		sclInter = float64(r.data.n1Header.SclInter)
@@ -613,14 +583,4 @@ func dimInfoToPhaseDim(DimInfo uint8) uint8 {
 
 func dimInfoToSliceDim(DimInfo uint8) uint8 {
 	return (DimInfo >> 4) & 0x03
-}
-
-func ConvertToF64(ar [4]float32) [4]float64 {
-	newar := [4]float64{}
-	var v float32
-	var i int
-	for i, v = range ar {
-		newar[i] = float64(v)
-	}
-	return newar
 }
