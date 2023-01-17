@@ -378,3 +378,11 @@ func dimInfoToPhaseDim(DimInfo uint8) uint8 {
 func dimInfoToSliceDim(DimInfo uint8) uint8 {
 	return (DimInfo >> 4) & 0x03
 }
+
+func convertSpaceTimeToXYZT(xyzUnit, timeUnit int32) uint8 {
+	return uint8((xyzUnit & 0x07) | (timeUnit & 0x38))
+}
+
+func convertFPSIntoDimInfo(freqDim, phaseDim, sliceDim int32) uint8 {
+	return uint8((freqDim & 0x03) | ((phaseDim & 0x03) << 2) | ((sliceDim & 0x03) << 4))
+}

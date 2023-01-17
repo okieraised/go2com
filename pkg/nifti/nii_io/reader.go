@@ -566,6 +566,9 @@ func (r *niiReader) parseData(header interface{}) error {
 	if r.data.Dim[5] > 1 {
 		statDim = r.data.Dim[5]
 	}
+
+	r.data.VoxOffset = float64(offset)
+
 	offset = voxOffset
 	dataSize := r.data.Dim[1] * r.data.Dim[2] * r.data.Dim[3] * r.data.Dim[4] * statDim * (int64(bitpix) / 8)
 

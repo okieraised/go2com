@@ -53,6 +53,11 @@ func TestNii1(t *testing.T) {
 
 	fmt.Println("len res2", len(res2))
 
+	writer := nii_io.NewNiiWriter("./out.nii", nii_io.WithNIfTIData(niiReader.GetNiiData()))
+
+	err = writer.WriteToFile()
+	assert.NoError(err)
+
 	//for _, elem := range res {
 	//	fmt.Println(elem)
 	//
@@ -70,4 +75,5 @@ func TestNii1(t *testing.T) {
 
 	shape = niiReader.GetImgShape()
 	fmt.Println(shape)
+
 }

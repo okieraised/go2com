@@ -89,6 +89,7 @@ type Nii struct {
 	Nifti1Ext     []Nifti1Ext      // array of extension structs (with data)
 	IJKOrtient    [3]int32         // self-add. Orientation ini, j, k coordinate
 	Affine        matrix.DMat44    // self-add. Affine matrix
+	VoxOffset     float64          // self-add. Voxel offset
 	Version       int              // self-add. Used for version identification when writing
 }
 
