@@ -1,4 +1,6 @@
-# go2com (DICOM image parser)
+# go2com (DICOM and NIFTI image parser)
+
+** This package is under active development and can be in a very broken state. Please use the latest released version **
 
 ## Example
 To parse a DICOM file, import the package as `github.com/okieraised/go2com`

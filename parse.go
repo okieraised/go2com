@@ -22,8 +22,8 @@ const (
 	MagicString = "DICM"
 )
 
-// Parser implements the field required to parse the dicom file
-type Parser struct {
+// DcmParser implements the field required to parse the dicom file
+type DcmParser struct {
 	filePath      string
 	fileContent   []byte
 	fileReader    *io.Reader
@@ -35,30 +35,8 @@ type Parser struct {
 	skipPixelData bool
 }
 
-// Deprecated: this initialization will be triggered by calling init() in tag pkg
-func InitTagDict() {
-	tag.InitTagDict()
-}
-
-// NewParser returns a new dicom parser
-// Deprecated: NewParser will be replaced by NewDCMFileParser in future release
-func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset bool) (*Parser, error) {
-	dcmReader := reader.NewDcmReader(bufio.NewReader(fileReader), skipPixelData)
-	parser := Parser{
-		skipPixelData: skipPixelData,
-		skipDataset:   skipDataset,
-		fileSize:      fileSize,
-		reader:        dcmReader,
-	}
-	return &parser, nil
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// New implementation of DICOM parser
-//----------------------------------------------------------------------------------------------------------------------
-
 // NewDCMFileParser creates new parser from input file path with default options and/or with user-specified options
-func NewDCMFileParser(filePath string, options ...func(*Parser)) (*Parser, error) {
+func NewDCMFileParser(filePath string, options ...func(*DcmParser)) (*DcmParser, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -69,7 +47,7 @@ func NewDCMFileParser(filePath string, options ...func(*Parser)) (*Parser, error
 		return nil, err
 	}
 	dcmReader := reader.NewDICOMReader(bufio.NewReader(f))
-	parser := &Parser{
+	parser := &DcmParser{
 		reader:   dcmReader,
 		fileSize: fInfo.Size(),
 	}
@@ -81,22 +59,22 @@ func NewDCMFileParser(filePath string, options ...func(*Parser)) (*Parser, error
 
 // WithSkipPixelData provides option to skip reading pixel data (7FE0,0010).
 // If true, pixel data is skipped. If false, pixel data will be read
-func WithSkipPixelData(skipPixelData bool) func(*Parser) {
-	return func(s *Parser) {
+func WithSkipPixelData(skipPixelData bool) func(*DcmParser) {
+	return func(s *DcmParser) {
 		s.skipPixelData = skipPixelData
 	}
 }
 
 // WithSkipDataset provides option to read only the metadata header.
 // If true, only the meta header is read, else, the dataset will be read
-func WithSkipDataset(skipPixelDataset bool) func(*Parser) {
-	return func(s *Parser) {
+func WithSkipDataset(skipPixelDataset bool) func(*DcmParser) {
+	return func(s *DcmParser) {
 		s.skipPixelData = skipPixelDataset
 	}
 }
 
 // IsValidDICOM checks if the dicom file follows the standard by having 128 bytes preamble followed by the magic string 'DICM'
-func (p *Parser) IsValidDICOM() error {
+func (p *DcmParser) IsValidDICOM() error {
 	preamble, err := p.reader.Peek(128 + 4)
 	if err != nil {
 		return fmt.Errorf("cannot read the first 132 bytes: %v", err)
@@ -107,10 +85,8 @@ func (p *Parser) IsValidDICOM() error {
 	return nil
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
 // Parse reads the DICOM file and parses it into array of elements
-func (p *Parser) Parse() error {
+func (p *DcmParser) Parse() error {
 	err := p.parse()
 	if err != nil {
 		return err
@@ -119,18 +95,18 @@ func (p *Parser) Parse() error {
 }
 
 // GetMetadata returns the file meta header
-func (p *Parser) GetMetadata() dataset.Dataset {
+func (p *DcmParser) GetMetadata() dataset.Dataset {
 	return p.metadata
 }
 
 // GetDataset returns the dataset
-func (p *Parser) GetDataset() dataset.Dataset {
+func (p *DcmParser) GetDataset() dataset.Dataset {
 	return p.dataset
 }
 
 // GetElementByTagString returns the element value of the input tag
 // Tag should be in (gggg,eeee) or ggggeeee format
-func (p *Parser) GetElementByTagString(tagStr string) (interface{}, error) {
+func (p *DcmParser) GetElementByTagString(tagStr string) (interface{}, error) {
 	tagStr = utils.FormatTag(tagStr)
 
 	if strings.HasPrefix(tagStr, "0002") {
@@ -153,7 +129,7 @@ func (p *Parser) GetElementByTagString(tagStr string) (interface{}, error) {
 //----------------------------------------------------------------------------------------------------------------------
 // Unexported methods
 //----------------------------------------------------------------------------------------------------------------------
-func (p *Parser) parse() error {
+func (p *DcmParser) parse() error {
 	p.setFileSize()
 	err := p.IsValidDICOM()
 	if err != nil {
@@ -175,7 +151,7 @@ func (p *Parser) parse() error {
 }
 
 // setFileSize sets the file size to the reader
-func (p *Parser) setFileSize() {
+func (p *DcmParser) setFileSize() {
 	_ = p.reader.SetFileSize(p.fileSize)
 }
 
@@ -183,38 +159,10 @@ func (p *Parser) setFileSize() {
 // https://dicom.nema.org/dicom/2013/output/chtml/part10/chapter_7.html
 // the File Meta Information shall be encoded using the Explicit VR Little Endian Transfer Syntax
 // (UID=1.2.840.10008.1.2.1)
-func (p *Parser) parseMetadata() error {
+func (p *DcmParser) parseMetadata() error {
 	var transferSyntaxUID string
 	var metadata []*element.Element
 
-	//// File meta header is mostly always explicit (except for 1.2.840.113619.5.2 [Implicit VR Big Endian DLX (G.E Private)])
-	//// where the header is implicit
-	//firstHeaderElemBytes, err := p.reader.Peek(4 + 2 + 2 + 4) // 4 bytes tag + 2 bytes VR + 2 bytes VL + 4 bytes value length
-	//if err != nil {
-	//	return err
-	//}
-	//subRd1 := reader.NewDcmReader(bufio.NewReader(bytes.NewReader(firstHeaderElemBytes)), p.skipPixelData)
-	//res, err := element.ReadElement(subRd1, p.reader.IsImplicit(), p.reader.ByteOrder())
-	//if err != nil {
-	//	return err
-	//}
-	//metaGroupLength, ok := (res.Value.RawValue).(int)
-	//if !ok {
-	//	//fmt.Println("GOT HERE")
-	//	p.reader.SetTransferSyntax(p.reader.ByteOrder(), true)
-	//	res, err = element.ReadElement(p.reader, p.reader.IsImplicit(), p.reader.ByteOrder())
-	//	if err != nil {
-	//		return err
-	//	}
-	//	metaGroupLength, ok = (res.Value.RawValue).(int)
-	//	if !ok {
-	//		return fmt.Errorf("invalid value for tag (0x%x, 0x%x)", res.Tag.Group, res.Tag.Element)
-	//	}
-	//} else {
-	//	p.reader.Skip(12)
-	//}
-
-	//------------------------------------------------------------------------------------------------------------------
 	res, err := element.ReadElement(p.reader, p.reader.IsImplicit(), p.reader.ByteOrder())
 	if err != nil {
 		return err
@@ -224,7 +172,6 @@ func (p *Parser) parseMetadata() error {
 	if !ok {
 		return fmt.Errorf("invalid value for tag (0x%x, 0x%x)", res.Tag.Group, res.Tag.Element)
 	}
-	//------------------------------------------------------------------------------------------------------------------
 
 	metadata = append(metadata, res)
 	// Keep reading the remaining header based on metaGroupLength
@@ -232,7 +179,8 @@ func (p *Parser) parseMetadata() error {
 	if err != nil {
 		return err
 	}
-	subRd := reader.NewDcmReader(bufio.NewReader(bytes.NewReader(pBytes)), p.skipPixelData)
+
+	subRd := reader.NewDICOMReader(bufio.NewReader(bytes.NewReader(pBytes)), reader.WithSkipPixelData(p.skipPixelData))
 	for {
 		res, err := element.ReadElement(subRd, p.reader.IsImplicit(), p.reader.ByteOrder())
 		if err != nil {
@@ -281,7 +229,7 @@ func (p *Parser) parseMetadata() error {
 }
 
 // parseDataset parses the file dataset after the file meta header
-func (p *Parser) parseDataset() error {
+func (p *DcmParser) parseDataset() error {
 	var data []*element.Element
 	for {
 		res, err := element.ReadElement(p.reader, p.reader.IsImplicit(), p.reader.ByteOrder())

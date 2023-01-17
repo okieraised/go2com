@@ -129,7 +129,7 @@ func (px PixelDataMacro) ReadEncapsulatedPixelData() ([]byte, error) {
 	}
 
 	bufRd := bufio.NewReaderSize(bytes.NewReader(rawPixel), int(pixelDataElem.ValueLength))
-	pixReader := reader.NewDcmReader(bufRd, true)
+	pixReader := reader.NewDICOMReader(bufRd, reader.WithSkipPixelData(true))
 	actualPixelData := make([]byte, 0, int(pixelDataElem.ValueLength))
 	index := 0
 	for {
