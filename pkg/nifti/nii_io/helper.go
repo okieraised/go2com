@@ -137,6 +137,49 @@ func swapNIFTI1Header(header *Nii1Header) (*Nii1Header, error) {
 	return newHeader, nil
 }
 
+// getDatatype returns the appropriate datatype of the NIFTI image
+func getDatatype(datatype int32) string {
+	switch datatype {
+	case constant.DT_UNKNOWN:
+		return "UNKNOWN"
+	case constant.DT_BINARY:
+		return "BINARY"
+	case constant.DT_INT8:
+		return "INT8"
+	case constant.DT_UINT8:
+		return "UINT8"
+	case constant.DT_INT16:
+		return "INT16"
+	case constant.DT_UINT16:
+		return "UINT16"
+	case constant.DT_INT32:
+		return "INT32"
+	case constant.DT_UINT32:
+		return "UINT32"
+	case constant.DT_INT64:
+		return "INT64"
+	case constant.DT_UINT64:
+		return "UINT64"
+	case constant.DT_FLOAT32:
+		return "FLOAT32"
+	case constant.DT_FLOAT64:
+		return "FLOAT64"
+	case constant.DT_FLOAT128:
+		return "FLOAT128"
+	case constant.DT_COMPLEX64:
+		return "COMPLEX64"
+	case constant.DT_COMPLEX128:
+		return "COMPLEX128"
+	case constant.DT_COMPLEX256:
+		return "COMPLEX256"
+	case constant.DT_RGB24:
+		return "RGB24"
+	case constant.DT_RGBA32:
+		return "RGBA32"
+	}
+	return ILLEGAL
+}
+
 // assignDatatypeSize sets the number of bytes per voxel and the swapsize based on a datatype code
 // returns nByper and swapSize
 func assignDatatypeSize(datatype int32) (int16, int16) {

@@ -1,15 +1,5 @@
 package nii_io
 
-const (
-	NIIVersion1 = iota + 1
-	NIIVersion2
-)
-
-const (
-	NII1HeaderSize = 348
-	NII2HeaderSize = 540
-)
-
 // Nii1Header defines the structure of the NIFTI-1 header
 type Nii1Header struct {
 	SizeofHdr      int32

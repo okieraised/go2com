@@ -1,6 +1,16 @@
 package constant
 
 const (
+	NIIVersion1 = iota + 1
+	NIIVersion2
+)
+
+const (
+	NII1HeaderSize = 348
+	NII2HeaderSize = 540
+)
+
+const (
 	NIFTI_INTENT_CORREL                     int16 = 2
 	NIFTI_INTENT_TTEST                      int16 = 3
 	NIFTI_INTENT_FTEST                      int16 = 4
