@@ -3,27 +3,25 @@ package dcm_io
 import (
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
-	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/vr"
-	"reflect"
-	"strconv"
+	"github.com/okieraised/go2com/pkg/plugins/orthanc"
 	"strings"
 )
 
 type MappedTag map[string]tag.TagBrowser
 
-// Export returns the mapped tag/(vr,value) dictionary
-func (p *DcmParser) Export(exportMeta bool) MappedTag {
-	res := make(MappedTag, len(p.metadata.Elements)+len(p.dataset.Elements))
+// ExportDatasetTags returns the mapped tag/(vr,value) dictionary
+func (r *dcmReader) ExportDatasetTags(exportMeta bool) MappedTag {
+	res := make(MappedTag, len(r.metadata.Elements)+len(r.dataset.Elements))
 	if exportMeta {
-		mt := p.metadata
+		mt := r.metadata
 		for _, elem := range mt.Elements {
 			res.mapElement(elem)
 		}
 	}
 
-	ds := p.dataset
+	ds := r.dataset
 	//colorImage := false
 	for _, elem := range ds.Elements {
 		//if elem.Tag == tag.RedPaletteColorLookupTableData || elem.Tag == tag.BluePaletteColorLookupTableData || elem.Tag == tag.GreenPaletteColorLookupTableData {
@@ -59,7 +57,7 @@ func (m MappedTag) GetElementByTagString(tagStr string) (interface{}, error) {
 }
 
 // mapElement returns a map[string]interface{} with key as tag and value as the tag values
-func (m MappedTag) mapElement(elem *element.Element) {
+func (m MappedTag) mapElement(elem *Element) {
 	tagStr := elem.Tag.StringWithoutParentheses()
 	vrStr := elem.ValueRepresentationStr
 	var value interface{}
@@ -68,7 +66,7 @@ func (m MappedTag) mapElement(elem *element.Element) {
 	// Else, loop through each element in the sequence and extract the info
 	if vrStr == "SQ" {
 		subVL := make([]interface{}, 0)
-		vlArr, ok := (elem.Value.RawValue).([]*element.Element)
+		vlArr, ok := (elem.Value.RawValue).([]*Element)
 		if ok {
 			if len(vlArr) == 0 {
 				return
@@ -93,8 +91,6 @@ func (m MappedTag) mapElement(elem *element.Element) {
 		}
 		value = subVL
 	} else {
-		//value = switchStringToNumeric(elem)
-		//value = utils.AppendToSlice(value)
 		if elem.ValueRepresentationStr == vr.PersonName {
 			value = utils.AppendToSlice(map[string]interface{}{
 				"Alphabetic": elem.Value.RawValue,
@@ -108,67 +104,6 @@ func (m MappedTag) mapElement(elem *element.Element) {
 		VR:    vrStr,
 		Value: value,
 	}
-}
-
-func switchStringToNumeric(elem *element.Element) interface{} {
-	switch elem.ValueRepresentationStr {
-	case vr.IntegerString:
-		switch reflect.ValueOf(elem.Value.RawValue).Kind() {
-		case reflect.Slice:
-			ValStrArr, ok := (elem.Value.RawValue).([]string)
-			if !ok {
-				return elem.Value.RawValue
-			}
-			res := make([]int, 0)
-			for _, sub := range ValStrArr {
-				intVar, err := strconv.Atoi(sub)
-				if err != nil {
-					return elem.Value.RawValue
-				}
-				res = append(res, intVar)
-			}
-			return res
-		case reflect.String:
-			valStr, ok := (elem.Value.RawValue).(string)
-			if !ok {
-				return elem.Value.RawValue
-			}
-			intVal, err := strconv.Atoi(valStr)
-			if err != nil {
-				return elem.Value.RawValue
-			}
-			return intVal
-		}
-	case vr.DecimalString, vr.OtherFloat, vr.OtherDouble:
-		switch reflect.ValueOf(elem.Value.RawValue).Kind() {
-		case reflect.Slice:
-			ValStrArr, ok := (elem.Value.RawValue).([]string)
-			if !ok {
-				return elem.Value.RawValue
-			}
-			res := make([]float64, 0)
-			for _, sub := range ValStrArr {
-				flVar, err := strconv.ParseFloat(sub, 64)
-				if err != nil {
-					return elem.Value.RawValue
-				}
-				res = append(res, flVar)
-			}
-			return res
-		case reflect.String:
-			valStr, ok := (elem.Value.RawValue).(string)
-			if !ok {
-				return elem.Value.RawValue
-			}
-			flVar, err := strconv.ParseFloat(valStr, 64)
-			if err != nil {
-				return elem.Value.RawValue
-			}
-			return flVar
-		}
-	default:
-	}
-	return elem.Value.RawValue
 }
 
 func createOrthancURI(ds Dataset) MappedTag {
@@ -188,6 +123,40 @@ func createOrthancURI(ds Dataset) MappedTag {
 				BulkDataURI: bulkURI,
 			}
 		}
+	}
+	return res
+}
+
+func (r *dcmReader) ExportSeriesTags() MappedTag {
+	res := make(MappedTag, len(r.dataset.Elements))
+	var value interface{}
+	for _, elem := range r.dataset.Elements {
+		if _, ok := orthanc.OrthancGetSeriesOfStudyTags[elem.Tag]; ok {
+			tagStr := elem.Tag.StringWithoutParentheses()
+			if elem.ValueRepresentationStr == vr.PersonName {
+				value = utils.AppendToSlice(map[string]interface{}{
+					"Alphabetic": elem.Value.RawValue,
+				})
+			} else {
+				value = utils.AppendToSlice(elem.Value.RawValue)
+			}
+			res[tagStr] = tag.TagBrowser{
+				VR:    elem.ValueRepresentationStr,
+				Value: value,
+			}
+
+		}
+	}
+
+	prefix := "http://127.0.0.1:8042"
+	firstSeriesURI := fmt.Sprintf("%s/dicom-web/studies/%s/series/%s", prefix,
+		res[tag.StudyInstanceUID.StringWithoutParentheses()].Value.([]interface{})[0].(string),
+		res[tag.SeriesInstanceUID.StringWithoutParentheses()].Value.([]interface{})[0].(string),
+	)
+
+	res[tag.RetrieveURL.StringWithoutParentheses()] = tag.TagBrowser{
+		Value: []interface{}{firstSeriesURI},
+		VR:    "UR",
 	}
 	return res
 }
