@@ -4,15 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/okieraised/go2com/pkg/dicom/dataset"
-	"github.com/okieraised/go2com/pkg/dicom/element"
-	"github.com/okieraised/go2com/pkg/dicom/reader"
+	"github.com/okieraised/go2com/pkg/dicom/dcm_io"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/uid"
 	"io"
 )
 
-type PixelDataMacro map[tag.DicomTag]*element.Element
+type PixelDataMacro map[tag.DicomTag]*dcm_io.Element
 
 // GetPixelDataMacroAttributes retrieves the tags and values corresponding to the PixelData macro
 //    +------------------------------------------------+
@@ -44,7 +42,7 @@ type PixelDataMacro map[tag.DicomTag]*element.Element
 //    +-------------+---------------------------+------+
 //    | (7FE0,0010) | PixelData                 | 1C   |
 //    +-------------+---------------------------+------+
-func GetPixelDataMacroAttributes(ds, meta dataset.Dataset) PixelDataMacro {
+func GetPixelDataMacroAttributes(ds, meta dcm_io.Dataset) PixelDataMacro {
 	res := make(PixelDataMacro, 0)
 	for _, elem := range meta.Elements {
 		if elem.Tag == tag.TransferSyntaxUID {
@@ -129,19 +127,19 @@ func (px PixelDataMacro) ReadEncapsulatedPixelData() ([]byte, error) {
 	}
 
 	bufRd := bufio.NewReaderSize(bytes.NewReader(rawPixel), int(pixelDataElem.ValueLength))
-	pixReader := reader.NewDICOMReader(bufRd, reader.WithSkipPixelData(true))
+	pixReader := dcm_io.NewDICOMReader(bufRd, dcm_io.WithSkipPixelData(true))
 	actualPixelData := make([]byte, 0, int(pixelDataElem.ValueLength))
 	index := 0
 	for {
 		var tGroup, tElem uint16
-		tGroup, err := pixReader.ReadUInt16()
+		tGroup, err := pixReader.readUInt16()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
 			return nil, err
 		}
-		tElem, err = pixReader.ReadUInt16()
+		tElem, err = pixReader.readUInt16()
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -166,7 +164,7 @@ func (px PixelDataMacro) ReadEncapsulatedPixelData() ([]byte, error) {
 			return nil, err
 		}
 
-		rawValue, err := pixReader.Peek(int(tValueLength))
+		rawValue, err := pixReader.peek(int(tValueLength))
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -177,7 +175,7 @@ func (px PixelDataMacro) ReadEncapsulatedPixelData() ([]byte, error) {
 		if index > 0 {
 			actualPixelData = append(actualPixelData, rawValue...)
 		}
-		_, err = pixReader.Discard(int(tValueLength))
+		_, err = pixReader.discard(int(tValueLength))
 		if err != nil {
 			if err == io.EOF {
 				break

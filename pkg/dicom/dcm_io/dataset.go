@@ -1,16 +1,15 @@
-package dataset
+package dcm_io
 
 import (
 	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
-	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"strings"
 )
 
 type Dataset struct {
-	Elements []*element.Element `json:"elements"`
+	Elements []*Element `json:"elements"`
 }
 
 type DicomUID struct {
@@ -42,7 +41,7 @@ func (ds *Dataset) RetrieveFileUID() (*DicomUID, error) {
 
 // FindElementByTagStr returns the corresponding element of the input tag.
 // Tag must be in 'ggggeeee' or '(gggg,eeee)' format
-func (ds *Dataset) FindElementByTagStr(tagStr string) (*element.Element, error) {
+func (ds *Dataset) FindElementByTagStr(tagStr string) (*Element, error) {
 	tagStr = utils.FormatTag(tagStr)
 	for _, elem := range ds.Elements {
 		if elem.Tag.StringWithoutParentheses() == tagStr {
@@ -53,7 +52,7 @@ func (ds *Dataset) FindElementByTagStr(tagStr string) (*element.Element, error) 
 }
 
 // FindElementByTagName returns the corresponding element of the input tag name.
-func (ds *Dataset) FindElementByTagName(tagName string) (*element.Element, error) {
+func (ds *Dataset) FindElementByTagName(tagName string) (*Element, error) {
 	tagName = utils.FormatTagName(tagName)
 	for _, elem := range ds.Elements {
 		if strings.ToLower(elem.TagName) == tagName {
@@ -64,7 +63,7 @@ func (ds *Dataset) FindElementByTagName(tagName string) (*element.Element, error
 }
 
 // FindElementByTag returns the corresponding element of the input tag name.
-func (ds *Dataset) FindElementByTag(tagName tag.DicomTag) (*element.Element, error) {
+func (ds *Dataset) FindElementByTag(tagName tag.DicomTag) (*Element, error) {
 	for _, elem := range ds.Elements {
 		if tagName == elem.Tag {
 			return elem, nil

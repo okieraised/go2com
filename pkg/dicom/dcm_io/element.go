@@ -1,4 +1,4 @@
-package element
+package dcm_io
 
 import (
 	"bufio"
@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/system"
-	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/vr"
 	"io"
@@ -35,19 +34,19 @@ type Element struct {
 }
 
 // ReadElement reads the DICOM file tag by tag and returns the pointer to the parsed Element
-func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder) (*Element, error) {
+func ReadElement(r DcmReader, isImplicit bool, binOrder binary.ByteOrder) (*Element, error) {
 	tagVal, dcmTagInfo, err := readTag(r)
 	if err != nil {
 		return nil, err
 	}
 
 	if *tagVal == tag.ItemDelimitationItem || *tagVal == tag.Item {
-		_ = r.Skip(4)
+		_ = r.skip(4)
 		return nil, nil
 	}
 
 	if *tagVal == tag.PixelData && r.SkipPixelData() {
-		_, err = r.Discard(int(r.GetFileSize()))
+		_, err = r.discard(int(r.GetFileSize()))
 		if err != nil {
 			return nil, err
 		}
@@ -85,12 +84,12 @@ func ReadElement(r reader.DcmReader, isImplicit bool, binOrder binary.ByteOrder)
 }
 
 // readTag returns the tag information
-func readTag(r reader.DcmReader) (*tag.DicomTag, *tag.TagInfo, error) {
-	group, err := r.ReadUInt16()
+func readTag(r DcmReader) (*tag.DicomTag, *tag.TagInfo, error) {
+	group, err := r.readUInt16()
 	if err != nil {
 		return nil, nil, err
 	}
-	element, err := r.ReadUInt16()
+	element, err := r.readUInt16()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,7 +119,7 @@ func readTag(r reader.DcmReader) (*tag.DicomTag, *tag.TagInfo, error) {
 }
 
 // readVR returns the value representation of the tag
-func readVR(r reader.DcmReader, isImplicit bool, t tag.DicomTag) (string, error) {
+func readVR(r DcmReader, isImplicit bool, t tag.DicomTag) (string, error) {
 	if isImplicit {
 		record, err := tag.Find(t)
 		if err != nil {
@@ -128,13 +127,13 @@ func readVR(r reader.DcmReader, isImplicit bool, t tag.DicomTag) (string, error)
 		}
 		return record.VR, nil
 	}
-	return r.ReadString(2)
+	return r.readString(2)
 }
 
 // readVL returns the value length of the dicom tag
-func readVL(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueRepresentation string) (uint32, error) {
+func readVL(r DcmReader, isImplicit bool, t tag.DicomTag, valueRepresentation string) (uint32, error) {
 	if isImplicit {
-		return r.ReadUInt32()
+		return r.readUInt32()
 	}
 
 	switch valueRepresentation {
@@ -144,8 +143,8 @@ func readVL(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueRepresenta
 	case vr.OtherByte, vr.OtherWord, vr.OtherFloat, vr.SequenceOfItems, vr.Unknown, vr.OtherByteOrOtherWord,
 		strings.ToLower(vr.OtherByteOrOtherWord), vr.UnlimitedText, vr.UniversalResourceIdentifier,
 		vr.UnlimitedCharacters:
-		r.Skip(2)
-		valueLength, err := r.ReadUInt32()
+		r.skip(2)
+		valueLength, err := r.readUInt32()
 		if err != nil {
 			return 0, err
 		}
@@ -157,7 +156,7 @@ func readVL(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueRepresenta
 		}
 		return valueLength, nil
 	default:
-		valueLength, err := r.ReadUInt16()
+		valueLength, err := r.readUInt16()
 		if err != nil {
 			return 0, err
 		}
@@ -170,17 +169,17 @@ func readVL(r reader.DcmReader, isImplicit bool, t tag.DicomTag, valueRepresenta
 }
 
 // readValue returns the value of the dicom tag
-func readValue(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+func readValue(r DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	// Add this here for a special case when the tag is private and the value representation is UN (unknown) but the
 	// value is of sequence of items. In this case, we will peek the next 4 bytes and check if it matches the item tag
 	// If yes then handles like SQ
 	if valueRepresentation == vr.Unknown && t.Group%2 != 0 {
-		n, err := r.Peek(4)
+		n, err := r.peek(4)
 		if err != nil {
 			return nil, err
 		}
 		if binary.BigEndian.Uint32(n) == 0xFFFEE000 || binary.BigEndian.Uint32(n) == 0xFEFF00E0 || binary.BigEndian.Uint32(n) == VLUndefinedLength {
-			r.SetTransferSyntax(r.ByteOrder(), true)
+			r.setTransferSyntax(r.ByteOrder(), true)
 			return readSequence(r, t, valueRepresentation, valueLength)
 		}
 	}
@@ -267,9 +266,9 @@ func switchStringToNumeric(in interface{}, valueRepresentation string) interface
 }
 
 // readStringType reads the value as string and strips any zero padding
-func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+func readStringType(r DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	sep := "\\"
-	str, err := r.ReadString(valueLength)
+	str, err := r.readString(valueLength)
 	if err != nil {
 		return str, err
 	}
@@ -284,7 +283,7 @@ func readStringType(r reader.DcmReader, t tag.DicomTag, valueRepresentation stri
 }
 
 // readPixelDataType reads the raw pixel data
-func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+func readPixelDataType(r DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	if valueLength%2 != 0 && valueLength != VLUndefinedLength {
 		fmt.Printf("Odd value length encountered for tag: %v with length %d", t.String(), valueLength)
 	}
@@ -306,7 +305,7 @@ func readPixelDataType(r reader.DcmReader, t tag.DicomTag, valueRepresentation s
 }
 
 // readByteType reads the value as byte array
-func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+func readByteType(r DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	switch valueRepresentation {
 	case vr.OtherByte, vr.Unknown, vr.OtherByteOrOtherWord, strings.ToLower(vr.OtherByteOrOtherWord):
 		bArr := make([]byte, valueLength)
@@ -326,7 +325,7 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 		buf := bytes.NewBuffer(make([]byte, 0, valueLength))
 		numWords := int(valueLength / 2)
 		for i := 0; i < numWords; i++ {
-			word, err := r.ReadUInt16()
+			word, err := r.readUInt16()
 			if err != nil {
 				// Handle a case when the actual pixel data is less than the value length. Just return what we can
 				// read here
@@ -348,7 +347,7 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 		}
 		return buf.Bytes(), nil
 	default:
-		_, err := r.Discard(int(valueLength))
+		_, err := r.discard(int(valueLength))
 		if err != nil {
 			return nil, err
 		}
@@ -357,15 +356,15 @@ func readByteType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 }
 
 // readIntType reads the value as integer and returns either the value or a slice of value
-func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+func readIntType(r DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	var subVal int
 	retVal := make([]int, 0, valueLength/2)
-	n, err := r.Peek(int(valueLength))
+	n, err := r.peek(int(valueLength))
 	if err != nil {
 		return nil, err
 	}
 	subReader := bytes.NewReader(n)
-	subRd := reader.NewDICOMReader(bufio.NewReader(subReader), reader.WithSkipPixelData(r.SkipPixelData()))
+	subRd := NewDICOMReader(bufio.NewReader(subReader), WithSkipPixelData(r.SkipPixelData()))
 	byteRead := 0
 	for {
 		if byteRead >= int(valueLength) {
@@ -373,35 +372,35 @@ func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string,
 		}
 		switch valueRepresentation {
 		case vr.UnsignedShort, vr.SignedShortOrUnsignedShort, strings.ToLower(vr.SignedShortOrUnsignedShort):
-			val, err := subRd.ReadUInt16()
+			val, err := subRd.readUInt16()
 			if err != nil {
 				return nil, err
 			}
 			subVal = int(val)
 			byteRead += 2
 		case vr.AttributeTag:
-			val, err := subRd.ReadUInt16()
+			val, err := subRd.readUInt16()
 			if err != nil {
 				return nil, err
 			}
 			subVal = int(val)
 			byteRead += 2
 		case vr.UnsignedLong:
-			val, err := subRd.ReadUInt32()
+			val, err := subRd.readUInt32()
 			if err != nil {
 				return nil, err
 			}
 			subVal = int(val)
 			byteRead += 4
 		case vr.SignedLong:
-			val, err := subRd.ReadInt32()
+			val, err := subRd.readInt32()
 			if err != nil {
 				return nil, err
 			}
 			subVal = int(val)
 			byteRead += 4
 		case vr.SignedShort:
-			val, err := subRd.ReadInt16()
+			val, err := subRd.readInt16()
 			if err != nil {
 				return nil, err
 			}
@@ -412,7 +411,7 @@ func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string,
 		}
 		retVal = append(retVal, subVal)
 	}
-	_, _ = r.Discard(int(valueLength))
+	_, _ = r.discard(int(valueLength))
 	if len(retVal) == 1 {
 		return retVal[0], nil
 	}
@@ -420,15 +419,15 @@ func readIntType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string,
 }
 
 // readFloatType reads the value as float
-func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+func readFloatType(r DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	var subVal float64
 	retVal := make([]float64, 0, valueLength/2)
-	n, err := r.Peek(int(valueLength))
+	n, err := r.peek(int(valueLength))
 	if err != nil {
 		return nil, err
 	}
 	subReader := bytes.NewReader(n)
-	subRd := reader.NewDICOMReader(bufio.NewReader(subReader), reader.WithSkipPixelData(r.SkipPixelData()))
+	subRd := NewDICOMReader(bufio.NewReader(subReader), WithSkipPixelData(r.SkipPixelData()))
 	byteRead := 0
 	for {
 		if byteRead >= int(valueLength) {
@@ -436,14 +435,14 @@ func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation strin
 		}
 		switch valueRepresentation {
 		case vr.FloatingPointSingle, vr.OtherFloat:
-			val, err := subRd.ReadFloat32()
+			val, err := subRd.readFloat32()
 			if err != nil {
 				return nil, err
 			}
 			subVal = float64(val)
 			byteRead += 4
 		case vr.FloatingPointDouble:
-			val, err := subRd.ReadFloat64()
+			val, err := subRd.readFloat64()
 			if err != nil {
 				return nil, err
 			}
@@ -452,7 +451,7 @@ func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation strin
 		}
 		retVal = append(retVal, subVal)
 	}
-	_, _ = r.Discard(int(valueLength))
+	_, _ = r.discard(int(valueLength))
 	if len(retVal) == 1 {
 		return retVal[0], nil
 	}
@@ -461,7 +460,7 @@ func readFloatType(r reader.DcmReader, t tag.DicomTag, valueRepresentation strin
 }
 
 // readSequence reads the value as sequence of items
-func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
+func readSequence(r DcmReader, t tag.DicomTag, valueRepresentation string, valueLength uint32) (interface{}, error) {
 	var sequences []*Element
 	// Reference: https://dicom.nema.org/dicom/2013/output/chtml/part05/sect_7.5.html
 	if valueLength == VLUndefinedLength {
@@ -481,7 +480,7 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 			sequences = append(sequences, subElement)
 		}
 	} else {
-		n, err := r.Peek(int(valueLength))
+		n, err := r.peek(int(valueLength))
 		if err != nil {
 			if err == bufio.ErrBufferFull {
 				bRaw, err := writeToBuf(r, int(valueLength))
@@ -500,18 +499,18 @@ func readSequence(r reader.DcmReader, t tag.DicomTag, valueRepresentation string
 		if err != nil {
 			return nil, err
 		}
-		_, _ = r.Discard(int(valueLength))
+		_, _ = r.discard(int(valueLength))
 	}
-	//r.SetTransferSyntax(r.ByteOrder(), r.IsTrackingImplicit())
+	//r.setTransferSyntax(r.ByteOrder(), r.isTrackingImplicit())
 	return sequences, nil
 
 }
 
-func writeToBuf(r reader.DcmReader, n int) ([]byte, error) {
+func writeToBuf(r DcmReader, n int) ([]byte, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, n))
 
 	for i := 0; i < n; i++ {
-		word, err := r.ReadUInt8()
+		word, err := r.readUInt8()
 		if err != nil {
 			return nil, err
 		}
@@ -523,12 +522,12 @@ func writeToBuf(r reader.DcmReader, n int) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func readDefinedLengthSequences(r reader.DcmReader, b []byte, valueRepresentation string) ([]*Element, error) {
+func readDefinedLengthSequences(r DcmReader, b []byte, valueRepresentation string) ([]*Element, error) {
 	var sequences []*Element
 	br := bytes.NewReader(b)
-	subRd := reader.NewDICOMReader(bufio.NewReaderSize(br, len(b)), reader.WithSkipPixelData(r.SkipPixelData()))
-	_ = subRd.Skip(8)
-	subRd.SetTransferSyntax(r.ByteOrder(), r.IsImplicit())
+	subRd := NewDICOMReader(bufio.NewReaderSize(br, len(b)), WithSkipPixelData(r.SkipPixelData()))
+	_ = subRd.skip(8)
+	subRd.setTransferSyntax(r.ByteOrder(), r.IsImplicit())
 	for {
 		subElement, err := ReadElement(subRd, r.IsImplicit(), r.ByteOrder())
 		if err != nil {
@@ -545,7 +544,7 @@ func readDefinedLengthSequences(r reader.DcmReader, b []byte, valueRepresentatio
 		//fmt.Println(subElement)
 	}
 	if valueRepresentation == vr.Unknown {
-		r.SetTransferSyntax(r.ByteOrder(), r.IsTrackingImplicit())
+		r.setTransferSyntax(r.ByteOrder(), r.isTrackingImplicit())
 	}
 
 	return sequences, nil
