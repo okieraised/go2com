@@ -379,10 +379,17 @@ func dimInfoToSliceDim(DimInfo uint8) uint8 {
 	return (DimInfo >> 4) & 0x03
 }
 
+// convertSpaceTimeToXYZT converts xyzUnit, timeUnit back to uint8 representation of XyztUnits field
 func convertSpaceTimeToXYZT(xyzUnit, timeUnit int32) uint8 {
 	return uint8((xyzUnit & 0x07) | (timeUnit & 0x38))
 }
 
+// convertFPSIntoDimInfo converts freqDim, phaseDim, sliceDim back to uint8 representation of DimInfo
 func convertFPSIntoDimInfo(freqDim, phaseDim, sliceDim int32) uint8 {
 	return uint8((freqDim & 0x03) | ((phaseDim & 0x03) << 2) | ((sliceDim & 0x03) << 4))
+}
+
+// Check for valid extension
+func validNIfTIFileExt(filePath string) {
+
 }

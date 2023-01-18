@@ -47,7 +47,8 @@ func TestNii1(t *testing.T) {
 
 	fmt.Println("---------------------------------------------------------------------------------------------------")
 
-	writer := nii_io.NewNiiWriter("./out.nii", nii_io.WithNIfTIData(niiReader.GetNiiData()))
+	writer, err := nii_io.NewNiiWriter("./out.nii", nii_io.WithNIfTIData(niiReader.GetNiiData()))
+	assert.NoError(err)
 	err = writer.WriteToFile()
 	assert.NoError(err)
 

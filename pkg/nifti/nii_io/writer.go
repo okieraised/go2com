@@ -33,7 +33,7 @@ type niiWriter struct {
 }
 
 // NewNiiWriter returns a new write for export
-func NewNiiWriter(filePath string, options ...func(*niiWriter)) *niiWriter {
+func NewNiiWriter(filePath string, options ...func(*niiWriter)) (*niiWriter, error) {
 	writer := new(niiWriter)
 
 	writer.filePath = filePath
@@ -45,7 +45,7 @@ func NewNiiWriter(filePath string, options ...func(*niiWriter)) *niiWriter {
 	for _, opt := range options {
 		opt(writer)
 	}
-	return writer
+	return writer, nil
 }
 
 func WithWriteHeaderFile(writeHeaderFile bool) func(*niiWriter) {
@@ -85,9 +85,9 @@ func (w *niiWriter) WriteToFile() error {
 		return err
 	}
 
-	if w.writeHeaderFile {
+	if w.writeHeaderFile { // If user decides to write to a separate hdr/img file pair
 		return nil
-	} else {
+	} else { // Just one file for both header and the image data
 		bufHeader := &bytes.Buffer{}
 		err := binary.Write(bufHeader, system.NativeEndian, w.header)
 		if err != nil {
@@ -97,15 +97,12 @@ func (w *niiWriter) WriteToFile() error {
 		bHeader := bufHeader.Bytes()
 		bData := w.niiData.Volume
 		offsetFromHeaderToVoxel := int(w.header.VoxOffset) - len(bHeader)
-		fmt.Println("offsetFromHeader", offsetFromHeaderToVoxel)
 
 		// Need to make sure the header is divisible by 16
 		var offset []byte
 		if offsetFromHeaderToVoxel > 0 {
 			offset = make([]byte, offsetFromHeaderToVoxel)
 		}
-
-		fmt.Println("offset", offset)
 
 		toWrite := []byte{}
 		toWrite = append(toWrite, bHeader...)
@@ -298,8 +295,3 @@ func MakeNewNii1Header(inDim *[8]int16, inDatatype int32) *Nii1Header {
 
 	return header
 }
-
-//func MakeNewImage(inDim *[8]int16, inDatatype int32, dataFill int) {
-//	//header := MakeNewNii1Header(inDim, inDatatype)
-//
-//}
