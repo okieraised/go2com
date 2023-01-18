@@ -25,7 +25,6 @@ const (
 type DcmParser struct {
 	filePath      string
 	fileContent   []byte
-	fileReader    *io.Reader
 	reader        reader.DcmReader
 	dataset       Dataset
 	metadata      Dataset
