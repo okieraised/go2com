@@ -1,6 +1,31 @@
 package constant
 
 const (
+	NIIVersion1 = iota + 1
+	NIIVersion2
+)
+
+const (
+	NII1HeaderSize = 348
+	NII2HeaderSize = 540
+)
+
+// Possible NIFTI image extension
+const (
+	NIFTI_FTYPE_NIFTI1_1     = ".nii"
+	NIFTI_FTYPE_NIFTI1_2     = ".img"
+	NIFTI_FTYPE_NIFTI1_2_HDR = ".hdr"
+	NIFTI_FTYPE_NIFTI_GZIP   = ".gz"
+)
+
+var ValidNIfTIExtMapper = map[string]bool{
+	NIFTI_FTYPE_NIFTI1_1:     true,
+	NIFTI_FTYPE_NIFTI1_2:     true,
+	NIFTI_FTYPE_NIFTI1_2_HDR: true,
+	NIFTI_FTYPE_NIFTI_GZIP:   true,
+}
+
+const (
 	NIFTI_INTENT_CORREL                     int16 = 2
 	NIFTI_INTENT_TTEST                      int16 = 3
 	NIFTI_INTENT_FTEST                      int16 = 4
@@ -50,27 +75,6 @@ const (
 )
 
 const (
-	NIFTI_TYPE_UNKNOWN    = 0
-	NIFTI_TYPE_BOOL       = 1
-	NIFTI_TYPE_UINT8      = 2
-	NIFTI_TYPE_INT16      = 4
-	NIFTI_TYPE_INT32      = 8
-	NIFTI_TYPE_FLOAT32    = 16
-	NIFTI_TYPE_COMPLEX64  = 32
-	NIFTI_TYPE_FLOAT64    = 64
-	NIFTI_TYPE_RGB24      = 128
-	NIFTI_TYPE_INT8       = 256
-	NIFTI_TYPE_UINT16     = 512
-	NIFTI_TYPE_UINT32     = 768
-	NIFTI_TYPE_INT64      = 1024
-	NIFTI_TYPE_UINT64     = 1280
-	NIFTI_TYPE_FLOAT128   = 1536
-	NIFTI_TYPE_COMPLEX128 = 1792
-	NIFTI_TYPE_COMPLEX256 = 2048
-	NIFTI_TYPE_RGBA32     = 2304
-)
-
-const (
 	NIFTI_UNKNOWN_ORIENT = 0
 	NIFTI_L2R            = 1
 	NIFTI_R2L            = 2
@@ -91,35 +95,50 @@ var OrietationToString = map[int]string{
 }
 
 const (
-	DT_UNKNOWN       int16 = 0 // what it says, dude
-	DT_BINARY        int16 = 1 // binary (1 bit/voxel)
-	DT_UNSIGNED_CHAR int16 = 2 // unsigned char (8 bits/voxel)
-	DT_UINT8         int16 = 2
-	DT_SIGNED_SHORT  int16 = 4 // signed short (16 bits/voxel)
-	DT_INT16         int16 = 4
-	DT_SIGNED_INT    int16 = 8 // signed int (32 bits/voxel)
-	DT_INT32         int16 = 8
-	DT_FLOAT         int16 = 16 // float (32 bits/voxel)
-	DT_FLOAT32       int16 = 16
-	DT_COMPLEX       int16 = 32 // complex (64 bits/voxel)
-	DT_COMPLEX64     int16 = 32
-	DT_DOUBLE        int16 = 64 // double (64 bits/voxel)
-	DT_FLOAT64       int16 = 64
-	DT_RGB           int16 = 128 // RGB triple (24 bits/voxel)
-	DT_RGB24         int16 = 128
-	DT_ALL           int16 = 255  // not very useful (?)
-	DT_INT8          int16 = 256  // signed char (8 bits)
-	DT_UINT16        int16 = 512  // unsigned short (16 bits)
-	DT_UINT32        int16 = 768  // unsigned int (32 bits)
-	DT_INT64         int16 = 1024 // long long (64 bits)
-	DT_UINT64        int16 = 1280 // unsigned long long (64 bits)
-	DT_FLOAT128      int16 = 1536 // long double (128 bits)
-	DT_COMPLEX128    int16 = 1792 // double pair (128 bits)
-	DT_COMPLEX256    int16 = 2048 // long double pair (256 bits)
-	DT_RGBA32        int16 = 2304
+	DT_UNKNOWN    int32 = 0    // what it says, dude
+	DT_BINARY     int32 = 1    // binary (1 bit/voxel)
+	DT_UINT8      int32 = 2    // unsigned char (8 bits/voxel)
+	DT_INT16      int32 = 4    // signed short (16 bits/voxel)
+	DT_INT32      int32 = 8    // signed int (32 bits/voxel)
+	DT_FLOAT32    int32 = 16   // float (32 bits/voxel)
+	DT_COMPLEX64  int32 = 32   // complex (64 bits/voxel)
+	DT_FLOAT64    int32 = 64   // double (64 bits/voxel)
+	DT_RGB24      int32 = 128  // RGB triple (24 bits/voxel)
+	DT_ALL        int32 = 255  // not very useful (?)
+	DT_INT8       int32 = 256  // signed char (8 bits)
+	DT_UINT16     int32 = 512  // unsigned short (16 bits)
+	DT_UINT32     int32 = 768  // unsigned int (32 bits)
+	DT_INT64      int32 = 1024 // long long (64 bits)
+	DT_UINT64     int32 = 1280 // unsigned long long (64 bits)
+	DT_FLOAT128   int32 = 1536 // long double (128 bits)
+	DT_COMPLEX128 int32 = 1792 // double pair (128 bits)
+	DT_COMPLEX256 int32 = 2048 // long double pair (256 bits)
+	DT_RGBA32     int32 = 2304
 )
 
-var IsDatatypeInt = map[int16]bool{
+var ValidDatatype = map[int32]bool{
+	DT_UNKNOWN:    true,
+	DT_BINARY:     true,
+	DT_INT8:       true,
+	DT_UINT8:      true,
+	DT_INT16:      true,
+	DT_UINT16:     true,
+	DT_INT32:      true,
+	DT_UINT32:     true,
+	DT_INT64:      true,
+	DT_UINT64:     true,
+	DT_FLOAT32:    true,
+	DT_FLOAT64:    true,
+	DT_ALL:        true,
+	DT_FLOAT128:   true,
+	DT_COMPLEX64:  true,
+	DT_COMPLEX128: true,
+	DT_COMPLEX256: true,
+	DT_RGB24:      true,
+	DT_RGBA32:     true,
+}
+
+var IsDatatypeInt = map[int32]bool{
 	DT_UNKNOWN:    false,
 	DT_BINARY:     false,
 	DT_INT8:       true,
@@ -148,7 +167,7 @@ const (
 	NIFTI_XFORM_MNI_152      = 4
 )
 
-var NiiPatientOrientationInfo = map[uint8]string{
+var NiiPatientOrientationInfo = map[int32]string{
 	NIFTI_XFORM_UNKNOWN:      "0: Unknown",
 	NIFTI_XFORM_SCANNER_ANAT: "1: Scanner Anat",
 	NIFTI_XFORM_ALIGNED_ANAT: "2: Aligned Anat",

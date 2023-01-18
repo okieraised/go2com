@@ -18,6 +18,8 @@ func ParseTransferSyntaxUID(uid string) (bo binary.ByteOrder, implicit bool, err
 		return binary.LittleEndian, false, nil
 	case ExplicitVRBigEndian:
 		return binary.BigEndian, false, nil
+	case PrivateGELittleEndianImplicitWithBigEndianPixelData:
+		return binary.LittleEndian, true, nil
 	default:
 		return binary.BigEndian, false, fmt.Errorf("unsupported transfer syntax: %v", uid)
 	}

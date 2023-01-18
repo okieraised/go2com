@@ -15,6 +15,7 @@ func init() {
 	switch buf {
 	case [2]byte{0xCD, 0xAB}:
 		NativeEndian = binary.LittleEndian
+
 	case [2]byte{0xAB, 0xCD}:
 		NativeEndian = binary.BigEndian
 	default:

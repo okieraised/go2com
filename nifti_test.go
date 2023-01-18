@@ -5,7 +5,7 @@ import (
 	_ "image/jpeg"
 	"testing"
 
-	"github.com/okieraised/go2com/pkg/nifti/reader"
+	"github.com/okieraised/go2com/pkg/nifti/nii_io"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,21 +16,18 @@ func TestNii1(t *testing.T) {
 	filePath = "/home/tripg/Documents/nifti/RGB16_4D.nii.gz"
 	filePath = "/home/tripg/Documents/nifti/someones_anatomy.nii.gz"
 	filePath = "/home/tripg/Documents/nifti/someones_epi.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/RGB8_4D.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/jaw.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
-	filePath = "/home/tripg/Documents/nifti/knee.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/RGB8_4D.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/jaw.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
+	//filePath = "/home/tripg/Documents/nifti/knee.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/ExBox11/fmri.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/ExBox11/structural.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural_brain.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/JHU_MNI_SS_T1.nii.gz"
 	//filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/native_brain_mask.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/task001_run003/bold.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/113-02-FLAIR_processed_reg_withskull.nii.gz"
-	filePath = "/home/tripg/Documents/nifti/ds107_sub001_highres.nii"
+	//filePath = "/Users/TriPham/Documents/nifti/avg152T1_RL_nifti.nii"
 
-	niiReader, err := reader.NewNiiReader(filePath)
+	niiReader, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
 	assert.NoError(err)
 	err = niiReader.Parse()
 	assert.NoError(err)
@@ -39,22 +36,57 @@ func TestNii1(t *testing.T) {
 	fmt.Println("shape", shape)
 	fmt.Println(niiReader.GetUnitsOfMeasurements())
 	fmt.Println("dtype", niiReader.GetDatatype())
-	fmt.Println("nbyper", niiReader.GetNiiData().Data.NByPer)
+	fmt.Println("nbyper", niiReader.GetNiiData().NByPer)
 	fmt.Println("GetSFromCode()", niiReader.GetSFormCode())
 	fmt.Println("GetQFromCode()", niiReader.GetQFormCode())
-	fmt.Println(niiReader.GetOrientation())
+	fmt.Println("orientation", niiReader.GetOrientation())
+	fmt.Println("affine", niiReader.GetAffine())
+	fmt.Println("QOffsetX", niiReader.GetNiiData().QoffsetX)
+	fmt.Println("QOffsetY", niiReader.GetNiiData().QoffsetY)
+	fmt.Println("QOffsetZ", niiReader.GetNiiData().QoffsetZ)
 
-	res, err := niiReader.GetSlice(1, 0)
+	fmt.Println("---------------------------------------------------------------------------------------------------")
+
+	writer, err := nii_io.NewNiiWriter("./out.nii.gz", nii_io.WithNIfTIData(niiReader.GetNiiData()), nii_io.WithCompression(true))
+	assert.NoError(err)
+	err = writer.WriteToFile()
 	assert.NoError(err)
 
-	fmt.Println("len res", len(res))
-	fmt.Println("len res0", len(res[0]))
-
-	//fmt.Println(res)
-	res2, err := niiReader.GetVolume(0)
+	filePath = "./out.nii.gz"
+	niiReader, err = nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = niiReader.Parse()
 	assert.NoError(err)
 
-	fmt.Println("len res2", len(res2))
+	shape = niiReader.GetImgShape()
+	fmt.Println("shape", shape)
+	fmt.Println(niiReader.GetUnitsOfMeasurements())
+	fmt.Println("dtype", niiReader.GetDatatype())
+	fmt.Println("nbyper", niiReader.GetNiiData().NByPer)
+	fmt.Println("GetSFromCode()", niiReader.GetSFormCode())
+	fmt.Println("GetQFromCode()", niiReader.GetQFormCode())
+	fmt.Println("orientation", niiReader.GetOrientation())
+	fmt.Println("affine", niiReader.GetAffine())
+	fmt.Println("QOffsetX", niiReader.GetNiiData().QoffsetX)
+	fmt.Println("QOffsetY", niiReader.GetNiiData().QoffsetY)
+	fmt.Println("QOffsetZ", niiReader.GetNiiData().QoffsetZ)
+
+	//res, err := niiReader.GetSlice(1, 0)
+	//assert.NoError(err)
+	//
+	//fmt.Println("len res", len(res))
+	//fmt.Println("len res0", len(res[0]))
+	//
+	////fmt.Println(res)
+	//res2, err := niiReader.GetVolume(0)
+	//assert.NoError(err)
+	//
+	//fmt.Println("len res2", len(res2))
+	//
+	//writer := nii_io.NewNiiWriter("./out.nii", nii_io.WithNIfTIData(niiReader.GetNiiData()))
+	//
+	//err = writer.WriteToFile()
+	//assert.NoError(err)
 
 	//for _, elem := range res {
 	//	fmt.Println(elem)
@@ -73,4 +105,73 @@ func TestNii1(t *testing.T) {
 
 	shape = niiReader.GetImgShape()
 	fmt.Println(shape)
+
+}
+
+func TestNii2(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
+	filePath = "/home/tripg/Documents/nifti/RGB16_4D.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/someones_anatomy.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/someones_epi.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/RGB8_4D.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/jaw.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/Arnow^Corie^Shelvey^OM_segmented.nii"
+	//filePath = "/home/tripg/Documents/nifti/knee.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/ExBox11/fmri.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/ExBox11/structural_brain.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/JHU_MNI_SS_T1.nii.gz"
+	//filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti2.nii.gz"
+	filePath = "/home/tripg/Documents/nifti/avg152T1_LR_nifti.img.gz"
+
+	niiReader, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true), nii_io.WithHeaderFile("/home/tripg/Documents/nifti/avg152T1_LR_nifti.hdr.gz"))
+	assert.NoError(err)
+	err = niiReader.Parse()
+	assert.NoError(err)
+
+	shape := niiReader.GetImgShape()
+	fmt.Println("shape", shape)
+	fmt.Println(niiReader.GetUnitsOfMeasurements())
+	fmt.Println("dtype", niiReader.GetDatatype())
+	fmt.Println("nbyper", niiReader.GetNiiData().NByPer)
+	fmt.Println("GetSFromCode()", niiReader.GetSFormCode())
+	fmt.Println("GetQFromCode()", niiReader.GetQFormCode())
+	fmt.Println("orientation", niiReader.GetOrientation())
+	fmt.Println("affine", niiReader.GetAffine())
+	fmt.Println("QOffsetX", niiReader.GetNiiData().QoffsetX)
+	fmt.Println("QOffsetY", niiReader.GetNiiData().QoffsetY)
+	fmt.Println("QOffsetZ", niiReader.GetNiiData().QoffsetZ)
+	fmt.Println("VoxOffset", niiReader.GetNiiData().VoxOffset)
+
+	fmt.Println("---------------------------------------------------------------------------------------------------")
+
+	writer, err := nii_io.NewNiiWriter("./out2.nii.gz", nii_io.WithNIfTIData(niiReader.GetNiiData()), nii_io.WithCompression(true))
+	assert.NoError(err)
+	err = writer.WriteToFile()
+	assert.NoError(err)
+
+	filePath = "./out2.nii.gz"
+	niiReader, err = nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = niiReader.Parse()
+	assert.NoError(err)
+
+	shape = niiReader.GetImgShape()
+	fmt.Println("shape", shape)
+	fmt.Println(niiReader.GetUnitsOfMeasurements())
+	fmt.Println("dtype", niiReader.GetDatatype())
+	fmt.Println("nbyper", niiReader.GetNiiData().NByPer)
+	fmt.Println("GetSFromCode()", niiReader.GetSFormCode())
+	fmt.Println("GetQFromCode()", niiReader.GetQFormCode())
+	fmt.Println("orientation", niiReader.GetOrientation())
+	fmt.Println("affine", niiReader.GetAffine())
+	fmt.Println("QOffsetX", niiReader.GetNiiData().QoffsetX)
+	fmt.Println("QOffsetY", niiReader.GetNiiData().QoffsetY)
+	fmt.Println("QOffsetZ", niiReader.GetNiiData().QoffsetZ)
+}
+
+func TestMagicString(t *testing.T) {
+	fmt.Println([]byte("ni1"))
 }
