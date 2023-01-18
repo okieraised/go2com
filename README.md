@@ -3,35 +3,14 @@
 ** This package is under active development and can be in a very broken state. Please use the latest released version **
 
 ## Example
-To parse a DICOM file, import the package as `github.com/okieraised/go2com`
+To parse a DICOM file
 ```go
-package main
 
-import (
-	"log"
-	"os"
+```
 
-	"github.com/okieraised/go2com"
-)
+To parse a single NIfTI file:
+```go
 
-func main() {
-	file, err := os.Open("/path_to_dcm_file")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	info, err := file.Stat()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fileSize := info.Size()
-
-	parser, err := go2com.NewParser(file, fileSize, false, false)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = parser.Parse()
-}
 ```
 
 ## Supported Transfer Syntaxes
