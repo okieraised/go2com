@@ -100,6 +100,24 @@ func (w *niiWriter) WriteToFile() error {
 	if w.writeHeaderFile { // If user decides to write to a separate hdr/img file pair
 		return nil
 	} else { // Just one file for both header and the image data
+
+		// We need to check the offset from the end of header file to the start of the voxel dataset
+		offsetFromHeaderToVoxel := int(w.header.VoxOffset) - int(w.header.SizeofHdr)
+		var offset []byte
+
+		// If the header size is equals to 348 (default), then we need to add 4 bytes or the offset we calculated to make it divisible by 6
+		if int(w.header.SizeofHdr) == constant.NII1HeaderSize {
+			defaultPadding := 4
+			if offsetFromHeaderToVoxel > 0 {
+				offset = make([]byte, offsetFromHeaderToVoxel)
+			} else {
+				// This is for a case where we read the image as .hdr/.img pair but want to write to a single file. We
+				// have to update the VoxOffset value
+				w.header.VoxOffset = float32(int(w.header.SizeofHdr) + defaultPadding)
+				offset = make([]byte, defaultPadding)
+			}
+		}
+
 		hdrBuf := &bytes.Buffer{}
 		err := binary.Write(hdrBuf, system.NativeEndian, w.header)
 		if err != nil {
@@ -108,10 +126,7 @@ func (w *niiWriter) WriteToFile() error {
 
 		bHeader := hdrBuf.Bytes()
 		bData := w.niiData.Volume
-		offsetFromHeaderToVoxel := int(w.header.VoxOffset) - len(bHeader)
 
-		// Need to make sure the header is divisible by 16
-		var offset []byte
 		if offsetFromHeaderToVoxel > 0 {
 			offset = make([]byte, offsetFromHeaderToVoxel)
 		}
@@ -211,7 +226,7 @@ func (w *niiWriter) convertImageToHeader() error {
 		for i := 0; i < 15; i++ {
 			header.IntentName[i] = w.niiData.IntentName[i]
 		}
-		header.AuxFile[15] = 0x0
+		header.IntentName[15] = 0x0
 	}
 
 	header.VoxOffset = float32(w.niiData.VoxOffset)

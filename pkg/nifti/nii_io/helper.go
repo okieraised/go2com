@@ -5,8 +5,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/okieraised/go2com/internal/system"
+	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 	"math"
+	"net/http"
 )
 
 // IsValidDatatype checks whether the datatype is valid for NIFTI format
@@ -392,4 +394,16 @@ func convertFPSIntoDimInfo(freqDim, phaseDim, sliceDim int32) uint8 {
 // Check for valid extension
 func validNIfTIFileExt(filePath string) {
 
+}
+
+func deflateFileContent(bData []byte) ([]byte, error) {
+	var err error
+	mimeType := http.DetectContentType(bData[:512])
+	if mimeType == "application/x-gzip" {
+		bData, err = utils.DeflateGzip(bData)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return bData, nil
 }

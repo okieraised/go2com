@@ -4,13 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"github.com/okieraised/go2com/internal/matrix"
 	"io"
-	"net/http"
 	"os"
 
-	"github.com/okieraised/go2com/internal/utils"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 )
 
@@ -52,6 +49,7 @@ type NiiReader interface {
 // niiReader define the NIfTI reader structure.
 type niiReader struct {
 	reader       *bytes.Reader
+	hReader      *bytes.Reader
 	binaryOrder  binary.ByteOrder // Default system order
 	retainHeader bool             // Whether to keep the header after parsing
 	inMemory     bool             // Whether to read the whole NIfTI image to memory
@@ -61,45 +59,61 @@ type niiReader struct {
 }
 
 // NewNiiReader receives a path to the NIFTI file and returns a new reader to parse the file
-//
-// TODO: this is not efficient when the file is large so we need to find better way to deal with large file size
-func NewNiiReader(filePath string, options ...func(*niiReader)) (NiiReader, error) {
+func NewNiiReader(filePath string, options ...func(*niiReader) error) (NiiReader, error) {
+
+	// Init new reader
+	reader := new(niiReader)
+	reader.binaryOrder = binary.LittleEndian
+	reader.data = &Nii{}
+
+	for _, opt := range options {
+		err := opt(reader)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// This is inefficient since it read the whole file to the memory
+	// TODO: improve this for large file
 	bData, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
 	// Check the content type to see if the file is gzipped. Do not depend on just the extensions of the file
-	mimeType := http.DetectContentType(bData[:512])
-	if mimeType == "application/x-gzip" {
-		bData, err = utils.DeflateGzip(bData)
-		if err != nil {
-			fmt.Println("got here")
-			return nil, err
-		}
-	}
-
-	reader := new(niiReader)
-	reader.binaryOrder = binary.LittleEndian
+	bData, err = deflateFileContent(bData)
 	reader.reader = bytes.NewReader(bData)
-	reader.data = &Nii{}
 
-	for _, opt := range options {
-		opt(reader)
-	}
 	return reader, nil
 }
 
-func WithInMemory(inMemory bool) func(*niiReader) {
-	return func(w *niiReader) {
+// WithInMemory allows option to read the whole file into memory
+func WithInMemory(inMemory bool) func(*niiReader) error {
+	return func(w *niiReader) error {
 		w.inMemory = inMemory
+		return nil
 	}
 }
 
-func WithRetainHeader(retainHeader bool) func(*niiReader) {
-	return func(w *niiReader) {
+// WithRetainHeader allows option to keep the header after parsing instead of just keeping the NIfTI data structure
+func WithRetainHeader(retainHeader bool) func(*niiReader) error {
+	return func(w *niiReader) error {
 		w.retainHeader = retainHeader
+		return nil
+	}
+}
+
+// WithHeaderFile allows option to specify the separate header file
+func WithHeaderFile(headerFile string) func(*niiReader) error {
+	return func(w *niiReader) error {
+		bData, err := os.ReadFile(headerFile)
+		if err != nil {
+			return err
+		}
+		// Check the content type to see if the file is gzipped. Do not depend on just the extensions of the file
+		bData, err = deflateFileContent(bData)
+		w.hReader = bytes.NewReader(bData)
+		return nil
 	}
 }
 
@@ -108,8 +122,15 @@ func WithRetainHeader(retainHeader bool) func(*niiReader) {
 // getVersion checks the header to determine the NIFTI version
 func (r *niiReader) getVersion() error {
 	var hSize int32
+	var hReader *bytes.Reader
 
-	err := binary.Read(r.reader, r.binaryOrder, &hSize)
+	if r.hReader != nil {
+		hReader = r.hReader
+	} else {
+		hReader = r.reader
+	}
+
+	err := binary.Read(hReader, r.binaryOrder, &hSize)
 	if err != nil {
 		return err
 	}
@@ -121,12 +142,12 @@ func (r *niiReader) getVersion() error {
 		r.version = constant.NIIVersion2
 	default:
 		r.binaryOrder = binary.BigEndian
-		_, err := r.reader.Seek(0, 0)
+		_, err := hReader.Seek(0, 0)
 		if err != nil {
 			return err
 		}
 		var hSize int32
-		err = binary.Read(r.reader, r.binaryOrder, &hSize)
+		err = binary.Read(hReader, r.binaryOrder, &hSize)
 		if err != nil {
 			return err
 		}
@@ -224,7 +245,14 @@ func (r *niiReader) Parse() error {
 
 // parseNIfTI parse the NIfTI header and the data
 func (r *niiReader) parseNIfTI() error {
-	_, err := r.reader.Seek(0, 0)
+	var hReader *bytes.Reader
+	if r.hReader != nil {
+		hReader = r.hReader
+	} else {
+		hReader = r.reader
+	}
+
+	_, err := hReader.Seek(0, 0)
 	if err != nil {
 		return err
 	}
@@ -235,7 +263,7 @@ func (r *niiReader) parseNIfTI() error {
 	switch r.version {
 	case constant.NIIVersion1:
 		n1Header := new(Nii1Header)
-		err = binary.Read(r.reader, r.binaryOrder, n1Header)
+		err = binary.Read(hReader, r.binaryOrder, n1Header)
 		if err != nil {
 			return err
 		}
@@ -254,7 +282,7 @@ func (r *niiReader) parseNIfTI() error {
 		header = n1Header
 	case constant.NIIVersion2:
 		n2Header := new(Nii2Header)
-		err = binary.Read(r.reader, r.binaryOrder, n2Header)
+		err = binary.Read(hReader, r.binaryOrder, n2Header)
 		if err != nil {
 			return err
 		}
@@ -368,6 +396,8 @@ func (r *niiReader) parseData(header interface{}) error {
 		r.data.QuaternB, r.data.QuaternC, r.data.QuaternD = float64(n1Header.QuaternB), float64(n1Header.QuaternC), float64(n1Header.QuaternD)
 		r.data.QoffsetX, r.data.QoffsetY, r.data.QoffsetZ = float64(n1Header.QoffsetX), float64(n1Header.QoffsetY), float64(n1Header.QoffsetZ)
 
+		r.data.AuxFile = n1Header.AuxFile
+
 	case constant.NIIVersion2:
 		n2Header := header.(*Nii2Header)
 
@@ -439,6 +469,8 @@ func (r *niiReader) parseData(header interface{}) error {
 
 		r.data.QuaternB, r.data.QuaternC, r.data.QuaternD = n2Header.QuaternB, n2Header.QuaternC, n2Header.QuaternD
 		r.data.QoffsetX, r.data.QoffsetY, r.data.QoffsetZ = n2Header.QoffsetX, n2Header.QoffsetY, n2Header.QoffsetZ
+
+		r.data.AuxFile = n2Header.AuxFile
 	}
 
 	// Fix bad value in header
