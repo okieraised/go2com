@@ -2,6 +2,7 @@
 
 ** This package is under active development and can be in a very broken state. Please use the latest released version **
 
+## TODO
 - [ ] Improve NIfTI reader for large file size
 - [ ] Improve NIfTI writer to export as NIfTI-2 format
 - [ ] Improve DICOM frame parser
