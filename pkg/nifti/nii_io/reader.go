@@ -48,12 +48,15 @@ type NiiReader interface {
 	GetNiiData() *Nii
 }
 
+// niiReader define the NIfTI reader structure.
 type niiReader struct {
-	reader      *bytes.Reader
-	binaryOrder binary.ByteOrder // Default system order
-	inMemory    bool             // Whether to read the whole NIfTI image to memory
-	data        *Nii             // Contains the NIFTI data structure
-	version     int              // Define the version of NIFTI image (1 or 2)
+	reader       *bytes.Reader
+	binaryOrder  binary.ByteOrder // Default system order
+	retainHeader bool             // Whether to keep the header after parsing
+	inMemory     bool             // Whether to read the whole NIfTI image to memory
+	data         *Nii             // Contains the NIFTI data structure
+	header       interface{}      // Contains the NIFTI header
+	version      int              // Define the version of NIFTI image (1 or 2)
 }
 
 // NewNiiReader receives a path to the NIFTI file and returns a new reader to parse the file
@@ -83,13 +86,18 @@ func NewNiiReader(filePath string, options ...func(*niiReader)) (NiiReader, erro
 	for _, opt := range options {
 		opt(reader)
 	}
-
 	return reader, nil
 }
 
 func WithInMemory(inMemory bool) func(*niiReader) {
 	return func(w *niiReader) {
 		w.inMemory = inMemory
+	}
+}
+
+func WithRetainHeader(retainHeader bool) func(*niiReader) {
+	return func(w *niiReader) {
+		w.retainHeader = retainHeader
 	}
 }
 
@@ -273,7 +281,6 @@ func (r *niiReader) parseNIfTI() error {
 
 // parseData parse the raw byte array into NIFTI-1 or NIFTI-2 data structure
 func (r *niiReader) parseData(header interface{}) error {
-	var offset int64
 	var statDim int64 = 1
 	var bitpix int16
 	var qFormCode, sFormCode, intentCode, sliceCode, datatype int32
@@ -519,9 +526,9 @@ func (r *niiReader) parseData(header interface{}) error {
 		r.data.StoXYZ.M[1][3] = sRowY[3]
 
 		r.data.StoXYZ.M[2][0] = sRowZ[0]
-		r.data.StoXYZ.M[2][1] = sRowZ[0]
-		r.data.StoXYZ.M[2][2] = sRowZ[0]
-		r.data.StoXYZ.M[2][3] = sRowZ[0]
+		r.data.StoXYZ.M[2][1] = sRowZ[1]
+		r.data.StoXYZ.M[2][2] = sRowZ[2]
+		r.data.StoXYZ.M[2][3] = sRowZ[3]
 
 		r.data.StoXYZ.M[3][0] = 0
 		r.data.StoXYZ.M[3][1] = 0
@@ -567,12 +574,10 @@ func (r *niiReader) parseData(header interface{}) error {
 		statDim = r.data.Dim[5]
 	}
 
-	r.data.VoxOffset = float64(offset)
-
-	offset = voxOffset
+	r.data.VoxOffset = float64(voxOffset)
 	dataSize := r.data.Dim[1] * r.data.Dim[2] * r.data.Dim[3] * r.data.Dim[4] * statDim * (int64(bitpix) / 8)
 
-	_, err := r.reader.Seek(offset, 0)
+	_, err := r.reader.Seek(voxOffset, 0)
 	if err != nil {
 		return err
 	}

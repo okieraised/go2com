@@ -446,5 +446,4 @@ func (n *Nii) matrixToOrientation(R matrix.DMat44) {
 
 	res := [3]int32{i, j, k}
 	n.IJKOrtient = res
-
 }

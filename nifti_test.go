@@ -39,24 +39,53 @@ func TestNii1(t *testing.T) {
 	fmt.Println("nbyper", niiReader.GetNiiData().NByPer)
 	fmt.Println("GetSFromCode()", niiReader.GetSFormCode())
 	fmt.Println("GetQFromCode()", niiReader.GetQFormCode())
-	fmt.Println(niiReader.GetOrientation())
+	fmt.Println("orientation", niiReader.GetOrientation())
+	fmt.Println("affine", niiReader.GetAffine())
+	fmt.Println("QOffsetX", niiReader.GetNiiData().QoffsetX)
+	fmt.Println("QOffsetY", niiReader.GetNiiData().QoffsetY)
+	fmt.Println("QOffsetZ", niiReader.GetNiiData().QoffsetZ)
 
-	res, err := niiReader.GetSlice(1, 0)
-	assert.NoError(err)
-
-	fmt.Println("len res", len(res))
-	fmt.Println("len res0", len(res[0]))
-
-	//fmt.Println(res)
-	res2, err := niiReader.GetVolume(0)
-	assert.NoError(err)
-
-	fmt.Println("len res2", len(res2))
+	fmt.Println("---------------------------------------------------------------------------------------------------")
 
 	writer := nii_io.NewNiiWriter("./out.nii", nii_io.WithNIfTIData(niiReader.GetNiiData()))
-
 	err = writer.WriteToFile()
 	assert.NoError(err)
+
+	filePath = "./out.nii"
+	niiReader, err = nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = niiReader.Parse()
+	assert.NoError(err)
+
+	shape = niiReader.GetImgShape()
+	fmt.Println("shape", shape)
+	fmt.Println(niiReader.GetUnitsOfMeasurements())
+	fmt.Println("dtype", niiReader.GetDatatype())
+	fmt.Println("nbyper", niiReader.GetNiiData().NByPer)
+	fmt.Println("GetSFromCode()", niiReader.GetSFormCode())
+	fmt.Println("GetQFromCode()", niiReader.GetQFormCode())
+	fmt.Println("orientation", niiReader.GetOrientation())
+	fmt.Println("affine", niiReader.GetAffine())
+	fmt.Println("QOffsetX", niiReader.GetNiiData().QoffsetX)
+	fmt.Println("QOffsetY", niiReader.GetNiiData().QoffsetY)
+	fmt.Println("QOffsetZ", niiReader.GetNiiData().QoffsetZ)
+
+	//res, err := niiReader.GetSlice(1, 0)
+	//assert.NoError(err)
+	//
+	//fmt.Println("len res", len(res))
+	//fmt.Println("len res0", len(res[0]))
+	//
+	////fmt.Println(res)
+	//res2, err := niiReader.GetVolume(0)
+	//assert.NoError(err)
+	//
+	//fmt.Println("len res2", len(res2))
+	//
+	//writer := nii_io.NewNiiWriter("./out.nii", nii_io.WithNIfTIData(niiReader.GetNiiData()))
+	//
+	//err = writer.WriteToFile()
+	//assert.NoError(err)
 
 	//for _, elem := range res {
 	//	fmt.Println(elem)

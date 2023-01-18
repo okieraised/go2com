@@ -96,14 +96,18 @@ func (w *niiWriter) WriteToFile() error {
 
 		bHeader := bufHeader.Bytes()
 		bData := w.niiData.Volume
+		offsetFromHeaderToVoxel := int(w.header.VoxOffset) - len(bHeader)
+		fmt.Println("offsetFromHeader", offsetFromHeaderToVoxel)
 
-		offsetFromHeader := len(bHeader) - int(w.header.VoxOffset)
+		// Need to make sure the header is divisible by 16
+		var offset []byte
+		if offsetFromHeaderToVoxel > 0 {
+			offset = make([]byte, offsetFromHeaderToVoxel)
+		}
 
-		fmt.Println("offsetFromHeader", offsetFromHeader)
+		fmt.Println("offset", offset)
 
 		toWrite := []byte{}
-		offset := make([]byte, 0, offsetFromHeader)
-		fmt.Println("offset", offset)
 		toWrite = append(toWrite, bHeader...)
 		toWrite = append(toWrite, offset...)
 		toWrite = append(toWrite, bData...)
@@ -181,7 +185,6 @@ func (w *niiWriter) convertImageToHeader() error {
 	header.IntentP1 = float32(w.niiData.IntentP1)
 	header.IntentP2 = float32(w.niiData.IntentP2)
 	header.IntentP3 = float32(w.niiData.IntentP3)
-
 	if w.niiData.IntentName[0] != 0x0 {
 		for i := 0; i < 15; i++ {
 			header.IntentName[i] = w.niiData.IntentName[i]
@@ -189,6 +192,7 @@ func (w *niiWriter) convertImageToHeader() error {
 		header.AuxFile[15] = 0x0
 	}
 
+	fmt.Println("w.niiData.VoxOffset", w.niiData.VoxOffset)
 	header.VoxOffset = float32(w.niiData.VoxOffset)
 	header.XyztUnits = convertSpaceTimeToXYZT(w.niiData.XYZUnits, w.niiData.TimeUnits)
 	header.Toffset = float32(w.niiData.TOffset)
