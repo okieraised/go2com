@@ -170,5 +170,8 @@ func TestNii2(t *testing.T) {
 	fmt.Println("QOffsetX", niiReader.GetNiiData().QoffsetX)
 	fmt.Println("QOffsetY", niiReader.GetNiiData().QoffsetY)
 	fmt.Println("QOffsetZ", niiReader.GetNiiData().QoffsetZ)
+}
 
+func TestMagicString(t *testing.T) {
+	fmt.Println([]byte("ni1"))
 }

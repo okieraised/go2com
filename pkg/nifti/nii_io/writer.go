@@ -10,6 +10,7 @@ import (
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 	"math"
 	"os"
+	"strings"
 )
 
 // niiWriter define the NIfTI writer structure.
@@ -98,9 +99,92 @@ func (w *niiWriter) WriteToFile() error {
 	}
 
 	if w.writeHeaderFile { // If user decides to write to a separate hdr/img file pair
-		return nil
-	} else { // Just one file for both header and the image data
+		var headerFilePath string
 
+		// Check if the user-specified output file has .nii or nii.gz suffix. If yes, replace it with .img extension since this
+		// is a .hdr/.img pair
+		if strings.HasSuffix(w.filePath, ".nii") || strings.HasSuffix(w.filePath, ".nii.gz") {
+			w.filePath = strings.ReplaceAll(w.filePath, ".nii", ".img")
+			headerFilePath = strings.ReplaceAll(w.filePath, ".img", ".hdr")
+		}
+
+		// Set the magic string to ni1
+		w.header.Magic = [4]uint8{110, 105, 49, 0}
+		// Set the VoxOffset to 0
+		w.header.VoxOffset = 0
+
+		// Write header structure as bytes
+		hdrBuf := &bytes.Buffer{}
+		err = binary.Write(hdrBuf, system.NativeEndian, w.header)
+		if err != nil {
+			return err
+		}
+		bHeader := hdrBuf.Bytes()
+
+		// Write compressed header to file
+		if w.headerCompression {
+			if !strings.HasSuffix(headerFilePath, ".gz") {
+				headerFilePath = headerFilePath + ".gz"
+			}
+
+			fHeader, err := os.Create(headerFilePath)
+			if err != nil {
+				return err
+			}
+			defer fHeader.Close()
+
+			gzipWriter := gzip.NewWriter(fHeader)
+			_, err = gzipWriter.Write(bHeader)
+			if err != nil {
+				return err
+			}
+			err = gzipWriter.Close()
+
+		} else { // Write normal header
+			if !strings.HasSuffix(headerFilePath, ".hdr") {
+				headerFilePath = headerFilePath + ".hdr"
+			}
+
+			fHeader, err := os.Create(headerFilePath)
+			if err != nil {
+				return err
+			}
+			defer fHeader.Close()
+
+			_, err = fHeader.Write(bHeader)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Write the data to file
+		bData := w.niiData.Volume
+
+		file, err := os.Create(w.filePath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		// Write compressed image to file
+		if w.compression {
+			gzipWriter := gzip.NewWriter(file)
+			_, err = gzipWriter.Write(bData)
+			if err != nil {
+				return err
+			}
+			err = gzipWriter.Close()
+
+		} else { // Write as normal
+			_, err = file.Write(bData)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+
+	} else { // Just one file for both header and the image data
 		// We need to check the offset from the end of header file to the start of the voxel dataset
 		offsetFromHeaderToVoxel := int(w.header.VoxOffset) - int(w.header.SizeofHdr)
 		var offset []byte
@@ -160,7 +244,6 @@ func (w *niiWriter) WriteToFile() error {
 			}
 		}
 	}
-
 	return nil
 }
 
