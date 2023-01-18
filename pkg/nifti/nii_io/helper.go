@@ -396,6 +396,7 @@ func validNIfTIFileExt(filePath string) {
 
 }
 
+// deflateFileContent deflates the gzipped binary to its original content
 func deflateFileContent(bData []byte) ([]byte, error) {
 	var err error
 	mimeType := http.DetectContentType(bData[:512])
