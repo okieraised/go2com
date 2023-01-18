@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/okieraised/go2com/pkg/dicom/dataset"
+	"github.com/okieraised/go2com/pkg/dicom/dcm_io"
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
@@ -44,7 +44,7 @@ type PixelDataMacro map[tag.DicomTag]*element.Element
 //    +-------------+---------------------------+------+
 //    | (7FE0,0010) | PixelData                 | 1C   |
 //    +-------------+---------------------------+------+
-func GetPixelDataMacroAttributes(ds, meta dataset.Dataset) PixelDataMacro {
+func GetPixelDataMacroAttributes(ds, meta dcm_io.Dataset) PixelDataMacro {
 	res := make(PixelDataMacro, 0)
 	for _, elem := range meta.Elements {
 		if elem.Tag == tag.TransferSyntaxUID {

@@ -1,11 +1,10 @@
-package go2com
+package dcm_io
 
 import (
 	"bufio"
 	"bytes"
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
-	"github.com/okieraised/go2com/pkg/dicom/dataset"
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/reader"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
@@ -28,8 +27,8 @@ type DcmParser struct {
 	fileContent   []byte
 	fileReader    *io.Reader
 	reader        reader.DcmReader
-	dataset       dataset.Dataset
-	metadata      dataset.Dataset
+	dataset       Dataset
+	metadata      Dataset
 	fileSize      int64
 	skipDataset   bool
 	skipPixelData bool
@@ -95,12 +94,12 @@ func (p *DcmParser) Parse() error {
 }
 
 // GetMetadata returns the file meta header
-func (p *DcmParser) GetMetadata() dataset.Dataset {
+func (p *DcmParser) GetMetadata() Dataset {
 	return p.metadata
 }
 
 // GetDataset returns the dataset
-func (p *DcmParser) GetDataset() dataset.Dataset {
+func (p *DcmParser) GetDataset() Dataset {
 	return p.dataset
 }
 
@@ -124,6 +123,10 @@ func (p *DcmParser) GetElementByTagString(tagStr string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("cannot find tag %s", tagStr)
 	}
+}
+
+func (p *DcmParser) RetrieveFileUID() (*DicomUID, error) {
+	return p.dataset.RetrieveFileUID()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -199,7 +202,7 @@ func (p *DcmParser) parseMetadata() error {
 		metadata = append(metadata, res)
 		//fmt.Println(res)
 	}
-	dicomMetadata := dataset.Dataset{Elements: metadata}
+	dicomMetadata := Dataset{Elements: metadata}
 	p.metadata = dicomMetadata
 	err = p.reader.Skip(int64(metaGroupLength))
 	if err != nil {
@@ -243,7 +246,7 @@ func (p *DcmParser) parseDataset() error {
 		data = append(data, res)
 		//fmt.Println(res)
 	}
-	dicomDataset := dataset.Dataset{Elements: data}
+	dicomDataset := Dataset{Elements: data}
 	p.dataset = dicomDataset
 	return nil
 }

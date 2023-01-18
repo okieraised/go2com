@@ -1,9 +1,8 @@
-package go2com
+package dcm_io
 
 import (
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
-	"github.com/okieraised/go2com/pkg/dicom/dataset"
 	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/vr"
@@ -172,7 +171,7 @@ func switchStringToNumeric(elem *element.Element) interface{} {
 	return elem.Value.RawValue
 }
 
-func createOrthancURI(ds dataset.Dataset) MappedTag {
+func createOrthancURI(ds Dataset) MappedTag {
 	res := make(MappedTag, 3)
 	prefix := "http://127.0.0.1:8042"
 	uids, err := ds.RetrieveFileUID()

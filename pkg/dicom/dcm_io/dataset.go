@@ -1,4 +1,4 @@
-package dataset
+package dcm_io
 
 import (
 	"errors"

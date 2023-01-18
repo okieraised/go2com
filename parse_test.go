@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/okieraised/go2com/internal/utils"
+	"github.com/okieraised/go2com/pkg/dicom/dcm_io"
 	"github.com/okieraised/go2com/pkg/dicom/iod"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ import (
 func TestProfilingParse1(t *testing.T) {
 	assert := assert.New(t)
 	fn := func() {
-		parser, err := NewDCMFileParser("./test_data/01.dcm", WithSkipPixelData(false), WithSkipDataset(false))
+		parser, err := dcm_io.NewDCMFileParser("./test_data/01.dcm", dcm_io.WithSkipPixelData(false), dcm_io.WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
@@ -33,7 +34,7 @@ func TestProfilingParse2(t *testing.T) {
 		assert.NoError(err)
 		for _, fPath := range filePaths {
 			fmt.Println("process:", fPath)
-			parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
+			parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(false), dcm_io.WithSkipDataset(false))
 			assert.NoError(err)
 			err = parser.Parse()
 			assert.NoError(err)
@@ -54,7 +55,7 @@ func TestProfilingParse3(t *testing.T) {
 		assert.NoError(err)
 		for _, fPath := range filePaths {
 			fmt.Println("process:", fPath)
-			parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
+			parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(false), dcm_io.WithSkipDataset(false))
 			assert.NoError(err)
 			err = parser.Parse()
 			assert.NoError(err)
@@ -71,20 +72,12 @@ func TestProfilingParse3(t *testing.T) {
 func TestNewParser1(t *testing.T) {
 	assert := assert.New(t)
 	fPath := "/home/tripg/workspace/dicom/mammo_dicoms/1.2.840.113619.2.255.10452022879169.3670200508103440.2701.dicom"
-	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
+	parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(true), dcm_io.WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
 
 	parser.Export(false)
-
-	//tt := parser.Export(false)
-	//for key := range tt {
-	//	val := tt[key].Value.([]interface{})
-	//	for _, subVal := range val {
-	//		fmt.Println(reflect.ValueOf(subVal).Kind())
-	//	}
-	//}
 }
 
 func TestNewParser2(t *testing.T) {
@@ -93,7 +86,7 @@ func TestNewParser2(t *testing.T) {
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		fmt.Println("process:", fPath)
-		parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
+		parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(false), dcm_io.WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		if err != nil && !strings.Contains(err.Error(), "could not find tag") {
@@ -104,7 +97,7 @@ func TestNewParser2(t *testing.T) {
 			fmt.Println(err)
 			continue
 		}
-		uids, err := parser.dataset.RetrieveFileUID()
+		uids, err := parser.RetrieveFileUID()
 		err = parser.Parse()
 		fmt.Println(uids.StudyInstanceUID, uids.SeriesInstanceUID, uids.SOPInstanceUID)
 		_ = parser.Export(false)
@@ -116,14 +109,15 @@ func TestNewParser3(t *testing.T) {
 	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/mammo_dicoms")
 	assert.NoError(err)
 	for _, fPath := range filePaths {
-		parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
+		fmt.Println("process:", fPath)
+		parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(true), dcm_io.WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
 
 		_ = parser.Export(false)
 
-		pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+		pixelData := iod.GetPixelDataMacroAttributes(parser.GetDataset(), parser.GetMetadata())
 		pixelData.GetExpectedPixelData()
 		valid := pixelData.ValidatePixelData()
 		if !valid {
@@ -136,12 +130,12 @@ func TestNewParser3(t *testing.T) {
 func TestNewParser4(t *testing.T) {
 	assert := assert.New(t)
 	fPath := "/home/tripg/workspace/dicom/oct/1.dcm"
-	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
+	parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(true), dcm_io.WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
 
-	for _, elem := range parser.dataset.Elements {
+	for _, elem := range parser.GetDataset().Elements {
 		fmt.Println(elem)
 	}
 }
@@ -183,11 +177,11 @@ func TestNewParser5(t *testing.T) {
 	//file, err := os.Open("/home/tripg/Documents/dicom/test_full/068.dcm")
 	fPath := "/home/tripg/Documents/dicom/10142022/Acuson/Sequoia/EXAMS/EXAM0003/CLIPS/CLIP0039"
 
-	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
+	parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(true), dcm_io.WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
-	for _, elem := range parser.dataset.Elements {
+	for _, elem := range parser.GetDataset().Elements {
 		if elem.Tag == tag.BluePaletteColorLookupTableData || elem.Tag == tag.RedPaletteColorLookupTableData || elem.Tag == tag.GreenPaletteColorLookupTableData {
 			continue
 		}
@@ -202,7 +196,7 @@ func TestNewParser6(t *testing.T) {
 	assert := assert.New(t)
 	fPath := "/home/tripg/Documents/dicom/MammoTomoUPMC_Case4/Case4 [Case4]/20071218 093012 [ - MAMMOGRAM DIGITAL SCR BILAT]/Series 73200000 [MG - R CC Breast Tomosynthesis Image]/1.3.6.1.4.1.5962.99.1.2280943358.716200484.1363785608958.597.0.dcm"
 
-	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
+	parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(false), dcm_io.WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -232,14 +226,14 @@ func TestNewParser7(t *testing.T) {
 		if strings.Contains(fPath, "1706") {
 			continue
 		}
-		parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
+		parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(true), dcm_io.WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
 
 		_ = parser.Export(false)
 
-		pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+		pixelData := iod.GetPixelDataMacroAttributes(parser.GetDataset(), parser.GetMetadata())
 		pixelData.GetExpectedPixelData()
 		valid := pixelData.ValidatePixelData()
 		if !valid {
@@ -252,7 +246,7 @@ func TestNewParser8(t *testing.T) {
 	assert := assert.New(t)
 	fPath := "/home/tripg/workspace/10142022/ALI_Technologies/UltraPACS/studies/w0019837/view0001"
 
-	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
+	parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(false), dcm_io.WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -262,7 +256,7 @@ func TestNewParser8(t *testing.T) {
 	//	fmt.Println(k, seriesTag[k])
 	//}
 
-	for _, elem := range parser.dataset.Elements {
+	for _, elem := range parser.GetDataset().Elements {
 		fmt.Println(elem)
 	}
 
@@ -284,14 +278,14 @@ func TestNewParser9(t *testing.T) {
 	assert.NoError(err)
 	for _, fPath := range filePaths {
 		fmt.Println("Process", fPath)
-		parser, err := NewDCMFileParser(fPath, WithSkipPixelData(false), WithSkipDataset(false))
+		parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(false), dcm_io.WithSkipDataset(false))
 		assert.NoError(err)
 		err = parser.Parse()
 		assert.NoError(err)
 
 		_ = parser.Export(false)
 
-		pixelData := iod.GetPixelDataMacroAttributes(parser.dataset, parser.metadata)
+		pixelData := iod.GetPixelDataMacroAttributes(parser.GetDataset(), parser.GetMetadata())
 		pixelData.GetExpectedPixelData()
 		valid := pixelData.ValidatePixelData()
 		if !valid {
@@ -304,7 +298,7 @@ func TestNewParser10(t *testing.T) {
 	assert := assert.New(t)
 	fPath := "/home/tripg/workspace/dicom/test_full/1706.dcm"
 
-	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
+	parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(true), dcm_io.WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
@@ -321,12 +315,12 @@ func TestNewParser11(t *testing.T) {
 	//file, err = os.Open("/home/tripg/Downloads/1-1.dcm")
 	//file, err = os.Open("/home/tripg/workspace/dicom2/PrivateGEImplicitVRBigEndianTransferSyntax16Bits.dcm")
 
-	parser, err := NewDCMFileParser(fPath, WithSkipPixelData(true), WithSkipDataset(false))
+	parser, err := dcm_io.NewDCMFileParser(fPath, dcm_io.WithSkipPixelData(true), dcm_io.WithSkipDataset(false))
 	assert.NoError(err)
 	err = parser.Parse()
 	assert.NoError(err)
 
-	for _, elem := range parser.dataset.Elements {
+	for _, elem := range parser.GetDataset().Elements {
 		fmt.Println(elem)
 	}
 }
