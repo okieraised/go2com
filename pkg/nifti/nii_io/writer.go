@@ -2,6 +2,7 @@ package nii_io
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -79,7 +80,7 @@ func WithNIfTIData(data *Nii) func(writer *niiWriter) {
 }
 
 func (w *niiWriter) WriteToFile() error {
-
+	// convert image structure to file
 	err := w.convertImageToHeader()
 	if err != nil {
 		return err
@@ -108,17 +109,28 @@ func (w *niiWriter) WriteToFile() error {
 		toWrite = append(toWrite, bHeader...)
 		toWrite = append(toWrite, offset...)
 		toWrite = append(toWrite, bData...)
-
 		file, err := os.Create(w.filePath)
 		if err != nil {
 			return err
 		}
+		defer file.Close()
 
-		_, err = file.Write(toWrite)
-		if err != nil {
-			return err
+		if w.compression { // If the compression is set to true, then write a compressed file
+			gzipWriter := gzip.NewWriter(file)
+			_, err = gzipWriter.Write(toWrite)
+			if err != nil {
+				return err
+			}
+			err = gzipWriter.Close()
+			if err != nil {
+				return err
+			}
+		} else { // Otherwise, just write normal file
+			_, err = file.Write(toWrite)
+			if err != nil {
+				return err
+			}
 		}
-
 	}
 
 	return nil
@@ -127,7 +139,7 @@ func (w *niiWriter) WriteToFile() error {
 // convertImageToHeader returns the header from a NIfTI image structure
 func (w *niiWriter) convertImageToHeader() error {
 	if w.niiData == nil {
-		return errors.New("no image data found")
+		return errors.New("image data is nil")
 	}
 
 	header := new(Nii1Header)
@@ -189,7 +201,6 @@ func (w *niiWriter) convertImageToHeader() error {
 		header.AuxFile[15] = 0x0
 	}
 
-	fmt.Println("w.niiData.VoxOffset", w.niiData.VoxOffset)
 	header.VoxOffset = float32(w.niiData.VoxOffset)
 	header.XyztUnits = convertSpaceTimeToXYZT(w.niiData.XYZUnits, w.niiData.TimeUnits)
 	header.Toffset = float32(w.niiData.TOffset)

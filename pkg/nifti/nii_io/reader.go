@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/okieraised/go2com/internal/matrix"
 	"io"
 	"net/http"
@@ -74,6 +75,7 @@ func NewNiiReader(filePath string, options ...func(*niiReader)) (NiiReader, erro
 	if mimeType == "application/x-gzip" {
 		bData, err = utils.DeflateGzip(bData)
 		if err != nil {
+			fmt.Println("got here")
 			return nil, err
 		}
 	}
