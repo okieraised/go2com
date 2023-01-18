@@ -16,12 +16,6 @@ const (
 	ILLEGAL = "ILLEGAL"
 )
 
-//type Nii struct {
-//	//n1Header *Nii1Header
-//	//n2Header *Nii2Header
-//	Data     *NiiData
-//}
-
 // Nii defines the structure of the NIFTI-1 data for I/O purpose
 type Nii struct {
 	NDim          int64            // last dimension greater than 1 (1..7)

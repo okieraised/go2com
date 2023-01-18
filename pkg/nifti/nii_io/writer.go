@@ -12,9 +12,6 @@ import (
 	"os"
 )
 
-type NiiWriter interface {
-}
-
 // niiWriter define the NIfTI writer structure.
 //
 // Parameters:
@@ -49,36 +46,50 @@ func NewNiiWriter(filePath string, options ...func(*niiWriter)) (*niiWriter, err
 	return writer, nil
 }
 
+// WithWriteHeaderFile sets the option to write NIfTI image to a header/image (.hdr/.img) file pair
+//
+// If true, output will be two files for the header and the image. Default is false.
 func WithWriteHeaderFile(writeHeaderFile bool) func(*niiWriter) {
 	return func(w *niiWriter) {
 		w.writeHeaderFile = writeHeaderFile
 	}
 }
 
+// WithHeaderCompression sets the option to write compressed NIfTI header structure to file (.hdr.gz)
+//
+// If true, the header will be compressed. It only works when WithWriteHeaderFile is provided with option `true`. Default is false.
 func WithHeaderCompression(headerCompression bool) func(*niiWriter) {
 	return func(w *niiWriter) {
 		w.headerCompression = headerCompression
 	}
 }
 
+// WithCompression sets the option to write compressed NIfTI image to a single file (.nii.gz)
+//
+// If true, the whole file will be compressed. Default is false.
 func WithCompression(withCompression bool) func(writer *niiWriter) {
 	return func(w *niiWriter) {
 		w.compression = withCompression
 	}
 }
 
+// WithHeader sets the option to allow user to provide predefined NIfTI-1 header structure.
+//
+// If no header provided, the header will be converted from the NIfTI image structure
 func WithHeader(header *Nii1Header) func(*niiWriter) {
 	return func(w *niiWriter) {
 		w.header = header
 	}
 }
 
+// WithNIfTIData sets the option to allow user to provide predefined NIfTI-1 data structure.
 func WithNIfTIData(data *Nii) func(writer *niiWriter) {
 	return func(w *niiWriter) {
 		w.niiData = data
 	}
 }
 
+// WriteToFile write the header and image to a NIfTI file
 func (w *niiWriter) WriteToFile() error {
 	// convert image structure to file
 	err := w.convertImageToHeader()
@@ -89,13 +100,13 @@ func (w *niiWriter) WriteToFile() error {
 	if w.writeHeaderFile { // If user decides to write to a separate hdr/img file pair
 		return nil
 	} else { // Just one file for both header and the image data
-		bufHeader := &bytes.Buffer{}
-		err := binary.Write(bufHeader, system.NativeEndian, w.header)
+		hdrBuf := &bytes.Buffer{}
+		err := binary.Write(hdrBuf, system.NativeEndian, w.header)
 		if err != nil {
 			return err
 		}
 
-		bHeader := bufHeader.Bytes()
+		bHeader := hdrBuf.Bytes()
 		bData := w.niiData.Volume
 		offsetFromHeaderToVoxel := int(w.header.VoxOffset) - len(bHeader)
 
@@ -105,10 +116,12 @@ func (w *niiWriter) WriteToFile() error {
 			offset = make([]byte, offsetFromHeaderToVoxel)
 		}
 
-		toWrite := []byte{}
-		toWrite = append(toWrite, bHeader...)
-		toWrite = append(toWrite, offset...)
-		toWrite = append(toWrite, bData...)
+		dataset := []byte{}
+		dataset = append(dataset, bHeader...)
+		dataset = append(dataset, offset...)
+		dataset = append(dataset, bData...)
+
+		// Create a file
 		file, err := os.Create(w.filePath)
 		if err != nil {
 			return err
@@ -117,7 +130,7 @@ func (w *niiWriter) WriteToFile() error {
 
 		if w.compression { // If the compression is set to true, then write a compressed file
 			gzipWriter := gzip.NewWriter(file)
-			_, err = gzipWriter.Write(toWrite)
+			_, err = gzipWriter.Write(dataset)
 			if err != nil {
 				return err
 			}
@@ -126,7 +139,7 @@ func (w *niiWriter) WriteToFile() error {
 				return err
 			}
 		} else { // Otherwise, just write normal file
-			_, err = file.Write(toWrite)
+			_, err = file.Write(dataset)
 			if err != nil {
 				return err
 			}
