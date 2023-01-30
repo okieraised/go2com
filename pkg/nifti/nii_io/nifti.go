@@ -2,10 +2,10 @@ package nii_io
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/matrix"
 	"math"
+	"strings"
 
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 )
@@ -81,7 +81,7 @@ type Nii struct {
 	Volume        []byte           // slice of data: nbyper*nvox bytes
 	NumExt        int32            // number of extensions in extList
 	Nifti1Ext     []Nifti1Ext      // array of extension structs (with data)
-	IJKOrtient    [3]int32         // self-add. Orientation ini, j, k coordinate
+	IJKOrient     [3]int32         // self-add. Orientation ini, j, k coordinate
 	Affine        matrix.DMat44    // self-add. Affine matrix
 	VoxOffset     float64          // self-add. Voxel offset
 	Version       int              // self-add. Used for version identification when writing
@@ -116,14 +116,16 @@ func (n *Nii) getSFormCode() string {
 	return sForm
 }
 
+// getDatatype returns the corresponding NIfTI datatype
 func (n *Nii) getDatatype() string {
 	return getDatatype(n.Datatype)
 }
 
+// getOrientation returns the image orientation
 func (n *Nii) getOrientation() [3]string {
 	res := [3]string{}
 
-	ijk := n.IJKOrtient
+	ijk := n.IJKOrient
 
 	iOrient, ok := constant.OrietationToString[int(ijk[0])]
 	if !ok {
@@ -213,6 +215,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 	return value
 }
 
+// getTimeSeries returns the time-series of a point
 func (n *Nii) getTimeSeries(x, y, z int64) ([]float64, error) {
 	timeSeries := make([]float64, 0, n.Dim[4])
 
@@ -221,15 +224,15 @@ func (n *Nii) getTimeSeries(x, y, z int64) ([]float64, error) {
 	sliceZ := n.Nx
 
 	if x >= sliceX {
-		return nil, errors.New("invalid x value")
+		return nil, fmt.Errorf("invalid x value %d", x)
 	}
 
 	if y >= sliceY {
-		return nil, errors.New("invalid y value")
+		return nil, fmt.Errorf("invalid y value %d", y)
 	}
 
 	if z >= sliceZ {
-		return nil, errors.New("invalid z value")
+		return nil, fmt.Errorf("invalid z value %d", z)
 	}
 
 	for t := 0; t < int(n.Dim[4]); t++ {
@@ -246,11 +249,11 @@ func (n *Nii) getSlice(z, t int64) ([][]float64, error) {
 	sliceT := n.Nt
 
 	if z >= sliceZ {
-		return nil, errors.New("invalid z value")
+		return nil, fmt.Errorf("invalid z value %d", z)
 	}
 
 	if t >= sliceT || t < 0 {
-		return nil, errors.New("invalid time value")
+		return nil, fmt.Errorf("invalid time value %d", t)
 	}
 
 	slice := make([][]float64, sliceX)
@@ -273,7 +276,7 @@ func (n *Nii) getVolume(t int64) ([][][]float64, error) {
 	sliceT := n.Nt
 
 	if t >= sliceT || t < 0 {
-		return nil, errors.New("invalid time value")
+		return nil, fmt.Errorf("invalid time value %d", t)
 	}
 	volume := make([][][]float64, sliceX)
 	for i := range volume {
@@ -333,4 +336,14 @@ func (n *Nii) getVoxelSize() [4]float64 {
 		size[index] = n.PixDim[index+1]
 	}
 	return size
+}
+
+// getDescrip returns the description with trailing null bytes removed
+func (n *Nii) getDescrip() string {
+	return strings.ReplaceAll(string(n.Descrip[:]), "\x00", "")
+}
+
+// getIntentName returns the intent name with trailing null bytes removed
+func (n *Nii) getIntentName() string {
+	return strings.ReplaceAll(string(n.IntentName[:]), "\x00", "")
 }

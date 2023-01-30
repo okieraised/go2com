@@ -14,6 +14,10 @@ import (
 type NiiReader interface {
 	// Parse returns the input NIFTI as header and image data
 	Parse() error
+	// GetDescrip returns the description with trailing null bytes removed
+	GetDescrip() string
+	// GetIntentName returns the description with trailing null bytes removed
+	GetIntentName() string
 	// GetOrientation returns the image orientation
 	GetOrientation() [3]string
 	// GetSliceCode returns the slice code
@@ -44,6 +48,14 @@ type NiiReader interface {
 	QuaternToMatrix() matrix.DMat44
 	// GetNiiData returns the raw NIFTI header and image data
 	GetNiiData() *Nii
+	// GetQuaternB returns the QuaternB parameter
+	GetQuaternB() float64
+	// GetQuaternC returns the QuaternC parameter
+	GetQuaternC() float64
+	// GetQuaternD returns the QuaternD parameter
+	GetQuaternD() float64
+	// GetHeader returns the NIfTI header
+	GetHeader() interface{}
 }
 
 // niiReader define the NIfTI reader structure.
@@ -119,49 +131,16 @@ func WithHeaderFile(headerFile string) func(*niiReader) error {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-// getVersion checks the header to determine the NIFTI version
-func (r *niiReader) getVersion() error {
-	var hSize int32
-	var hReader *bytes.Reader
-
-	if r.hReader != nil {
-		hReader = r.hReader
-	} else {
-		hReader = r.reader
-	}
-
-	err := binary.Read(hReader, r.binaryOrder, &hSize)
-	if err != nil {
-		return err
-	}
-
-	switch hSize {
-	case constant.NII1HeaderSize:
-		r.version = constant.NIIVersion1
-	case constant.NII2HeaderSize:
-		r.version = constant.NIIVersion2
-	default:
-		r.binaryOrder = binary.BigEndian
-		_, err := hReader.Seek(0, 0)
-		if err != nil {
-			return err
+func (r *niiReader) GetHeader() interface{} {
+	if r.header != nil {
+		if r.version == constant.NIIVersion1 {
+			return r.header.(*Nii1Header)
 		}
-		var hSize int32
-		err = binary.Read(hReader, r.binaryOrder, &hSize)
-		if err != nil {
-			return err
-		}
-		switch hSize {
-		case constant.NII1HeaderSize:
-			r.version = constant.NIIVersion1
-		case constant.NII2HeaderSize:
-			r.version = constant.NIIVersion2
-		default:
-			return errors.New("invalid NIFTI file format")
+		if r.version == constant.NIIVersion2 {
+			return r.header.(*Nii2Header)
 		}
 	}
-	r.data.Version = r.version
-	return nil
+	return r.header
 }
 
 func (r *niiReader) MatrixToOrientation(R matrix.DMat44) {
@@ -226,6 +205,31 @@ func (r *niiReader) GetNiiData() *Nii {
 
 func (r *niiReader) GetBinaryOrder() binary.ByteOrder {
 	return r.binaryOrder
+}
+
+// GetQuaternB returns the QuaternB parameter
+func (r *niiReader) GetQuaternB() float64 {
+	return r.data.QuaternB
+}
+
+// GetQuaternC returns the QuaternC parameter
+func (r *niiReader) GetQuaternC() float64 {
+	return r.data.QuaternC
+}
+
+// GetQuaternD returns the QuaternD parameter
+func (r *niiReader) GetQuaternD() float64 {
+	return r.data.QuaternD
+}
+
+// GetDescrip returns the description with trailing null bytes removed
+func (r *niiReader) GetDescrip() string {
+	return r.data.getDescrip()
+}
+
+// GetIntentName returns the description with trailing null bytes removed
+func (r *niiReader) GetIntentName() string {
+	return r.data.getIntentName()
 }
 
 // Parse returns the raw byte array into NIFTI-1 header and dataset structure
@@ -306,6 +310,11 @@ func (r *niiReader) parseNIfTI() error {
 	if err != nil {
 		return err
 	}
+
+	if r.retainHeader {
+		r.header = header
+	}
+
 	return nil
 }
 
@@ -632,5 +641,50 @@ func (r *niiReader) parseData(header interface{}) error {
 	r.data.Affine = affine
 	r.data.matrixToOrientation(affine)
 
+	return nil
+}
+
+// getVersion checks the header to determine the NIFTI version
+func (r *niiReader) getVersion() error {
+	var hSize int32
+	var hReader *bytes.Reader
+
+	if r.hReader != nil {
+		hReader = r.hReader
+	} else {
+		hReader = r.reader
+	}
+
+	err := binary.Read(hReader, r.binaryOrder, &hSize)
+	if err != nil {
+		return err
+	}
+
+	switch hSize {
+	case constant.NII1HeaderSize:
+		r.version = constant.NIIVersion1
+	case constant.NII2HeaderSize:
+		r.version = constant.NIIVersion2
+	default:
+		r.binaryOrder = binary.BigEndian
+		_, err := hReader.Seek(0, 0)
+		if err != nil {
+			return err
+		}
+		var hSize int32
+		err = binary.Read(hReader, r.binaryOrder, &hSize)
+		if err != nil {
+			return err
+		}
+		switch hSize {
+		case constant.NII1HeaderSize:
+			r.version = constant.NIIVersion1
+		case constant.NII2HeaderSize:
+			r.version = constant.NIIVersion2
+		default:
+			return errors.New("invalid NIFTI file format")
+		}
+	}
+	r.data.Version = r.version
 	return nil
 }
