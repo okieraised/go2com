@@ -2,6 +2,7 @@ package nii_io
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/matrix"
 	"math"
@@ -92,6 +93,10 @@ type Nifti1Ext struct {
 	Edata []byte
 	ESize int32
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+// Get methods
+//----------------------------------------------------------------------------------------------------------------------
 
 // getSliceCode returns the slice code of the NIFTI image
 func (n *Nii) getSliceCode() string {
@@ -346,4 +351,103 @@ func (n *Nii) getDescrip() string {
 // getIntentName returns the intent name with trailing null bytes removed
 func (n *Nii) getIntentName() string {
 	return strings.ReplaceAll(string(n.IntentName[:]), "\x00", "")
+}
+
+// getSliceDuration returns the slice duration info
+func (n *Nii) getSliceDuration() float64 {
+	return n.SliceDuration
+}
+
+// getSliceStart returns the slice start info
+func (n *Nii) getSliceStart() int64 {
+	return n.SliceStart
+}
+
+// getSliceEnd returns the slice end info
+func (n *Nii) getSliceEnd() int64 {
+	return n.SliceEnd
+}
+
+// getRawData returns the raw byte array of image
+func (n *Nii) getRawData() []byte {
+	return n.Volume
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Set methods
+//----------------------------------------------------------------------------------------------------------------------
+
+// setSliceCode sets the new slice code of the NIFTI image
+func (n *Nii) setSliceCode(sliceCode int32) error {
+	_, ok := constant.NiiSliceAcquistionInfo[sliceCode]
+	if ok {
+		n.SliceCode = sliceCode
+		return nil
+	}
+	return fmt.Errorf("unknown sliceCode %d", sliceCode)
+}
+
+// setQFormCode sets the new QForm code
+func (n *Nii) setQFormCode(qFormCode int32) error {
+	_, ok := constant.NiiPatientOrientationInfo[qFormCode]
+	if ok {
+		n.QformCode = qFormCode
+		return nil
+	}
+	return fmt.Errorf("unknown qFormCode %d", qFormCode)
+}
+
+// setSFormCode sets the new SForm code
+func (n *Nii) setSFormCode(sFormCode int32) error {
+	_, ok := constant.NiiPatientOrientationInfo[n.SformCode]
+	if ok {
+		n.SformCode = sFormCode
+		return nil
+	}
+	return fmt.Errorf("unknown sFormCode %d", sFormCode)
+}
+
+// setDatatype sets the new NIfTI datatype
+func (n *Nii) setDatatype(datatype int32) error {
+	_, ok := constant.ValidDatatype[datatype]
+	if ok {
+		n.Datatype = datatype
+		return nil
+	}
+	return fmt.Errorf("unknown datatype value %d", datatype)
+}
+
+// setAffine sets the new 4x4 affine matrix
+func (n *Nii) setAffine(mat matrix.DMat44) {
+	n.Affine = mat
+}
+
+// setDescrip returns the description with trailing null bytes removed
+func (n *Nii) setDescrip(descrip string) error {
+
+	if len([]byte(descrip)) > 79 {
+		return errors.New("description must be fewer than 80 characters")
+	}
+
+	var bDescrip [80]byte
+	copy(bDescrip[:], descrip)
+
+	n.Descrip = bDescrip
+
+	return nil
+}
+
+// setIntentName sets the new intent name
+func (n *Nii) setIntentName(intentName string) error {
+
+	if len([]byte(intentName)) > 15 {
+		return errors.New("intent name must be fewer than 16 characters")
+	}
+
+	var bDescrip [80]byte
+	copy(bDescrip[:], intentName)
+
+	n.Descrip = bDescrip
+
+	return nil
 }
