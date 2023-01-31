@@ -1,6 +1,7 @@
 package nii_io
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -153,7 +154,7 @@ func (n *Nii) getOrientation() [3]string {
 	return res
 }
 
-// GetAt returns the value at (x, y, z, t) location
+// getAt returns the value at (x, y, z, t) location
 func (n *Nii) getAt(x, y, z, t int64) float64 {
 
 	tIndex := t * n.Nx * n.Ny * n.Nz
@@ -213,7 +214,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 	default:
 	}
 
-	if n.SclSlope != 0 {
+	if n.SclSlope != 0 && n.Datatype != constant.DT_RGB24 {
 		value = n.SclSlope*value + n.SclInter
 	}
 
@@ -449,5 +450,114 @@ func (n *Nii) setIntentName(intentName string) error {
 
 	n.Descrip = bDescrip
 
+	return nil
+}
+
+// setSliceDuration sets the new slice duration info
+func (n *Nii) setSliceDuration(sliceDuration float64) {
+	n.SliceDuration = sliceDuration
+}
+
+// setSliceStart sets the new slice start info
+func (n *Nii) setSliceStart(sliceStart int64) {
+	n.SliceStart = sliceStart
+}
+
+// setSliceEnd sets the new slice end info
+func (n *Nii) setSliceEnd(sliceEnd int64) {
+	n.SliceEnd = sliceEnd
+}
+
+// setXYZUnits sets the new spatial unit of measurements
+func (n *Nii) setXYZUnits(xyzUnit int32) {
+	n.XYZUnits = xyzUnit
+}
+
+// setTimeUnits sets the new temporal unit of measurements
+func (n *Nii) setTimeUnits(timeUnit int32) {
+	n.TimeUnits = timeUnit
+}
+
+// setAt sets the new value at (x, y, z, t) location
+func (n *Nii) setAt(newVal float64, x, y, z, t int64) error {
+
+	tIndex := t * n.Nx * n.Ny * n.Nz
+	zIndex := n.Nx * n.Ny * z
+	yIndex := n.Nx * y
+	xIndex := x
+	index := tIndex + zIndex + yIndex + xIndex
+	nByPer := int64(n.NByPer)
+
+	if index*nByPer > int64(len(n.Volume)) || (index+1)*nByPer > int64(len(n.Volume)) {
+		return fmt.Errorf("index out of range. Max volume size is %d", len(n.Volume))
+	}
+
+	dataPoint := n.Volume[index*nByPer : (index+1)*nByPer]
+
+	switch n.NByPer {
+	case 0, 1:
+		if len(dataPoint) > 0 {
+			count := 0
+			var buf bytes.Buffer
+			err := binary.Write(&buf, n.ByteOrder, newVal)
+			if err != nil {
+				return err
+			}
+			for _, b := range buf.Bytes() {
+				if b != 0x00 {
+					count++
+				}
+			}
+			if count == len(dataPoint) {
+				copy(n.Volume[index*nByPer:(index+1)*nByPer], buf.Bytes())
+			}
+		}
+	case 2: // This fits Uint16
+		v := uint16(newVal)
+		b := make([]byte, 2)
+
+		switch n.ByteOrder {
+		case binary.LittleEndian:
+			binary.LittleEndian.PutUint16(b, v)
+		case binary.BigEndian:
+			binary.BigEndian.PutUint16(b, v)
+		}
+		copy(n.Volume[index*nByPer:(index+1)*nByPer], b)
+	case 3, 4: // This fits Uint32
+		v := uint32(newVal)
+		b := make([]byte, 4)
+
+		switch n.ByteOrder {
+		case binary.LittleEndian:
+			binary.LittleEndian.PutUint32(b, v)
+			switch len(dataPoint) {
+			case 3:
+				copy(n.Volume[index*nByPer:(index+1)*nByPer], b[:3])
+			case 4:
+				copy(n.Volume[index*nByPer:(index+1)*nByPer], b)
+			}
+		case binary.BigEndian:
+			binary.BigEndian.PutUint32(b, v)
+			switch len(dataPoint) {
+			case 3:
+				copy(n.Volume[index*nByPer:(index+1)*nByPer], b[:3])
+			case 4:
+				copy(n.Volume[index*nByPer:(index+1)*nByPer], b)
+			}
+		}
+	case 8:
+		v := uint64(newVal)
+		b := make([]byte, 8)
+		switch n.ByteOrder {
+		case binary.LittleEndian:
+			binary.LittleEndian.PutUint64(b, v)
+		case binary.BigEndian:
+			binary.BigEndian.PutUint64(b, v)
+		}
+		copy(n.Volume[index*nByPer:(index+1)*nByPer], b)
+	case 16: // Unsupported
+	case 32: // Unsupported
+	default:
+	}
 	return nil
 }

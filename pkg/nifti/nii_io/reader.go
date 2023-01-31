@@ -56,6 +56,8 @@ type NiiReader interface {
 	GetQuaternD() float64
 	// GetHeader returns the NIfTI header
 	GetHeader() interface{}
+	// SetAt sets the new value at (x, y, z, t) location
+	SetAt(newVal float64, x, y, z, t int64) error
 }
 
 // niiReader define the NIfTI reader structure.
@@ -231,6 +233,13 @@ func (r *niiReader) GetDescrip() string {
 func (r *niiReader) GetIntentName() string {
 	return r.data.getIntentName()
 }
+
+// SetAt sets the new value at (x, y, z, t) location
+func (r *niiReader) SetAt(newVal float64, x, y, z, t int64) error {
+	return r.data.setAt(newVal, x, y, z, t)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 // Parse returns the raw byte array into NIFTI-1 header and dataset structure
 func (r *niiReader) Parse() error {
