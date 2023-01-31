@@ -68,7 +68,8 @@ func TestNii1(t *testing.T) {
 	filePath = "/home/tripg/workspace/test_segment.nii.gz"
 	filePath = "/home/tripg/workspace/anim3.nii.gz"
 	filePath = "/home/tripg/workspace/RGB16_4D.nii.gz"
-	filePath = "/home/tripg/workspace/RGB8_4D.nii.gz"
+	//filePath = "/home/tripg/workspace/RGB8_4D.nii.gz"
+	//filePath = "/home/tripg/workspace/nifti/JHU_MNI_SS_T1_mask.nii.gz"
 
 	niiReader, err = nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true)) // , nii_io.WithRetainHeader(false)
 	assert.NoError(err)
@@ -97,7 +98,7 @@ func TestNii1(t *testing.T) {
 	//fmt.Println(niiReader.GetVolume(8))
 	//fmt.Println(niiReader.GetAt(112, 186, 20, 0))
 
-	fmt.Println(niiReader.GetVolume(0))
+	fmt.Println(niiReader.GetVolume(2))
 	//
 	//writer, err := nii_io.NewNiiWriter("./out.nii.gz", nii_io.WithNIfTIData(niiReader.GetNiiData()), nii_io.WithCompression(true))
 	//assert.NoError(err)

@@ -193,6 +193,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 			switch len(dataPoint) {
 			case 3:
 				v = uint32(uint(dataPoint[0]) | uint(dataPoint[1])<<8 | uint(dataPoint[2])<<16)
+				value = float64(math.Float32frombits(v))
 			case 4:
 				v = binary.LittleEndian.Uint32(dataPoint)
 				switch n.Datatype {
@@ -210,6 +211,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 			switch len(dataPoint) {
 			case 3:
 				v = uint32(uint(dataPoint[2]) | uint(dataPoint[1])<<8 | uint(dataPoint[0])<<16)
+				value = float64(math.Float32frombits(v))
 			case 4:
 				v = binary.BigEndian.Uint32(dataPoint)
 				switch n.Datatype {
