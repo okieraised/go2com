@@ -94,9 +94,10 @@ func TestNii1(t *testing.T) {
 	fmt.Println("Header", niiReader.GetHeader())
 	fmt.Println("PixDim", niiReader.GetNiiData().PixDim)
 
-	//fmt.Println(niiReader.GetVolume(0))
+	//fmt.Println(niiReader.GetVolume(8))
+	//fmt.Println(niiReader.GetAt(112, 186, 20, 0))
 
-	niiReader.GetVolume(0)
+	fmt.Println(niiReader.GetVolume(0))
 	//
 	//writer, err := nii_io.NewNiiWriter("./out.nii.gz", nii_io.WithNIfTIData(niiReader.GetNiiData()), nii_io.WithCompression(true))
 	//assert.NoError(err)

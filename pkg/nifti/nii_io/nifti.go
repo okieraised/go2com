@@ -180,7 +180,12 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 		case binary.BigEndian:
 			v = binary.BigEndian.Uint16(dataPoint)
 		}
-		value = float64(v)
+		switch n.Datatype {
+		case constant.DT_INT16:
+			value = float64(int16(v))
+		case constant.DT_UINT16:
+			value = float64(v)
+		}
 	case 3, 4: // This fits Uint32
 		var v uint32
 		switch n.ByteOrder {
@@ -190,6 +195,16 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 				v = uint32(uint(dataPoint[0]) | uint(dataPoint[1])<<8 | uint(dataPoint[2])<<16)
 			case 4:
 				v = binary.LittleEndian.Uint32(dataPoint)
+				switch n.Datatype {
+				case constant.DT_INT32:
+					value = float64(int32(v))
+				case constant.DT_UINT32:
+					value = float64(v)
+				case constant.DT_FLOAT32:
+					value = float64(float32(v))
+				case constant.DT_RGBA32:
+					value = float64(math.Float32frombits(v))
+				}
 			}
 		case binary.BigEndian:
 			switch len(dataPoint) {
@@ -197,9 +212,19 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 				v = uint32(uint(dataPoint[2]) | uint(dataPoint[1])<<8 | uint(dataPoint[0])<<16)
 			case 4:
 				v = binary.BigEndian.Uint32(dataPoint)
+				switch n.Datatype {
+				case constant.DT_INT32:
+					value = float64(int32(v))
+				case constant.DT_UINT32:
+					value = float64(v)
+				case constant.DT_FLOAT32:
+					value = float64(float32(v))
+				case constant.DT_RGBA32:
+					value = float64(math.Float32frombits(v))
+				}
 			}
 		}
-		value = float64(math.Float32frombits(v))
+
 	case 8:
 		var v uint64
 		switch n.ByteOrder {
@@ -208,7 +233,16 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 		case binary.BigEndian:
 			v = binary.BigEndian.Uint64(dataPoint)
 		}
-		value = math.Float64frombits(v)
+		switch n.Datatype {
+		case constant.DT_FLOAT64:
+			value = float64(v)
+		case constant.DT_INT64:
+			value = float64(int64(v))
+		case constant.DT_UINT64:
+			value = float64(v)
+		case constant.DT_COMPLEX64:
+			value = math.Float64frombits(v)
+		}
 	case 16: // Unsupported
 	case 32: // Unsupported
 	default:
