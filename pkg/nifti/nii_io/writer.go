@@ -107,20 +107,21 @@ func (w *niiWriter) writePairNii() error {
 
 	// Check if the user-specified filePath suffix is ending with '.nii'.
 	// If not, we append '.nii' to the end to signify the file is NIfTI format
-	if !strings.HasSuffix(w.filePath, ".nii") {
-		w.filePath = w.filePath + ".nii"
-		headerFilePath = w.filePath
-
-		// Now replace the suffix to identify the header and img file
-		headerFilePath = strings.ReplaceAll(w.filePath, ".nii", "_nifti.hdr")
-		w.filePath = strings.ReplaceAll(w.filePath, ".nii", "_nifti.img")
+	if !strings.HasSuffix(w.filePath, constant.NIFTI_EXT) {
+		w.filePath = w.filePath + constant.NIFTI_EXT
 	}
+
+	headerFilePath = w.filePath
+	// Now replace the suffix to identify the header and img file
+	headerFilePath = strings.ReplaceAll(w.filePath, constant.NIFTI_EXT, "_nifti.hdr")
+	w.filePath = strings.ReplaceAll(w.filePath, constant.NIFTI_EXT, "_nifti.img")
 
 	// Check if the user-specified filePath suffix is ending with '.gz'.
 	// If not, we append '.gz' to the end to signify the file is compressed
 	if w.compression {
-		if !strings.HasSuffix(w.filePath, ".gz") {
-			w.filePath = w.filePath + ".gz"
+		if !strings.HasSuffix(w.filePath, constant.NIFTI_COMPRESSED_EXT) {
+			w.filePath = w.filePath + constant.NIFTI_COMPRESSED_EXT
+			headerFilePath = headerFilePath + constant.NIFTI_COMPRESSED_EXT
 		}
 	}
 
@@ -226,15 +227,15 @@ func (w *niiWriter) writeSingleNii() error {
 
 	// Check if the user-specified filePath suffix is ending with '.nii'.
 	// If not, we append '.nii' to the end to signify the file is NIfTI format
-	if !strings.HasSuffix(w.filePath, ".nii") {
-		w.filePath = w.filePath + ".nii"
+	if !strings.HasSuffix(w.filePath, constant.NIFTI_EXT) {
+		w.filePath = w.filePath + constant.NIFTI_EXT
 	}
 
 	// Check if the user-specified filePath suffix is ending with '.gz'.
 	// If not, we append '.gz' to the end to signify the file is compressed
 	if w.compression {
-		if !strings.HasSuffix(w.filePath, ".gz") {
-			w.filePath = w.filePath + ".gz"
+		if !strings.HasSuffix(w.filePath, constant.NIFTI_COMPRESSED_EXT) {
+			w.filePath = w.filePath + constant.NIFTI_COMPRESSED_EXT
 		}
 	}
 

@@ -1,6 +1,11 @@
 package constant
 
 const (
+	NIFTI_EXT            = ".nii"
+	NIFTI_COMPRESSED_EXT = ".gz"
+)
+
+const (
 	NIIVersion1 = iota + 1
 	NIIVersion2
 )
@@ -10,20 +15,20 @@ const (
 	NII2HeaderSize = 540
 )
 
-// Possible NIFTI image extension
-const (
-	NIFTI_FTYPE_NIFTI1_1     = ".nii"
-	NIFTI_FTYPE_NIFTI1_2     = ".img"
-	NIFTI_FTYPE_NIFTI1_2_HDR = ".hdr"
-	NIFTI_FTYPE_NIFTI_GZIP   = ".gz"
-)
-
-var ValidNIfTIExtMapper = map[string]bool{
-	NIFTI_FTYPE_NIFTI1_1:     true,
-	NIFTI_FTYPE_NIFTI1_2:     true,
-	NIFTI_FTYPE_NIFTI1_2_HDR: true,
-	NIFTI_FTYPE_NIFTI_GZIP:   true,
-}
+//// Possible NIFTI image extension
+//const (
+//	NIFTI_FTYPE_NIFTI1_1     = ".nii"
+//	NIFTI_FTYPE_NIFTI1_2     = ".img"
+//	NIFTI_FTYPE_NIFTI1_2_HDR = ".hdr"
+//	NIFTI_FTYPE_NIFTI_GZIP   = ".gz"
+//)
+//
+//var ValidNIfTIExtMapper = map[string]bool{
+//	NIFTI_FTYPE_NIFTI1_1:     true,
+//	NIFTI_FTYPE_NIFTI1_2:     true,
+//	NIFTI_FTYPE_NIFTI1_2_HDR: true,
+//	NIFTI_FTYPE_NIFTI_GZIP:   true,
+//}
 
 const (
 	NIFTI_INTENT_CORREL                     int16 = 2

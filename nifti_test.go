@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestNiiWriter(t *testing.T) {
+func TestNiiWriter_Single(t *testing.T) {
 	assert := assert.New(t)
 
 	filePath := "/home/tripg/workspace/anim3.nii.gz"
@@ -19,6 +19,22 @@ func TestNiiWriter(t *testing.T) {
 	assert.NoError(err)
 
 	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out.nii", nii_io.WithNIfTIData(rd.GetNiiData()), nii_io.WithCompression(true))
+	assert.NoError(err)
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
+func TestNiiWriter_Pair(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/anim3.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out.nii", nii_io.WithNIfTIData(rd.GetNiiData()), nii_io.WithWriteHeaderFile(true), nii_io.WithCompression(true))
 	assert.NoError(err)
 	err = writer.WriteToFile()
 	assert.NoError(err)
