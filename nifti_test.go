@@ -37,9 +37,12 @@ func TestNiiWriter_EmptyImageData_Filled(t *testing.T) {
 	assert.NoError(err)
 
 	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out_blank_filled.nii",
-		nii_io.WithNIfTIData(img),
+		nii_io.WithNIfTIData(rd.GetNiiData()),
 		nii_io.WithCompression(true),
 	)
+
+	err = writer.SetVolume(img)
+	assert.NoError(err)
 
 	for x := 200; x <= 250; x++ {
 		for y := 100; y <= 150; y++ {
@@ -78,9 +81,12 @@ func TestNiiWriter_EmptyImageData(t *testing.T) {
 	assert.NoError(err)
 
 	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out_blank.nii",
-		nii_io.WithNIfTIData(img),
+		nii_io.WithNIfTIData(rd.GetNiiData()),
 		nii_io.WithCompression(true),
 	)
+
+	err = writer.SetVolume(img)
+	assert.NoError(err)
 
 	err = writer.WriteToFile()
 	assert.NoError(err)

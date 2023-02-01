@@ -449,3 +449,7 @@ func (w *niiWriter) SetXYZUnits(xyzUnit int32) {
 func (w *niiWriter) SetTimeUnits(timeUnit int32) {
 	w.niiData.setTimeUnits(timeUnit)
 }
+
+func (w *niiWriter) SetVolume(vol []byte) error {
+	return w.niiData.setVolume(vol)
+}

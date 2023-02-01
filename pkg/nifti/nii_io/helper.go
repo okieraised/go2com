@@ -518,8 +518,8 @@ func MakeNewNii2Header(inDim *[8]int64, inDatatype int32) *Nii2Header {
 	return header
 }
 
-// MakeEmptyImageFromImg initializes a zero-filled byte slice to the Volume field of the niiData from existing Nii image structure
-func MakeEmptyImageFromImg(img *Nii) (*Nii, error) {
+// MakeEmptyImageFromImg returns a zero-filled byte slice from existing Nii image structure
+func MakeEmptyImageFromImg(img *Nii) ([]byte, error) {
 	var bDataLength int64
 
 	if img == nil {
@@ -555,9 +555,48 @@ func MakeEmptyImageFromImg(img *Nii) (*Nii, error) {
 	bDataLength = bDataLength * int64(nByper)
 
 	// Init a slice of bytes with capacity of bDataLength and initial value of 0
-	// Then assign it to the Volume field in the niiData
 	bData := make([]byte, bDataLength, bDataLength)
-	img.Volume = bData
 
-	return img, nil
+	return bData, nil
+}
+
+// MakeEmptyImageFromHdr initializes a zero-filled byte slice from existing header structure
+func MakeEmptyImageFromHdr(hdr *Nii1Header) ([]byte, error) {
+	var bDataLength int64
+
+	if hdr == nil {
+		return nil, errors.New("NIfTI image structure nil")
+	}
+
+	if hdr.Dim[1] == 0 {
+		return nil, errors.New("x dimension must not be zero")
+	}
+	if hdr.Dim[2] == 0 {
+		return nil, errors.New("y dimension must not be zero")
+	}
+	bDataLength = int64(hdr.Dim[1] * hdr.Dim[2])
+
+	if hdr.Dim[3] > 0 {
+		bDataLength = bDataLength * int64(hdr.Dim[3])
+	}
+	if hdr.Dim[4] > 0 {
+		bDataLength = bDataLength * int64(hdr.Dim[4])
+	}
+	if hdr.Dim[5] > 0 {
+		bDataLength = bDataLength * int64(hdr.Dim[5])
+	}
+	if hdr.Dim[6] > 0 {
+		bDataLength = bDataLength * int64(hdr.Dim[6])
+	}
+	if hdr.Dim[7] > 0 {
+		bDataLength = bDataLength * int64(hdr.Dim[7])
+	}
+
+	nByper, _ := assignDatatypeSize(int32(hdr.Datatype))
+	bDataLength = bDataLength * int64(nByper)
+
+	// Init a slice of bytes with capacity of bDataLength and initial value of 0
+	bData := make([]byte, bDataLength, bDataLength)
+
+	return bData, nil
 }

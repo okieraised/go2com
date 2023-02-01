@@ -597,3 +597,43 @@ func (n *Nii) setAt(newVal float64, x, y, z, t int64) error {
 	}
 	return nil
 }
+
+// setVolume sets the new value at (x, y, z, t) location
+func (n *Nii) setVolume(vol []byte) error {
+	var bDataLength int64
+
+	// Need at least nx, ny
+	if n.Nx == 0 {
+		return errors.New("x dimension must not be zero")
+	}
+	if n.Ny == 0 {
+		return errors.New("y dimension must not be zero")
+	}
+	bDataLength = n.Nx * n.Ny
+
+	if n.Nz > 0 {
+		bDataLength = bDataLength * n.Nz
+	}
+	if n.Nt > 0 {
+		bDataLength = bDataLength * n.Nt
+	}
+	if n.Nu > 0 {
+		bDataLength = bDataLength * n.Nu
+	}
+	if n.Nv > 0 {
+		bDataLength = bDataLength * n.Nv
+	}
+	if n.Nw > 0 {
+		bDataLength = bDataLength * n.Nw
+	}
+
+	nByper, _ := assignDatatypeSize(n.Datatype)
+	bDataLength = bDataLength * int64(nByper)
+
+	if int64(len(vol)) != bDataLength {
+		return fmt.Errorf("expected length of volume does not match. Expected %d Actual %d", bDataLength, len(vol))
+	}
+
+	n.Volume = vol
+	return nil
+}
