@@ -265,50 +265,6 @@ func (w *niiWriter) writeSingleNii() error {
 	return nil
 }
 
-// MakeEmptyImage initializes a zero-filled byte slice to the Volume field of the niiData from existing Nii image structure
-func (w *niiWriter) MakeEmptyImage() error {
-	var bDataLength int64
-
-	if w.niiData == nil {
-		return errors.New("NIfTI image structure nil")
-	}
-
-	// Need at least nx, ny
-	if w.niiData.Nx == 0 {
-		return errors.New("x dimension must not be zero")
-	}
-	if w.niiData.Ny == 0 {
-		return errors.New("y dimension must not be zero")
-	}
-	bDataLength = w.niiData.Nx * w.niiData.Ny
-
-	if w.niiData.Nz > 0 {
-		bDataLength = bDataLength * w.niiData.Nz
-	}
-	if w.niiData.Nt > 0 {
-		bDataLength = bDataLength * w.niiData.Nt
-	}
-	if w.niiData.Nu > 0 {
-		bDataLength = bDataLength * w.niiData.Nu
-	}
-	if w.niiData.Nv > 0 {
-		bDataLength = bDataLength * w.niiData.Nv
-	}
-	if w.niiData.Nw > 0 {
-		bDataLength = bDataLength * w.niiData.Nw
-	}
-
-	nByper, _ := assignDatatypeSize(w.niiData.Datatype)
-	bDataLength = bDataLength * int64(nByper)
-
-	// Init a slice of bytes with capacity of bDataLength and initial value of 0
-	// Then assign it to the Volume field in the niiData
-	bData := make([]byte, bDataLength, bDataLength)
-	w.niiData.Volume = bData
-
-	return nil
-}
-
 // convertImageToHeader returns the header from a NIfTI image structure
 func (w *niiWriter) convertImageToHeader() error {
 	if w.niiData == nil {

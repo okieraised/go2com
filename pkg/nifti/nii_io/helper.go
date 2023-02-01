@@ -3,6 +3,7 @@ package nii_io
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/system"
 	"github.com/okieraised/go2com/internal/utils"
@@ -515,4 +516,48 @@ func MakeNewNii2Header(inDim *[8]int64, inDatatype int32) *Nii2Header {
 	header.Magic = [8]byte{110, 105, 50, 0, 13, 10, 26, 10}
 
 	return header
+}
+
+// MakeEmptyImageFromImg initializes a zero-filled byte slice to the Volume field of the niiData from existing Nii image structure
+func MakeEmptyImageFromImg(img *Nii) (*Nii, error) {
+	var bDataLength int64
+
+	if img == nil {
+		return nil, errors.New("NIfTI image structure nil")
+	}
+
+	// Need at least nx, ny
+	if img.Nx == 0 {
+		return nil, errors.New("x dimension must not be zero")
+	}
+	if img.Ny == 0 {
+		return nil, errors.New("y dimension must not be zero")
+	}
+	bDataLength = img.Nx * img.Ny
+
+	if img.Nz > 0 {
+		bDataLength = bDataLength * img.Nz
+	}
+	if img.Nt > 0 {
+		bDataLength = bDataLength * img.Nt
+	}
+	if img.Nu > 0 {
+		bDataLength = bDataLength * img.Nu
+	}
+	if img.Nv > 0 {
+		bDataLength = bDataLength * img.Nv
+	}
+	if img.Nw > 0 {
+		bDataLength = bDataLength * img.Nw
+	}
+
+	nByper, _ := assignDatatypeSize(img.Datatype)
+	bDataLength = bDataLength * int64(nByper)
+
+	// Init a slice of bytes with capacity of bDataLength and initial value of 0
+	// Then assign it to the Volume field in the niiData
+	bData := make([]byte, bDataLength, bDataLength)
+	img.Volume = bData
+
+	return img, nil
 }
