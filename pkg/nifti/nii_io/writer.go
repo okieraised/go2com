@@ -18,17 +18,15 @@ import (
 // Parameters:
 //     - `filePath`         : Export file path to write NIfTI image
 //     - `writeHeaderFile`  : Whether to write NIfTI file pair (hdr + img file)
-//     - `compression`      : Whether the NIfTI volume will be compressed
-//     - `headerCompression`: Whether the NIfTI header will be compressed. This only works when the writeHeaderFile option is set to True
+//     - `compression`      : Whether the NIfTI volume will be compressed. If writeHeaderFile is set to True, both the .hdr and .img files will be compressed
 //     - `niiData`          : Input NIfTI data to write to file
 //     - `header`           : Input NIfTI header to write to file. If nil, the default header will be constructed
 type niiWriter struct {
-	filePath          string      // Export file path to write NIfTI image
-	writeHeaderFile   bool        // Whether to write NIfTI file pair (hdr + img file)
-	compression       bool        // Whether the NIfTI volume will be compressed
-	headerCompression bool        // Whether the NIfTI header will be compressed. This only works when the writeHeaderFile option is set to True
-	niiData           *Nii        // Input NIfTI data to write to file
-	header            *Nii1Header // Input NIfTI header to write to file. If nil, the default header will be constructed
+	filePath        string      // Export file path to write NIfTI image
+	writeHeaderFile bool        // Whether to write NIfTI file pair (hdr + img file)
+	compression     bool        // Whether the NIfTI file will be compressed
+	niiData         *Nii        // Input NIfTI data to write to file
+	header          *Nii1Header // Input NIfTI header to write to file. If nil, the default header will be constructed
 }
 
 // NewNiiWriter returns a new write for export
@@ -36,9 +34,8 @@ func NewNiiWriter(filePath string, options ...func(*niiWriter)) (*niiWriter, err
 	writer := new(niiWriter)
 
 	writer.filePath = filePath
-	writer.writeHeaderFile = false   // Default to false. Write to a single file only
-	writer.compression = false       // Default to false. No compression
-	writer.headerCompression = false // Default to false. No header compression
+	writer.writeHeaderFile = false // Default to false. Write to a single file only
+	writer.compression = false     // Default to false. No compression
 
 	// Other options
 	for _, opt := range options {
@@ -53,15 +50,6 @@ func NewNiiWriter(filePath string, options ...func(*niiWriter)) (*niiWriter, err
 func WithWriteHeaderFile(writeHeaderFile bool) func(*niiWriter) {
 	return func(w *niiWriter) {
 		w.writeHeaderFile = writeHeaderFile
-	}
-}
-
-// WithHeaderCompression sets the option to write compressed NIfTI header structure to file (.hdr.gz)
-//
-// If true, the header will be compressed. It only works when WithWriteHeaderFile is provided with option `true`. Default is false.
-func WithHeaderCompression(headerCompression bool) func(*niiWriter) {
-	return func(w *niiWriter) {
-		w.headerCompression = headerCompression
 	}
 }
 
@@ -90,7 +78,7 @@ func WithNIfTIData(data *Nii) func(writer *niiWriter) {
 	}
 }
 
-// WriteToFile write the header and image to a NIfTI file
+// WriteToFile write the header and image to either a single NIfTI file or a pair of .hdr/.img file
 func (w *niiWriter) WriteToFile() error {
 	// convert image structure to file
 	err := w.convertImageToHeader()
@@ -100,91 +88,10 @@ func (w *niiWriter) WriteToFile() error {
 
 	// If user decides to write to a separate hdr/img file pair
 	if w.writeHeaderFile {
-		var headerFilePath string
-
-		// Check if the user-specified output file has .nii or nii.gz suffix. If yes, replace it with .img extension since this
-		// is a .hdr/.img pair
-		if strings.HasSuffix(w.filePath, ".nii") || strings.HasSuffix(w.filePath, ".nii.gz") {
-			w.filePath = strings.ReplaceAll(w.filePath, ".nii", ".img")
-			headerFilePath = strings.ReplaceAll(w.filePath, ".img", ".hdr")
-		}
-
-		// Set the magic string to ni1
-		w.header.Magic = [4]uint8{110, 105, 49, 0}
-		// Set the VoxOffset to 0
-		w.header.VoxOffset = 0
-
-		// Write header structure as bytes
-		hdrBuf := &bytes.Buffer{}
-		err = binary.Write(hdrBuf, system.NativeEndian, w.header)
+		err := w.writePairNii()
 		if err != nil {
 			return err
 		}
-		bHeader := hdrBuf.Bytes()
-
-		// Write compressed header to file
-		if w.headerCompression {
-			if !strings.HasSuffix(headerFilePath, ".gz") {
-				headerFilePath = headerFilePath + ".gz"
-			}
-
-			fHeader, err := os.Create(headerFilePath)
-			if err != nil {
-				return err
-			}
-			defer fHeader.Close()
-
-			gzipWriter := gzip.NewWriter(fHeader)
-			_, err = gzipWriter.Write(bHeader)
-			if err != nil {
-				return err
-			}
-			err = gzipWriter.Close()
-
-		} else { // Write normal header
-			if !strings.HasSuffix(headerFilePath, ".hdr") {
-				headerFilePath = headerFilePath + ".hdr"
-			}
-
-			fHeader, err := os.Create(headerFilePath)
-			if err != nil {
-				return err
-			}
-			defer fHeader.Close()
-
-			_, err = fHeader.Write(bHeader)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Write the data to file
-		bData := w.niiData.Volume
-
-		file, err := os.Create(w.filePath)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		// Write compressed image to file
-		if w.compression {
-			gzipWriter := gzip.NewWriter(file)
-			_, err = gzipWriter.Write(bData)
-			if err != nil {
-				return err
-			}
-			err = gzipWriter.Close()
-
-		} else { // Write as normal
-			_, err = file.Write(bData)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-
 	} else { // Just one file for both header and the image data
 		err := w.writeSingleNii()
 		if err != nil {
@@ -196,6 +103,86 @@ func (w *niiWriter) WriteToFile() error {
 
 // writePairNii writes the header and NIfTI image Nii as 2 separate files
 func (w *niiWriter) writePairNii() error {
+	var headerFilePath string
+
+	// Check if the user-specified filePath suffix is ending with '.nii'.
+	// If not, we append '.nii' to the end to signify the file is NIfTI format
+	if !strings.HasSuffix(w.filePath, ".nii") {
+		w.filePath = w.filePath + ".nii"
+		headerFilePath = w.filePath
+
+		// Now replace the suffix to identify the header and img file
+		headerFilePath = strings.ReplaceAll(w.filePath, ".nii", "_nifti.hdr")
+		w.filePath = strings.ReplaceAll(w.filePath, ".nii", "_nifti.img")
+	}
+
+	// Check if the user-specified filePath suffix is ending with '.gz'.
+	// If not, we append '.gz' to the end to signify the file is compressed
+	if w.compression {
+		if !strings.HasSuffix(w.filePath, ".gz") {
+			w.filePath = w.filePath + ".gz"
+		}
+	}
+
+	// Set the magic string to ni1
+	w.header.Magic = [4]uint8{110, 105, 49, 0}
+	// Set the VoxOffset to 0 since we write to separate header/img file
+	w.header.VoxOffset = 0
+
+	// Write header structure as bytes
+	hdrBuf := &bytes.Buffer{}
+	err := binary.Write(hdrBuf, system.NativeEndian, w.header)
+	if err != nil {
+		return err
+	}
+	bHeader := hdrBuf.Bytes()
+
+	// Image data
+	bData := w.niiData.Volume
+
+	// Create header file object
+	fHeader, err := os.Create(headerFilePath)
+	if err != nil {
+		return err
+	}
+	defer fHeader.Close()
+
+	// Create data file object
+	fData, err := os.Create(w.filePath)
+	if err != nil {
+		return err
+	}
+	defer fData.Close()
+
+	// If compression option is set to true, write both the header and image data as compressed files
+	if w.compression {
+		// Write compressed header to file
+		gzipWriter := gzip.NewWriter(fHeader)
+		_, err = gzipWriter.Write(bHeader)
+		if err != nil {
+			return err
+		}
+		err = gzipWriter.Close()
+
+		// Write compressed data to file
+		gzipWriter = gzip.NewWriter(fData)
+		_, err = gzipWriter.Write(bData)
+		if err != nil {
+			return err
+		}
+		err = gzipWriter.Close()
+
+	} else { // Write both the header and image data normally
+		_, err = fHeader.Write(bHeader)
+		if err != nil {
+			return err
+		}
+
+		_, err = fData.Write(bData)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
