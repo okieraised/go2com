@@ -8,6 +8,82 @@ import (
 	"testing"
 )
 
+//func Test_NiiReaderProfiling(t *testing.T) {
+//	assert := assert.New(t)
+//	filePath := "/home/tripg/workspace/anim3.nii.gz"
+//	fn := func() {
+//		rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+//		assert.NoError(err)
+//		err = rd.Parse()
+//		assert.NoError(err)
+//	}
+//
+//	err := utils.CPUProfilingFunc(fn, "/home/tripg/workspace/nii_reader.pprof")
+//	assert.NoError(err)
+//}
+
+func TestNiiWriter_EmptyImageData_Filled(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/anim3.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out_blank_filled.nii",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+	assert.NoError(err)
+	err = writer.MakeEmptyImage()
+	assert.NoError(err)
+
+	for x := 200; x <= 250; x++ {
+		for y := 100; y <= 150; y++ {
+			for z := 0; z <= 49; z++ {
+				err = writer.SetAt(1, int64(x), int64(y), int64(z), 0)
+				assert.NoError(err)
+			}
+		}
+	}
+
+	for x := 300; x <= 400; x++ {
+		for y := 200; y <= 300; y++ {
+			for z := 0; z <= 49; z++ {
+				err = writer.SetAt(1, int64(x), int64(y), int64(z), 0)
+				assert.NoError(err)
+			}
+
+		}
+	}
+
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
+func TestNiiWriter_EmptyImageData(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/anim3.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out_blank.nii",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+
+	err = writer.MakeEmptyImage()
+	assert.NoError(err)
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
 func TestNiiWriter_Single(t *testing.T) {
 	assert := assert.New(t)
 
@@ -18,7 +94,11 @@ func TestNiiWriter_Single(t *testing.T) {
 	err = rd.Parse()
 	assert.NoError(err)
 
-	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out.nii", nii_io.WithNIfTIData(rd.GetNiiData()), nii_io.WithCompression(true))
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out.nii",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+
 	assert.NoError(err)
 	err = writer.WriteToFile()
 	assert.NoError(err)
@@ -34,7 +114,11 @@ func TestNiiWriter_Pair(t *testing.T) {
 	err = rd.Parse()
 	assert.NoError(err)
 
-	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out.nii", nii_io.WithNIfTIData(rd.GetNiiData()), nii_io.WithWriteHeaderFile(true), nii_io.WithCompression(true))
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out.nii",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithWriteHeaderFile(true),
+		nii_io.WithCompression(true),
+	)
 	assert.NoError(err)
 	err = writer.WriteToFile()
 	assert.NoError(err)
@@ -253,13 +337,14 @@ func TestNii2(t *testing.T) {
 	fmt.Println("QOffsetZ", niiReader.GetNiiData().QoffsetZ)
 }
 
-func TestMagicString(t *testing.T) {
-	fmt.Println([]byte("n+1"))
-
-	x := make([]byte, 100, 100)
-
-	fmt.Println(x)
-}
+//func TestMagicString(t *testing.T) {
+//	fmt.Println([]byte("ni2"))
+//	fmt.Println(110, 105, 50, 0, 13, 10, 26, 10)
+//	// 0D 0A 1A 0A
+//	x := make([]byte, 100, 100)
+//
+//	fmt.Println(x)
+//}
 
 //func TestFloatToBytes(t *testing.T) {
 //	var original = []byte{0x00, 0x00, 0x00, 0x11, 0x12, 0x64, 0x80, 0x00, 0x59, 0x57}

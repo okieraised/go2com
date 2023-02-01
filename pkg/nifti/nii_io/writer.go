@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/binary"
 	"errors"
-	"fmt"
+	"github.com/okieraised/go2com/internal/matrix"
 	"github.com/okieraised/go2com/internal/system"
 	"github.com/okieraised/go2com/pkg/nifti/constant"
 	"math"
@@ -425,57 +425,71 @@ func (w *niiWriter) convertImageToHeader() error {
 	return nil
 }
 
-func MakeNewNii1Header(inDim *[8]int16, inDatatype int32) *Nii1Header {
+func (w *niiWriter) GetNiiData() *Nii {
+	return w.niiData
+}
 
-	// Default Dim value
-	defaultDim := [8]int16{3, 1, 1, 1, 0, 0, 0, 0}
+// SetAt sets the new value at (x, y, z, t) location
+func (w *niiWriter) SetAt(newVal float64, x, y, z, t int64) error {
+	return w.niiData.setAt(newVal, x, y, z, t)
+}
 
-	header := new(Nii1Header)
-	var dim [8]int16
+// SetSliceCode sets the new slice code of the NIFTI image
+func (w *niiWriter) SetSliceCode(sliceCode int32) error {
+	return w.niiData.setSliceCode(sliceCode)
+}
 
-	// If no input Dim is provided then we use the default value
-	if inDim != nil {
-		dim = *inDim
-	} else {
-		dim = defaultDim
-	}
+// SetQFormCode sets the new QForm code
+func (w *niiWriter) SetQFormCode(qFormCode int32) error {
+	return w.niiData.setQFormCode(qFormCode)
+}
 
-	// validate Dim: if there is any problem, apply default Dim
-	if dim[0] < 0 || dim[0] > 7 {
-		dim = defaultDim
-	} else {
-		for c := 1; c <= int(dim[0]); c++ {
-			if dim[c] < 1 {
-				fmt.Printf("bad dim: %d: %d\n", c, dim[c])
-				dim = defaultDim
-				break
-			}
-		}
-	}
+// SetSFormCode sets the new SForm code
+func (w *niiWriter) SetSFormCode(sFormCode int32) error {
+	return w.niiData.setSFormCode(sFormCode)
+}
 
-	// Validate datatype
-	datatype := inDatatype
-	if !IsValidDatatype(datatype) {
-		datatype = constant.DT_FLOAT32
-	}
+// SetDatatype sets the new NIfTI datatype
+func (w *niiWriter) SetDatatype(datatype int32) error {
+	return w.niiData.setDatatype(datatype)
+}
 
-	// Populate the header struct
-	header.SizeofHdr = constant.NII1HeaderSize
-	header.Regular = 'r'
+// SetAffine sets the new 4x4 affine matrix
+func (w *niiWriter) SetAffine(mat matrix.DMat44) {
+	w.niiData.setAffine(mat)
+}
 
-	// Init dim and pixdim
-	header.Dim[0] = dim[0]
-	header.Pixdim[0] = 0.0
-	for c := 1; c <= int(dim[0]); c++ {
-		header.Dim[c] = dim[c]
-		header.Pixdim[c] = 1.0
-	}
+// SetDescrip returns the description with trailing null bytes removed
+func (w *niiWriter) SetDescrip(descrip string) error {
+	return w.niiData.setDescrip(descrip)
+}
 
-	header.Datatype = int16(datatype)
+// SetIntentName sets the new intent name
+func (w *niiWriter) SetIntentName(intentName string) error {
+	return w.niiData.setIntentName(intentName)
+}
 
-	nByper, _ := assignDatatypeSize(datatype)
-	header.Bitpix = 8 * nByper
-	header.Magic = [4]byte{110, 43, 49, 0}
+// SetSliceDuration sets the new slice duration info
+func (w *niiWriter) SetSliceDuration(sliceDuration float64) {
+	w.niiData.setSliceDuration(sliceDuration)
+}
 
-	return header
+// SetSliceStart sets the new slice start info
+func (w *niiWriter) SetSliceStart(sliceStart int64) {
+	w.niiData.setSliceStart(sliceStart)
+}
+
+// SetSliceEnd sets the new slice end info
+func (w *niiWriter) SetSliceEnd(sliceEnd int64) {
+	w.niiData.setSliceEnd(sliceEnd)
+}
+
+// SetXYZUnits sets the new spatial unit of measurements
+func (w *niiWriter) SetXYZUnits(xyzUnit int32) {
+	w.niiData.setXYZUnits(xyzUnit)
+}
+
+// SetTimeUnits sets the new temporal unit of measurements
+func (w *niiWriter) SetTimeUnits(timeUnit int32) {
+	w.niiData.setTimeUnits(timeUnit)
 }
