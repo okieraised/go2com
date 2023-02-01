@@ -8,6 +8,22 @@ import (
 	"testing"
 )
 
+func TestNiiWriter(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/anim3.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out.nii", nii_io.WithNIfTIData(rd.GetNiiData()), nii_io.WithCompression(true))
+	assert.NoError(err)
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
 func TestNii1(t *testing.T) {
 	assert := assert.New(t)
 
@@ -67,7 +83,7 @@ func TestNii1(t *testing.T) {
 	filePath = "/home/tripg/workspace/NIfTI-files/images_structural_unstripped/UPENN-GBM-00009_11/UPENN-GBM-00009_11_FLAIR_unstripped.nii.gz"
 	filePath = "/home/tripg/workspace/test_segment.nii.gz"
 	filePath = "/home/tripg/workspace/anim3.nii.gz"
-	filePath = "/home/tripg/workspace/RGB16_4D.nii.gz"
+	//filePath = "/home/tripg/workspace/RGB16_4D.nii.gz"
 	//filePath = "/home/tripg/workspace/RGB8_4D.nii.gz"
 	//filePath = "/home/tripg/workspace/nifti/JHU_MNI_SS_T1_mask.nii.gz"
 
@@ -222,7 +238,11 @@ func TestNii2(t *testing.T) {
 }
 
 func TestMagicString(t *testing.T) {
-	fmt.Println([]byte("ni1"))
+	fmt.Println([]byte("n+1"))
+
+	x := make([]byte, 100, 100)
+
+	fmt.Println(x)
 }
 
 //func TestFloatToBytes(t *testing.T) {
