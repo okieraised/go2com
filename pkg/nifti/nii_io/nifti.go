@@ -497,7 +497,7 @@ func (n *Nii) setTimeUnits(timeUnit int32) {
 	n.TimeUnits = timeUnit
 }
 
-// setAt sets the new value at (x, y, z, t) location
+// setAt sets the new value in bytes at (x, y, z, t) location
 func (n *Nii) setAt(newVal float64, x, y, z, t int64) error {
 
 	tIndex := t * n.Nx * n.Ny * n.Nz
@@ -514,7 +514,9 @@ func (n *Nii) setAt(newVal float64, x, y, z, t int64) error {
 	dataPoint := n.Volume[index*nByPer : (index+1)*nByPer]
 
 	switch nByPer {
-	case 0, 1:
+	case 0:
+		return nil
+	case 1:
 		if len(dataPoint) > 0 {
 			count := 0
 			var buf bytes.Buffer
@@ -542,28 +544,26 @@ func (n *Nii) setAt(newVal float64, x, y, z, t int64) error {
 			binary.BigEndian.PutUint16(b, v)
 		}
 		copy(n.Volume[index*nByPer:(index+1)*nByPer], b)
-	case 3, 4: // This fits Uint32
-		v := uint32(newVal)
+	case 3:
+		v := math.Float32bits(float32(newVal))
 		b := make([]byte, 4)
-
 		switch n.ByteOrder {
 		case binary.LittleEndian:
 			binary.LittleEndian.PutUint32(b, v)
-			switch len(dataPoint) {
-			case 3:
-				copy(n.Volume[index*nByPer:(index+1)*nByPer], b[:3])
-			case 4:
-				copy(n.Volume[index*nByPer:(index+1)*nByPer], b)
-			}
 		case binary.BigEndian:
 			binary.BigEndian.PutUint32(b, v)
-			switch len(dataPoint) {
-			case 3:
-				copy(n.Volume[index*nByPer:(index+1)*nByPer], b[:3])
-			case 4:
-				copy(n.Volume[index*nByPer:(index+1)*nByPer], b)
-			}
 		}
+		copy(n.Volume[index*nByPer:(index+1)*nByPer], b[:3])
+	case 4: // This fits Uint32
+		v := uint32(newVal)
+		b := make([]byte, 4)
+		switch n.ByteOrder {
+		case binary.LittleEndian:
+			binary.LittleEndian.PutUint32(b, v)
+		case binary.BigEndian:
+			binary.BigEndian.PutUint32(b, v)
+		}
+		copy(n.Volume[index*nByPer:(index+1)*nByPer], b)
 	case 8:
 		v := uint64(newVal)
 		b := make([]byte, 8)
@@ -621,6 +621,7 @@ func (n *Nii) setVolume(vol []byte) error {
 	return nil
 }
 
+// setVoxelToRawVolume converts the 1-D slice of float64 back to byte array
 func (n *Nii) setVoxelToRawVolume(vox *Voxels) error {
 	result := make([]byte, vox.GetRawByteSize(), vox.GetRawByteSize())
 	nByPer := n.NByPer
@@ -629,24 +630,24 @@ func (n *Nii) setVoxelToRawVolume(vox *Voxels) error {
 		switch nByPer {
 		case 0:
 			continue
-		case 1:
-			count := 0
+		case 1: // 1 byte per voxel includes Uint8 and Int8
 			var buf bytes.Buffer
-			err := binary.Write(&buf, n.ByteOrder, voxel)
-			if err != nil {
-				return err
-			}
-			for _, b := range buf.Bytes() {
-				if b != 0x00 {
-					count++
+			switch n.Datatype {
+			case constant.DT_UINT8:
+				err := binary.Write(&buf, n.ByteOrder, uint8(voxel))
+				if err != nil {
+					return err
+				}
+			case constant.DT_INT8:
+				err := binary.Write(&buf, n.ByteOrder, int8(voxel))
+				if err != nil {
+					return err
 				}
 			}
 			copy(result[index*int(nByPer):(index+1)*int(nByPer)], buf.Bytes())
-
 		case 2: // This fits Uint16
 			v := uint16(voxel)
 			b := make([]byte, 2)
-
 			switch n.ByteOrder {
 			case binary.LittleEndian:
 				binary.LittleEndian.PutUint16(b, v)
@@ -654,28 +655,26 @@ func (n *Nii) setVoxelToRawVolume(vox *Voxels) error {
 				binary.BigEndian.PutUint16(b, v)
 			}
 			copy(result[index*int(nByPer):(index+1)*int(nByPer)], b)
-		case 3, 4: // This fits Uint32
-			v := uint32(voxel)
+		case 3: // This fits Uint32 -> RGB24
+			v := math.Float32bits(float32(voxel))
 			b := make([]byte, 4)
-
 			switch n.ByteOrder {
 			case binary.LittleEndian:
 				binary.LittleEndian.PutUint32(b, v)
-				switch nByPer {
-				case 3:
-					copy(result[index*int(nByPer):(index+1)*int(nByPer)], b[:3])
-				case 4:
-					copy(result[index*int(nByPer):(index+1)*int(nByPer)], b)
-				}
 			case binary.BigEndian:
 				binary.BigEndian.PutUint32(b, v)
-				switch nByPer {
-				case 3:
-					copy(result[index*int(nByPer):(index+1)*int(nByPer)], b[:3])
-				case 4:
-					copy(result[index*int(nByPer):(index+1)*int(nByPer)], b)
-				}
 			}
+			copy(result[index*int(nByPer):(index+1)*int(nByPer)], b[:3])
+		case 4: // This fits Uint32
+			v := uint32(voxel)
+			b := make([]byte, 4)
+			switch n.ByteOrder {
+			case binary.LittleEndian:
+				binary.LittleEndian.PutUint32(b, v)
+			case binary.BigEndian:
+				binary.BigEndian.PutUint32(b, v)
+			}
+			copy(result[index*int(nByPer):(index+1)*int(nByPer)], b)
 		case 8:
 			v := uint64(voxel)
 			b := make([]byte, 8)

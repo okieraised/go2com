@@ -22,23 +22,106 @@ import (
 //	assert.NoError(err)
 //}
 
-func TestNiiWriter_FillVoxel(t *testing.T) {
+func TestNiiWriter_WriteUint8(t *testing.T) {
 	assert := assert.New(t)
 
-	filePath := "/home/tripg/workspace/anim3.nii.gz"
+	filePath := "/home/tripg/workspace/uint8.nii.gz"
 
 	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
 	assert.NoError(err)
 	err = rd.Parse()
 	assert.NoError(err)
 
-	fmt.Println(rd.GetVolume(0))
+	voxels := rd.GetVoxels()
+	err = rd.SetVoxelToRawVolume(voxels)
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/uint8_out.nii.gz",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+
+	err = writer.WriteToFile()
+	assert.NoError(err)
 }
+
+func TestNiiWriter_WriteInt16(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/int16.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	voxels := rd.GetVoxels()
+	err = rd.SetVoxelToRawVolume(voxels)
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/int16_out.nii.gz",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
+func TestNiiWriter_WriteRGB24(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/rgb24.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	voxels := rd.GetVoxels()
+	err = rd.SetVoxelToRawVolume(voxels)
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/rgb24_out.nii.gz",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
+func TestNiiWriter_WriteRGB24_2(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/rgb24_2.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	voxels := rd.GetVoxels()
+	err = rd.SetVoxelToRawVolume(voxels)
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/rgb24_2_out.nii.gz",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 func TestNiiWriter_FullAnnotation(t *testing.T) {
 	assert := assert.New(t)
 
 	filePath := "/home/tripg/workspace/anim3.nii.gz"
+	filePath = "/home/tripg/workspace/RGB8_4D.nii.gz"
+	filePath = "/home/tripg/workspace/NIfTI-files/images_structural/UPENN-GBM-00003_11/UPENN-GBM-00003_11_T2.nii.gz"
 
 	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
 	assert.NoError(err)
@@ -58,7 +141,7 @@ func TestNiiWriter_FullAnnotation(t *testing.T) {
 	err = rd.SetVoxelToRawVolume(voxels)
 	assert.NoError(err)
 
-	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out_annotation_2.nii",
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/RGB8_4D_out.nii.gz",
 		nii_io.WithNIfTIData(rd.GetNiiData()),
 		nii_io.WithCompression(true),
 	)
