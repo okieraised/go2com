@@ -22,6 +22,102 @@ import (
 //	assert.NoError(err)
 //}
 
+func TestNiiWriter_Segmentation(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/anim3.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	voxels := rd.GetVoxels()
+
+	for index, voxel := range voxels.GetDataset() {
+		if voxel > -200 {
+			voxels.GetDataset()[index] = 1
+		} else {
+			voxels.GetDataset()[index] = 0
+		}
+	}
+
+	err = rd.SetVoxelToRawVolume(voxels)
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out.nii.gz",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
+func TestNiiWriter_Segmentation_2(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/rgb24.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	voxels := rd.GetVoxels()
+
+	for index, voxel := range voxels.GetDataset() {
+		if voxel > 0 {
+			voxels.GetDataset()[index] = 1
+		} else {
+			voxels.GetDataset()[index] = 0
+		}
+	}
+
+	err = rd.SetVoxelToRawVolume(voxels)
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/rgb24_segmentation.nii.gz",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
+func TestNiiWriter_WriteFloat32(t *testing.T) {
+	assert := assert.New(t)
+
+	filePath := "/home/tripg/workspace/tensor_tr.nii.gz"
+
+	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
+	assert.NoError(err)
+	err = rd.Parse()
+	assert.NoError(err)
+
+	voxels := rd.GetVoxels()
+
+	//for index, voxel := range voxels.GetDataset() {
+	//	if voxel > 0 {
+	//		voxels.GetDataset()[index] = 1
+	//	} else {
+	//		voxels.GetDataset()[index] = 0
+	//	}
+	//}
+
+	err = rd.SetVoxelToRawVolume(voxels)
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/tensor_tr_out.nii.gz",
+		nii_io.WithNIfTIData(rd.GetNiiData()),
+		nii_io.WithCompression(true),
+	)
+
+	err = writer.WriteToFile()
+	assert.NoError(err)
+}
+
 func TestNiiWriter_WriteUint8(t *testing.T) {
 	assert := assert.New(t)
 
@@ -115,72 +211,6 @@ func TestNiiWriter_WriteRGB24_2(t *testing.T) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
-func TestNiiWriter_FullAnnotation(t *testing.T) {
-	assert := assert.New(t)
-
-	filePath := "/home/tripg/workspace/anim3.nii.gz"
-	filePath = "/home/tripg/workspace/RGB8_4D.nii.gz"
-	filePath = "/home/tripg/workspace/NIfTI-files/images_structural/UPENN-GBM-00003_11/UPENN-GBM-00003_11_T2.nii.gz"
-
-	rd, err := nii_io.NewNiiReader(filePath, nii_io.WithInMemory(true))
-	assert.NoError(err)
-	err = rd.Parse()
-	assert.NoError(err)
-
-	voxels := rd.GetVoxels()
-
-	//for index, voxel := range voxels.GetDataset() {
-	//	if voxel > -200 {
-	//		voxels.GetDataset()[index] = 1
-	//	} else {
-	//		voxels.GetDataset()[index] = 0
-	//	}
-	//}
-
-	err = rd.SetVoxelToRawVolume(voxels)
-	assert.NoError(err)
-
-	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/RGB8_4D_out.nii.gz",
-		nii_io.WithNIfTIData(rd.GetNiiData()),
-		nii_io.WithCompression(true),
-	)
-
-	err = writer.WriteToFile()
-	assert.NoError(err)
-
-	//return
-	//
-	//writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out_annotation.nii",
-	//	nii_io.WithNIfTIData(rd.GetNiiData()),
-	//	nii_io.WithCompression(true),
-	//)
-	//
-	////err = writer.SetVolume(img)
-	////assert.NoError(err)
-	//
-	//for x := 0; x < 462; x++ {
-	//	for y := 0; y < 364; y++ {
-	//		for z := 0; z < 50; z++ {
-	//			for tt := 0; tt < 9; tt++ {
-	//				curr := rd.GetAt(int64(x), int64(y), int64(z), int64(tt))
-	//				if curr > -200 {
-	//					err = writer.SetAt(1, int64(x), int64(y), int64(z), int64(tt))
-	//					assert.NoError(err)
-	//				} else if curr >= -720 && curr <= 200 {
-	//					err = writer.SetAt(2, int64(x), int64(y), int64(z), int64(tt))
-	//					assert.NoError(err)
-	//				} else {
-	//					err = writer.SetAt(0, int64(x), int64(y), int64(z), int64(tt))
-	//					assert.NoError(err)
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
-	//err = writer.WriteToFile()
-	//assert.NoError(err)
-}
 
 func TestNiiWriter_EmptyImageData_Filled(t *testing.T) {
 	assert := assert.New(t)

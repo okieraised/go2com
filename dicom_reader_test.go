@@ -30,6 +30,36 @@ func Test_ReaderProfiling(t *testing.T) {
 	assert.NoError(err)
 }
 
+func Test_NewParser_PDF(t *testing.T) {
+	assert := assert.New(t)
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/Downloads/IMG-0003-00001 (1).dcm")
+	assert.NoError(err)
+	for _, fPath := range filePaths {
+		fmt.Println("process:", fPath)
+
+		f, err := os.Open(fPath)
+		assert.NoError(err)
+
+		fInfo, err := f.Stat()
+		assert.NoError(err)
+
+		dcmReader := dcm_io.NewDICOMReader(bufio.NewReader(f), dcm_io.WithSetFileSize(fInfo.Size()))
+
+		err = dcmReader.Parse()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		assert.NoError(err)
+
+		//for _, elem := range dcmReader.GetDataset().Elements {
+		//	fmt.Println(elem)
+		//}
+		fmt.Println(dcmReader.ExportSeriesTags())
+
+	}
+}
+
 func Test_NewParser1(t *testing.T) {
 	assert := assert.New(t)
 	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/test_data")

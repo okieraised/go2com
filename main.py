@@ -53,6 +53,7 @@ fpath = '/home/tripg/Downloads/123.241606668321866.1724728615648318_en.dcm'
 fpath = '/home/tripg/Downloads/1-1.dcm'
 fpath = '/home/tripg/workspace/dicom3/winter.dcm'
 fpath = '/home/tripg/Downloads/PrivateGEImplicitVRBigEndianTransferSyntax16Bits.dcm'
+fpath = '/home/tripg/Downloads/IMG-0003-00001 (1).dcm'
 
 ds = dcmread(fpath, force=True)
 print(ds)

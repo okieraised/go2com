@@ -453,3 +453,13 @@ func (w *niiWriter) SetTimeUnits(timeUnit int32) {
 func (w *niiWriter) SetVolume(vol []byte) error {
 	return w.niiData.setVolume(vol)
 }
+
+// GetVoxels returns the 1-D slices of voxel value as float64 type
+func (w *niiWriter) GetVoxels() *Voxels {
+	return w.niiData.getVoxel()
+}
+
+// SetVoxelToRawVolume converts the float64 slice of voxel back to its corresponding byte slice
+func (w *niiWriter) SetVoxelToRawVolume(vox *Voxels) error {
+	return w.niiData.setVoxelToRawVolume(vox)
+}
