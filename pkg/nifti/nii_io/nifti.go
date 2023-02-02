@@ -6,10 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/okieraised/go2com/internal/matrix"
+	"github.com/okieraised/go2com/pkg/nifti/constant"
 	"math"
 	"strings"
-
-	"github.com/okieraised/go2com/pkg/nifti/constant"
 )
 
 const (
@@ -154,9 +153,23 @@ func (n *Nii) getOrientation() [3]string {
 	return res
 }
 
+func (n *Nii) fillVoxel() *Voxels {
+	vox := NewVoxels(n.Nx, n.Ny, n.Nz, n.Nt)
+
+	for x := int64(0); x < n.Nx; x++ {
+		for y := int64(0); y < n.Ny; y++ {
+			for z := int64(0); z < n.Nz; z++ {
+				for t := int64(0); t < n.Nt; t++ {
+					vox.Set(x, y, z, t, n.getAt(x, y, z, t))
+				}
+			}
+		}
+	}
+	return vox
+}
+
 // getAt returns the value at (x, y, z, t) location
 func (n *Nii) getAt(x, y, z, t int64) float64 {
-
 	tIndex := t * n.Nx * n.Ny * n.Nz
 	zIndex := n.Nx * n.Ny * z
 	yIndex := n.Nx * y
@@ -192,7 +205,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 		case binary.LittleEndian:
 			switch len(dataPoint) {
 			case 3:
-				v = uint32(uint(dataPoint[0]) | uint(dataPoint[1])<<8 | uint(dataPoint[2])<<16)
+				v = uint32(dataPoint[0]) | uint32(dataPoint[1])<<8 | uint32(dataPoint[2])<<16
 				value = float64(math.Float32frombits(v))
 			case 4:
 				v = binary.LittleEndian.Uint32(dataPoint)
@@ -210,7 +223,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 		case binary.BigEndian:
 			switch len(dataPoint) {
 			case 3:
-				v = uint32(uint(dataPoint[2]) | uint(dataPoint[1])<<8 | uint(dataPoint[0])<<16)
+				v = uint32(dataPoint[2]) | uint32(dataPoint[1])<<8 | uint32(dataPoint[0])<<16
 				value = float64(math.Float32frombits(v))
 			case 4:
 				v = binary.BigEndian.Uint32(dataPoint)
@@ -226,7 +239,6 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 				}
 			}
 		}
-
 	case 8:
 		var v uint64
 		switch n.ByteOrder {

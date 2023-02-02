@@ -56,6 +56,8 @@ type NiiReader interface {
 	GetQuaternD() float64
 	// GetHeader returns the NIfTI header
 	GetHeader() interface{}
+	// FillVoxels returns the 1-D slices of voxel value as float64 type
+	FillVoxels() *Voxels
 }
 
 // niiReader define the NIfTI reader structure.
@@ -324,14 +326,12 @@ func (r *niiReader) parseNIfTI() error {
 func (r *niiReader) parseData(header interface{}) error {
 	var statDim int64 = 1
 	var bitpix int16
-	var qFormCode, sFormCode, intentCode, sliceCode, datatype int32
+	var qFormCode, sFormCode, intentCode, sliceCode, datatype, freqDim, phaseDim, sliceDim int32
 	var pixDim0, sclSlope, sclInter, intentP1, intentP2, intentP3, quaternB, quaternC, quaternD, sliceDuration, calMin, calMax float64
 	var sRowX, sRowY, sRowZ [4]float64
 	var intentName [16]uint8
 	var descrip [80]uint8
-	var sliceStart, sliceEnd int64
-	var voxOffset int64
-	var freqDim, phaseDim, sliceDim int32
+	var sliceStart, sliceEnd, voxOffset int64
 
 	switch r.version {
 	case constant.NIIVersion1:
@@ -689,4 +689,9 @@ func (r *niiReader) getVersion() error {
 	}
 	r.data.Version = r.version
 	return nil
+}
+
+// FillVoxels returns the 1-D slices of voxel value as float64 type
+func (r *niiReader) FillVoxels() *Voxels {
+	return r.data.fillVoxel()
 }
