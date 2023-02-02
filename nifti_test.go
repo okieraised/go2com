@@ -32,11 +32,7 @@ func TestNiiWriter_FillVoxel(t *testing.T) {
 	err = rd.Parse()
 	assert.NoError(err)
 
-	_, err = nii_io.MakeEmptyImageFromImg(rd.GetNiiData())
-	assert.NoError(err)
-	//
-	//fmt.Println(rd.GetAt(0, 0, 0, 0))
-	////fmt.Println(voxels)
+	fmt.Println(rd.GetVolume(0))
 }
 
 func TestNiiWriter_FullAnnotation(t *testing.T) {
@@ -49,43 +45,58 @@ func TestNiiWriter_FullAnnotation(t *testing.T) {
 	err = rd.Parse()
 	assert.NoError(err)
 
-	//fmt.Println(rd.GetVolume(8))
-	//fmt.Println(rd.GetAt(198, 180, 0, 7))
-	//return
-	//original := rd.GetNiiData()
+	voxels := rd.GetVoxels()
 
-	//img, err := nii_io.MakeEmptyImageFromImg(rd.GetNiiData())
-	//assert.NoError(err)
+	//for index, voxel := range voxels.GetDataset() {
+	//	if voxel > -200 {
+	//		voxels.GetDataset()[index] = 1
+	//	} else {
+	//		voxels.GetDataset()[index] = 0
+	//	}
+	//}
 
-	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out_annotation.nii",
+	err = rd.SetVoxelToRawVolume(voxels)
+	assert.NoError(err)
+
+	writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out_annotation_2.nii",
 		nii_io.WithNIfTIData(rd.GetNiiData()),
 		nii_io.WithCompression(true),
 	)
 
-	//err = writer.SetVolume(img)
-	//assert.NoError(err)
-
-	for x := 0; x < 462; x++ {
-		for y := 0; y < 364; y++ {
-			for z := 0; z < 50; z++ {
-				for tt := 0; tt < 9; tt++ {
-					curr := rd.GetAt(int64(x), int64(y), int64(z), int64(tt))
-					if curr > -200 {
-						err = writer.SetAt(1, int64(x), int64(y), int64(z), int64(tt))
-						assert.NoError(err)
-					} else if curr >= -720 && curr <= 200 {
-						err = writer.SetAt(2, int64(x), int64(y), int64(z), int64(tt))
-						assert.NoError(err)
-					} else {
-						err = writer.SetAt(0, int64(x), int64(y), int64(z), int64(tt))
-						assert.NoError(err)
-					}
-				}
-			}
-		}
-	}
 	err = writer.WriteToFile()
 	assert.NoError(err)
+
+	//return
+	//
+	//writer, err := nii_io.NewNiiWriter("/home/tripg/workspace/anim3_out_annotation.nii",
+	//	nii_io.WithNIfTIData(rd.GetNiiData()),
+	//	nii_io.WithCompression(true),
+	//)
+	//
+	////err = writer.SetVolume(img)
+	////assert.NoError(err)
+	//
+	//for x := 0; x < 462; x++ {
+	//	for y := 0; y < 364; y++ {
+	//		for z := 0; z < 50; z++ {
+	//			for tt := 0; tt < 9; tt++ {
+	//				curr := rd.GetAt(int64(x), int64(y), int64(z), int64(tt))
+	//				if curr > -200 {
+	//					err = writer.SetAt(1, int64(x), int64(y), int64(z), int64(tt))
+	//					assert.NoError(err)
+	//				} else if curr >= -720 && curr <= 200 {
+	//					err = writer.SetAt(2, int64(x), int64(y), int64(z), int64(tt))
+	//					assert.NoError(err)
+	//				} else {
+	//					err = writer.SetAt(0, int64(x), int64(y), int64(z), int64(tt))
+	//					assert.NoError(err)
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
+	//err = writer.WriteToFile()
+	//assert.NoError(err)
 }
 
 func TestNiiWriter_EmptyImageData_Filled(t *testing.T) {

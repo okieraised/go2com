@@ -10,16 +10,18 @@ import (
 type Voxels struct {
 	voxel                  []float64
 	dimX, dimY, dimZ, dimT int64
+	datatype               int32
 }
 
-func NewVoxels(dimX, dimY, dimZ, dimT int64) *Voxels {
+func NewVoxels(dimX, dimY, dimZ, dimT int64, datatype int32) *Voxels {
 	voxel := make([]float64, dimX*dimY*dimZ*dimT)
 	return &Voxels{
-		voxel: voxel,
-		dimX:  dimX,
-		dimY:  dimY,
-		dimZ:  dimZ,
-		dimT:  dimT,
+		voxel:    voxel,
+		dimX:     dimX,
+		dimY:     dimY,
+		dimZ:     dimZ,
+		dimT:     dimT,
+		datatype: datatype,
 	}
 }
 
@@ -35,6 +37,15 @@ func (v *Voxels) Get(x, y, z, t int64) float64 {
 
 func (v *Voxels) Len() int {
 	return len(v.voxel)
+}
+
+func (v *Voxels) GetDataset() []float64 {
+	return v.voxel
+}
+
+func (v *Voxels) GetRawByteSize() int {
+	nByPer, _ := assignDatatypeSize(v.datatype)
+	return int(v.dimX*v.dimY*v.dimZ*v.dimT) * int(nByPer)
 }
 
 // quaternToMatrix returns the transformation matrix from the quaternion parameters

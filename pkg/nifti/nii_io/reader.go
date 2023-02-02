@@ -56,8 +56,10 @@ type NiiReader interface {
 	GetQuaternD() float64
 	// GetHeader returns the NIfTI header
 	GetHeader() interface{}
-	// FillVoxels returns the 1-D slices of voxel value as float64 type
-	FillVoxels() *Voxels
+	// GetVoxels returns the 1-D slices of voxel value as float64 type
+	GetVoxels() *Voxels
+	// SetVoxelToRawVolume returns the byte slice that corresponds to the 1-D voxel slice
+	SetVoxelToRawVolume(vox *Voxels) error
 }
 
 // niiReader define the NIfTI reader structure.
@@ -691,7 +693,12 @@ func (r *niiReader) getVersion() error {
 	return nil
 }
 
-// FillVoxels returns the 1-D slices of voxel value as float64 type
-func (r *niiReader) FillVoxels() *Voxels {
-	return r.data.fillVoxel()
+// GetVoxels returns the 1-D slices of voxel value as float64 type
+func (r *niiReader) GetVoxels() *Voxels {
+	return r.data.getVoxel()
+}
+
+// SetVoxelToRawVolume converts the float64 slice of voxel back to its corresponding byte slice
+func (r *niiReader) SetVoxelToRawVolume(vox *Voxels) error {
+	return r.data.setVoxelToRawVolume(vox)
 }

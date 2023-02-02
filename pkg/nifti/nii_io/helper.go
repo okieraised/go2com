@@ -600,3 +600,35 @@ func MakeEmptyImageFromHdr(hdr *Nii1Header) ([]byte, error) {
 
 	return bData, nil
 }
+
+func uint64ToFloat64(v uint64, datatype int32) float64 {
+	var value float64
+
+	switch datatype {
+	case constant.DT_FLOAT64:
+		value = float64(v)
+	case constant.DT_INT64:
+		value = float64(int64(v))
+	case constant.DT_UINT64:
+		value = float64(v)
+	case constant.DT_COMPLEX64:
+		value = math.Float64frombits(v)
+	}
+	return value
+}
+
+func uint32ToFloat64(v uint32, datatype int32) float64 {
+	var value float64
+
+	switch datatype {
+	case constant.DT_INT32:
+		value = float64(int32(v))
+	case constant.DT_UINT32:
+		value = float64(v)
+	case constant.DT_FLOAT32:
+		value = float64(float32(v))
+	case constant.DT_RGBA32:
+		value = float64(math.Float32frombits(v))
+	}
+	return value
+}

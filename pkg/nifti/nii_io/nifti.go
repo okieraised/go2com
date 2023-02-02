@@ -153,9 +153,8 @@ func (n *Nii) getOrientation() [3]string {
 	return res
 }
 
-func (n *Nii) fillVoxel() *Voxels {
-	vox := NewVoxels(n.Nx, n.Ny, n.Nz, n.Nt)
-
+func (n *Nii) getVoxel() *Voxels {
+	vox := NewVoxels(n.Nx, n.Ny, n.Nz, n.Nt, n.Datatype)
 	for x := int64(0); x < n.Nx; x++ {
 		for y := int64(0); y < n.Ny; y++ {
 			for z := int64(0); z < n.Nz; z++ {
@@ -209,16 +208,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 				value = float64(math.Float32frombits(v))
 			case 4:
 				v = binary.LittleEndian.Uint32(dataPoint)
-				switch n.Datatype {
-				case constant.DT_INT32:
-					value = float64(int32(v))
-				case constant.DT_UINT32:
-					value = float64(v)
-				case constant.DT_FLOAT32:
-					value = float64(float32(v))
-				case constant.DT_RGBA32:
-					value = float64(math.Float32frombits(v))
-				}
+				value = uint32ToFloat64(v, n.Datatype)
 			}
 		case binary.BigEndian:
 			switch len(dataPoint) {
@@ -227,16 +217,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 				value = float64(math.Float32frombits(v))
 			case 4:
 				v = binary.BigEndian.Uint32(dataPoint)
-				switch n.Datatype {
-				case constant.DT_INT32:
-					value = float64(int32(v))
-				case constant.DT_UINT32:
-					value = float64(v)
-				case constant.DT_FLOAT32:
-					value = float64(float32(v))
-				case constant.DT_RGBA32:
-					value = float64(math.Float32frombits(v))
-				}
+				value = uint32ToFloat64(v, n.Datatype)
 			}
 		}
 	case 8:
@@ -247,16 +228,7 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 		case binary.BigEndian:
 			v = binary.BigEndian.Uint64(dataPoint)
 		}
-		switch n.Datatype {
-		case constant.DT_FLOAT64:
-			value = float64(v)
-		case constant.DT_INT64:
-			value = float64(int64(v))
-		case constant.DT_UINT64:
-			value = float64(v)
-		case constant.DT_COMPLEX64:
-			value = math.Float64frombits(v)
-		}
+		value = uint64ToFloat64(v, n.Datatype)
 	case 16: // Unsupported
 	case 32: // Unsupported
 	default:
@@ -265,7 +237,6 @@ func (n *Nii) getAt(x, y, z, t int64) float64 {
 	if n.SclSlope != 0 && n.Datatype != constant.DT_RGB24 {
 		value = n.SclSlope*value + n.SclInter
 	}
-
 	return value
 }
 
@@ -542,7 +513,7 @@ func (n *Nii) setAt(newVal float64, x, y, z, t int64) error {
 
 	dataPoint := n.Volume[index*nByPer : (index+1)*nByPer]
 
-	switch n.NByPer {
+	switch nByPer {
 	case 0, 1:
 		if len(dataPoint) > 0 {
 			count := 0
@@ -610,7 +581,7 @@ func (n *Nii) setAt(newVal float64, x, y, z, t int64) error {
 	return nil
 }
 
-// setVolume sets the new value at (x, y, z, t) location
+// setVolume sets the new volume
 func (n *Nii) setVolume(vol []byte) error {
 	var bDataLength int64
 
@@ -647,5 +618,79 @@ func (n *Nii) setVolume(vol []byte) error {
 	}
 
 	n.Volume = vol
+	return nil
+}
+
+func (n *Nii) setVoxelToRawVolume(vox *Voxels) error {
+	result := make([]byte, vox.GetRawByteSize(), vox.GetRawByteSize())
+	nByPer := n.NByPer
+
+	for index, voxel := range vox.voxel {
+		switch nByPer {
+		case 0:
+			continue
+		case 1:
+			count := 0
+			var buf bytes.Buffer
+			err := binary.Write(&buf, n.ByteOrder, voxel)
+			if err != nil {
+				return err
+			}
+			for _, b := range buf.Bytes() {
+				if b != 0x00 {
+					count++
+				}
+			}
+			copy(result[index*int(nByPer):(index+1)*int(nByPer)], buf.Bytes())
+
+		case 2: // This fits Uint16
+			v := uint16(voxel)
+			b := make([]byte, 2)
+
+			switch n.ByteOrder {
+			case binary.LittleEndian:
+				binary.LittleEndian.PutUint16(b, v)
+			case binary.BigEndian:
+				binary.BigEndian.PutUint16(b, v)
+			}
+			copy(result[index*int(nByPer):(index+1)*int(nByPer)], b)
+		case 3, 4: // This fits Uint32
+			v := uint32(voxel)
+			b := make([]byte, 4)
+
+			switch n.ByteOrder {
+			case binary.LittleEndian:
+				binary.LittleEndian.PutUint32(b, v)
+				switch nByPer {
+				case 3:
+					copy(result[index*int(nByPer):(index+1)*int(nByPer)], b[:3])
+				case 4:
+					copy(result[index*int(nByPer):(index+1)*int(nByPer)], b)
+				}
+			case binary.BigEndian:
+				binary.BigEndian.PutUint32(b, v)
+				switch nByPer {
+				case 3:
+					copy(result[index*int(nByPer):(index+1)*int(nByPer)], b[:3])
+				case 4:
+					copy(result[index*int(nByPer):(index+1)*int(nByPer)], b)
+				}
+			}
+		case 8:
+			v := uint64(voxel)
+			b := make([]byte, 8)
+			switch n.ByteOrder {
+			case binary.LittleEndian:
+				binary.LittleEndian.PutUint64(b, v)
+			case binary.BigEndian:
+				binary.BigEndian.PutUint64(b, v)
+			}
+			copy(result[index*int(nByPer):(index+1)*int(nByPer)], b)
+		case 16: // Unsupported
+		case 32: // Unsupported
+		default:
+		}
+	}
+	n.Volume = result
 	return nil
 }
