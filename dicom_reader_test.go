@@ -331,6 +331,10 @@ func Test_NewParser7_Single_4(t *testing.T) {
 		err = dcmReader.Parse()
 		assert.NoError(err)
 
+		for _, elem := range dcmReader.GetMetadata().Elements {
+			fmt.Println(elem)
+		}
+
 		for _, elem := range dcmReader.GetDataset().Elements {
 			fmt.Println(elem)
 		}

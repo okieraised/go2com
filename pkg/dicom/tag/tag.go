@@ -12,6 +12,19 @@ const (
 	TagUnknown  = "unknown_tag"
 )
 
+var FileMetaValidTag = map[DicomTag]bool{
+	FileMetaInformationGroupLength: true,
+	FileMetaInformationVersion:     true,
+	MediaStorageSOPClassUID:        true,
+	MediaStorageSOPInstanceUID:     true,
+	TransferSyntaxUID:              true,
+	ImplementationClassUID:         true,
+	ImplementationVersionName:      true,
+	SourceApplicationEntityTitle:   true,
+	PrivateInformationCreatorUID:   true,
+	PrivateInformation:             true,
+}
+
 type TagBrowser struct {
 	Value       interface{} `json:"Value,omitempty" bson:"Value,omitempty"`
 	VR          string      `json:"vr" bson:"vr"`

@@ -52,7 +52,6 @@ func ReadElement(r DcmReader, isImplicit bool, binOrder binary.ByteOrder) (*Elem
 		}
 		return nil, nil
 	}
-
 	dmcTagName := dcmTagInfo.Name
 	dcmVR, err := readVR(r, isImplicit, *tagVal)
 	if err != nil {

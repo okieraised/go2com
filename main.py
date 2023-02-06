@@ -61,9 +61,9 @@ fpath = '/home/tripg/workspace/pydicom_dcm/SC_rgb_jpeg.dcm'
 fpath = '/home/tripg/Downloads/123.241606668321866.1724728615648318_en.dcm'
 fpath = '/home/tripg/workspace/dicom/test_data/File 12943.dcm'
 fpath = '/home/tripg/workspace/pydicom_dcm/no_meta_group_length.dcm'
-fpath = '/home/tripg/workspace/pydicom_dcm/waveform_ecg.dcm'
-fpath = '/home/tripg/workspace/pydicom_dcm/meta_missing_tsyntax.dcm'
-fpath = '/home/tripg/workspace/pydicom_dcm/rtstruct.dcm'
+# fpath = '/home/tripg/workspace/pydicom_dcm/waveform_ecg.dcm'
+# fpath = '/home/tripg/workspace/pydicom_dcm/meta_missing_tsyntax.dcm'
+# fpath = '/home/tripg/workspace/pydicom_dcm/rtstruct.dcm'
 
 ds = dcmread(fpath, force=True)
 print(ds)

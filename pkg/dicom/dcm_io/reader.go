@@ -52,15 +52,16 @@ type DcmReader interface {
 }
 
 type dcmReader struct {
-	reader            *bufio.Reader
-	binaryOrder       binary.ByteOrder
-	dataset           Dataset
-	metadata          Dataset
-	isImplicit        bool
-	keepTrackImplicit bool
-	skipPixelData     bool
-	skipDataset       bool
-	fileSize          int64
+	reader               *bufio.Reader
+	binaryOrder          binary.ByteOrder
+	dataset              Dataset
+	metadata             Dataset
+	allowNonCompliantDcm bool
+	isImplicit           bool
+	keepTrackImplicit    bool
+	skipPixelData        bool
+	skipDataset          bool
+	fileSize             int64
 }
 
 // NewDICOMReader returns a new reader
@@ -76,6 +77,14 @@ func NewDICOMReader(reader *bufio.Reader, options ...func(*dcmReader)) DcmReader
 		opt(parser)
 	}
 	return parser
+}
+
+// WithAllowNonCompliantDcm provides option to keep trying to parse the file even if it's not DICOM compliant
+// e.g.: Missing header, missing FileMetaInformationGroupLength,...
+func WithAllowNonCompliantDcm(allowNonCompliantDcm bool) func(*dcmReader) {
+	return func(s *dcmReader) {
+		s.allowNonCompliantDcm = allowNonCompliantDcm
+	}
 }
 
 // WithSkipPixelData provides option to skip reading pixel data (7FE0,0010).
@@ -297,10 +306,14 @@ func (r *dcmReader) parse() error {
 		return err
 	}
 	_ = r.skip(132)
-	err = r.parseMetadata()
+	//err = r.parseMetadata()
+	err = r.parseMeta()
 	if err != nil {
 		return err
 	}
+
+	// IMPORTANT: Additional check is needed here since there are few instances where the DICOM
+	// meta header is registered as Explicit Little-Endian, but Implicit Little-Endian is used in the body
 	err = r.checkImplicityAgreement()
 	if err != nil {
 		return nil
@@ -319,6 +332,44 @@ func (r *dcmReader) parse() error {
 // setFileSize sets the file size to the reader
 func (r *dcmReader) setFileSize() {
 	_ = r.SetFileSize(r.fileSize)
+}
+
+func (r *dcmReader) parseMeta() error {
+	var metadata []*Element
+	var transferSyntaxUID string
+
+	for {
+		// No longer relied on the MetaInformationGroupLength tag to determine the length of the meta header.
+		// We check if the group tag is 0x0002 before proceeding to read the element. If the group tag is not 0x0002,
+		// then break the loop
+		n, err := r.peek(2)
+		if err != nil {
+			return err
+		}
+		if bytes.Compare(n, []byte{0x2, 0x0}) != 0 {
+			break
+		}
+
+		res, err := ReadElement(r, r.IsImplicit(), r.ByteOrder())
+		if err != nil {
+			return err
+		}
+		metadata = append(metadata, res)
+		if res.Tag == tag.TransferSyntaxUID {
+			transferSyntaxUID = (res.Value.RawValue).(string)
+		}
+	}
+	r.metadata = Dataset{Elements: metadata}
+
+	// Set transfer syntax here for the dataset parser
+	binOrder, isImplicit, err := uid.ParseTransferSyntaxUID(transferSyntaxUID)
+	if err != nil {
+		return err
+	}
+	r.setTransferSyntax(binOrder, isImplicit)
+	r.setOverallImplicit(isImplicit)
+
+	return nil
 }
 
 // parseMetadata parses the file meta information according to
@@ -363,7 +414,7 @@ func (r *dcmReader) parseMetadata() error {
 			transferSyntaxUID = (res.Value.RawValue).(string)
 		}
 		metadata = append(metadata, res)
-		fmt.Println(res)
+		//fmt.Println(res)
 	}
 	dicomMetadata := Dataset{Elements: metadata}
 	r.metadata = dicomMetadata
@@ -378,18 +429,6 @@ func (r *dcmReader) parseMetadata() error {
 	}
 	r.setTransferSyntax(binOrder, isImplicit)
 	r.setOverallImplicit(isImplicit)
-
-	// IMPORTANT: Additional check is needed here since there are few instances where the DICOM
-	// meta header is registered as Explicit Little-Endian, but Implicit Little-Endian is used in the body
-	if transferSyntaxUID == uid.ExplicitVRLittleEndian {
-		firstElem, err := r.reader.Peek(6)
-		if err != nil {
-			return err
-		}
-		if !vr.VRMapper[string(firstElem[4:6])] {
-			r.setTransferSyntax(binOrder, true)
-		}
-	}
 
 	return nil
 }
@@ -422,9 +461,10 @@ func (r *dcmReader) parseDataset() error {
 			}
 		}
 		data = append(data, res)
-		fmt.Println(res)
+		//fmt.Println(res)
 	}
 	dicomDataset := Dataset{Elements: data}
+	//r.dataset.Elements = append(r.dataset.Elements, dicomDataset.Elements...)
 	r.dataset = dicomDataset
 	return nil
 }
