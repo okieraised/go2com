@@ -301,6 +301,11 @@ func (r *dcmReader) parse() error {
 	if err != nil {
 		return err
 	}
+	err = r.checkImplicityAgreement()
+	if err != nil {
+		return nil
+	}
+
 	if r.skipDataset {
 		return nil
 	}
@@ -358,7 +363,7 @@ func (r *dcmReader) parseMetadata() error {
 			transferSyntaxUID = (res.Value.RawValue).(string)
 		}
 		metadata = append(metadata, res)
-		//fmt.Println(res)
+		fmt.Println(res)
 	}
 	dicomMetadata := Dataset{Elements: metadata}
 	r.metadata = dicomMetadata
@@ -389,6 +394,21 @@ func (r *dcmReader) parseMetadata() error {
 	return nil
 }
 
+func (r *dcmReader) checkImplicityAgreement() error {
+	// Need to check if the implicit matches between header and body
+	n, err := r.peek(6)
+	if err != nil {
+		return err
+	}
+	if !vr.VRMapper[string(n[4:6])] && !r.IsImplicit() {
+		r.setTransferSyntax(r.binaryOrder, true)
+	}
+	if vr.VRMapper[string(n[4:6])] && r.IsImplicit() {
+		r.setTransferSyntax(r.binaryOrder, false)
+	}
+	return nil
+}
+
 // parseDataset parses the file dataset after the file meta header
 func (r *dcmReader) parseDataset() error {
 	var data []*Element
@@ -402,7 +422,7 @@ func (r *dcmReader) parseDataset() error {
 			}
 		}
 		data = append(data, res)
-		//fmt.Println(res)
+		fmt.Println(res)
 	}
 	dicomDataset := Dataset{Elements: data}
 	r.dataset = dicomDataset

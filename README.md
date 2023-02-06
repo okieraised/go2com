@@ -1,21 +1,12 @@
-# go2com (DICOM and NIFTI image parser)
+# go2com (DICOM image parser)
 
 ** This package is under active development and can be in a very broken state. Please use the latest released version **
 
 ## TODO
-- [ ] Improve NIfTI reader for large file size
-- [ ] Improve NIfTI writer to export as NIfTI-2 format
 - [ ] Improve DICOM frame parser
-- [ ] Support for additional medical image formats
-- [ ] Support changing value in NIfTI frame
 
 ## Example
 To parse a DICOM file
-```go
-
-```
-
-To parse a single NIfTI file:
 ```go
 
 ```

@@ -479,6 +479,9 @@ func readSequence(r DcmReader, t tag.DicomTag, valueRepresentation string, value
 			}
 			sequences = append(sequences, subElement)
 		}
+		if valueRepresentation == vr.Unknown {
+			r.setTransferSyntax(r.ByteOrder(), r.isTrackingImplicit())
+		}
 	} else {
 		n, err := r.peek(int(valueLength))
 		if err != nil {
@@ -541,7 +544,6 @@ func readDefinedLengthSequences(r DcmReader, b []byte, valueRepresentation strin
 			continue
 		}
 		sequences = append(sequences, subElement)
-		//fmt.Println(subElement)
 	}
 	if valueRepresentation == vr.Unknown {
 		r.setTransferSyntax(r.ByteOrder(), r.isTrackingImplicit())
