@@ -306,8 +306,7 @@ func (r *dcmReader) parse() error {
 		return err
 	}
 	_ = r.skip(132)
-	//err = r.parseMetadata()
-	err = r.parseMeta()
+	err = r.parseMetadata()
 	if err != nil {
 		return err
 	}
@@ -334,7 +333,11 @@ func (r *dcmReader) setFileSize() {
 	_ = r.SetFileSize(r.fileSize)
 }
 
-func (r *dcmReader) parseMeta() error {
+// parseMetadata parses the file meta information according to
+// https://dicom.nema.org/dicom/2013/output/chtml/part10/chapter_7.html
+// the File Meta Information shall be encoded using the Explicit VR Little Endian Transfer Syntax
+// (UID=1.2.840.10008.1.2.1)
+func (r *dcmReader) parseMetadata() error {
 	var metadata []*Element
 	var transferSyntaxUID string
 
@@ -361,67 +364,6 @@ func (r *dcmReader) parseMeta() error {
 	}
 	r.metadata = Dataset{Elements: metadata}
 
-	// Set transfer syntax here for the dataset parser
-	binOrder, isImplicit, err := uid.ParseTransferSyntaxUID(transferSyntaxUID)
-	if err != nil {
-		return err
-	}
-	r.setTransferSyntax(binOrder, isImplicit)
-	r.setOverallImplicit(isImplicit)
-
-	return nil
-}
-
-// parseMetadata parses the file meta information according to
-// https://dicom.nema.org/dicom/2013/output/chtml/part10/chapter_7.html
-// the File Meta Information shall be encoded using the Explicit VR Little Endian Transfer Syntax
-// (UID=1.2.840.10008.1.2.1)
-func (r *dcmReader) parseMetadata() error {
-	var transferSyntaxUID string
-	var metadata []*Element
-
-	res, err := ReadElement(r, r.IsImplicit(), r.ByteOrder())
-	if err != nil {
-		return err
-	}
-
-	metaGroupLength, ok := (res.Value.RawValue).(int)
-	if !ok {
-		return fmt.Errorf("invalid value for tag (0x%x, 0x%x)", res.Tag.Group, res.Tag.Element)
-	}
-
-	metadata = append(metadata, res)
-	// Keep reading the remaining header based on metaGroupLength
-	pBytes, err := r.reader.Peek(metaGroupLength)
-	if err != nil {
-		return err
-	}
-
-	subRd := NewDICOMReader(bufio.NewReader(bytes.NewReader(pBytes)), WithSkipPixelData(r.skipPixelData))
-	for {
-		res, err := ReadElement(subRd, r.IsImplicit(), r.ByteOrder())
-		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				return err
-			}
-		}
-		if res.Tag.Compare(tag.DicomTag{
-			Group:   0x0002,
-			Element: 0x0010,
-		}) == 0 {
-			transferSyntaxUID = (res.Value.RawValue).(string)
-		}
-		metadata = append(metadata, res)
-		//fmt.Println(res)
-	}
-	dicomMetadata := Dataset{Elements: metadata}
-	r.metadata = dicomMetadata
-	err = r.skip(int64(metaGroupLength))
-	if err != nil {
-		return err
-	}
 	// Set transfer syntax here for the dataset parser
 	binOrder, isImplicit, err := uid.ParseTransferSyntaxUID(transferSyntaxUID)
 	if err != nil {
