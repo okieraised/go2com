@@ -51,7 +51,7 @@ func TestNewDICOMReader_2(t *testing.T) {
 		err = rd.Parse()
 		if err != nil {
 			fmt.Println(err)
-			return
+			continue
 		}
 		assert.NoError(err)
 	}
