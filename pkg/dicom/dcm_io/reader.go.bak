@@ -52,15 +52,16 @@ type DcmReader interface {
 }
 
 type dcmReader struct {
-	reader            *bufio.Reader
-	binaryOrder       binary.ByteOrder
-	dataset           Dataset
-	metadata          Dataset
-	isImplicit        bool
-	keepTrackImplicit bool
-	skipPixelData     bool
-	skipDataset       bool
-	fileSize          int64
+	reader               *bufio.Reader
+	binaryOrder          binary.ByteOrder
+	dataset              Dataset
+	metadata             Dataset
+	allowNonCompliantDcm bool
+	isImplicit           bool
+	keepTrackImplicit    bool
+	skipPixelData        bool
+	skipDataset          bool
+	fileSize             int64
 }
 
 // NewDICOMReader returns a new reader
@@ -76,6 +77,14 @@ func NewDICOMReader(reader *bufio.Reader, options ...func(*dcmReader)) DcmReader
 		opt(parser)
 	}
 	return parser
+}
+
+// WithAllowNonCompliantDcm provides option to keep trying to parse the file even if it's not DICOM compliant
+// e.g.: Missing header, missing FileMetaInformationGroupLength,...
+func WithAllowNonCompliantDcm(allowNonCompliantDcm bool) func(*dcmReader) {
+	return func(s *dcmReader) {
+		s.allowNonCompliantDcm = allowNonCompliantDcm
+	}
 }
 
 // WithSkipPixelData provides option to skip reading pixel data (7FE0,0010).
@@ -301,6 +310,14 @@ func (r *dcmReader) parse() error {
 	if err != nil {
 		return err
 	}
+
+	// IMPORTANT: Additional check is needed here since there are few instances where the DICOM
+	// meta header is registered as Explicit Little-Endian, but Implicit Little-Endian is used in the body
+	err = r.checkImplicityAgreement()
+	if err != nil {
+		return nil
+	}
+
 	if r.skipDataset {
 		return nil
 	}
@@ -321,51 +338,32 @@ func (r *dcmReader) setFileSize() {
 // the File Meta Information shall be encoded using the Explicit VR Little Endian Transfer Syntax
 // (UID=1.2.840.10008.1.2.1)
 func (r *dcmReader) parseMetadata() error {
-	var transferSyntaxUID string
 	var metadata []*Element
+	var transferSyntaxUID string
 
-	res, err := ReadElement(r, r.IsImplicit(), r.ByteOrder())
-	if err != nil {
-		return err
-	}
-
-	metaGroupLength, ok := (res.Value.RawValue).(int)
-	if !ok {
-		return fmt.Errorf("invalid value for tag (0x%x, 0x%x)", res.Tag.Group, res.Tag.Element)
-	}
-
-	metadata = append(metadata, res)
-	// Keep reading the remaining header based on metaGroupLength
-	pBytes, err := r.reader.Peek(metaGroupLength)
-	if err != nil {
-		return err
-	}
-
-	subRd := NewDICOMReader(bufio.NewReader(bytes.NewReader(pBytes)), WithSkipPixelData(r.skipPixelData))
 	for {
-		res, err := ReadElement(subRd, r.IsImplicit(), r.ByteOrder())
+		// No longer relied on the MetaInformationGroupLength tag to determine the length of the meta header.
+		// We check if the group tag is 0x0002 before proceeding to read the element. If the group tag is not 0x0002,
+		// then break the loop
+		n, err := r.peek(2)
 		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				return err
-			}
+			return err
 		}
-		if res.Tag.Compare(tag.DicomTag{
-			Group:   0x0002,
-			Element: 0x0010,
-		}) == 0 {
-			transferSyntaxUID = (res.Value.RawValue).(string)
+		if bytes.Compare(n, []byte{0x2, 0x0}) != 0 {
+			break
+		}
+
+		res, err := ReadElement(r, r.IsImplicit(), r.ByteOrder())
+		if err != nil {
+			return err
 		}
 		metadata = append(metadata, res)
-		//fmt.Println(res)
+		if res.Tag == tag.TransferSyntaxUID {
+			transferSyntaxUID = (res.Value.RawValue).(string)
+		}
 	}
-	dicomMetadata := Dataset{Elements: metadata}
-	r.metadata = dicomMetadata
-	err = r.skip(int64(metaGroupLength))
-	if err != nil {
-		return err
-	}
+	r.metadata = Dataset{Elements: metadata}
+
 	// Set transfer syntax here for the dataset parser
 	binOrder, isImplicit, err := uid.ParseTransferSyntaxUID(transferSyntaxUID)
 	if err != nil {
@@ -374,18 +372,21 @@ func (r *dcmReader) parseMetadata() error {
 	r.setTransferSyntax(binOrder, isImplicit)
 	r.setOverallImplicit(isImplicit)
 
-	// IMPORTANT: Additional check is needed here since there are few instances where the DICOM
-	// meta header is registered as Explicit Little-Endian, but Implicit Little-Endian is used in the body
-	if transferSyntaxUID == uid.ExplicitVRLittleEndian {
-		firstElem, err := r.reader.Peek(6)
-		if err != nil {
-			return err
-		}
-		if !vr.VRMapper[string(firstElem[4:6])] {
-			r.setTransferSyntax(binOrder, true)
-		}
-	}
+	return nil
+}
 
+func (r *dcmReader) checkImplicityAgreement() error {
+	// Need to check if the implicit matches between header and body
+	n, err := r.peek(6)
+	if err != nil {
+		return err
+	}
+	if !vr.VRMapper[string(n[4:6])] && !r.IsImplicit() {
+		r.setTransferSyntax(r.binaryOrder, true)
+	}
+	if vr.VRMapper[string(n[4:6])] && r.IsImplicit() {
+		r.setTransferSyntax(r.binaryOrder, false)
+	}
 	return nil
 }
 
@@ -405,6 +406,7 @@ func (r *dcmReader) parseDataset() error {
 		//fmt.Println(res)
 	}
 	dicomDataset := Dataset{Elements: data}
+	//r.dataset.Elements = append(r.dataset.Elements, dicomDataset.Elements...)
 	r.dataset = dicomDataset
 	return nil
 }
