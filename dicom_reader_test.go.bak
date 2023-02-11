@@ -124,6 +124,54 @@ func Test_NewParser1(t *testing.T) {
 	}
 }
 
+func Test_NewParser1_1(t *testing.T) {
+	assert := assert.New(t)
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/test_data")
+	assert.NoError(err)
+	for _, fPath := range filePaths {
+		fmt.Println("process:", fPath)
+
+		f, err := os.Open(fPath)
+		assert.NoError(err)
+
+		fInfo, err := f.Stat()
+		assert.NoError(err)
+
+		rd := NewDICOMReader(bufio.NewReader(f), WithSetFileSize(fInfo.Size()))
+
+		err = rd.Parse()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		assert.NoError(err)
+	}
+}
+
+func Test_NewParser2_1(t *testing.T) {
+	assert := assert.New(t)
+	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/test_full")
+	assert.NoError(err)
+	for _, fPath := range filePaths {
+		fmt.Println("process:", fPath)
+		f, err := os.Open(fPath)
+		assert.NoError(err)
+
+		fInfo, err := f.Stat()
+		assert.NoError(err)
+
+		rd := NewDICOMReader(bufio.NewReader(f), WithSetFileSize(fInfo.Size()))
+
+		err = rd.Parse()
+		if err != nil {
+			if strings.Contains(err.Error(), "not in valid dicom format") {
+				continue
+			}
+		}
+		assert.NoError(err)
+	}
+}
+
 func Test_NewParser2(t *testing.T) {
 	assert := assert.New(t)
 	filePaths, err := utils.ReadDirRecursively("/home/tripg/workspace/dicom/test_full")
@@ -330,6 +378,10 @@ func Test_NewParser7_Single_4(t *testing.T) {
 
 		err = dcmReader.Parse()
 		assert.NoError(err)
+
+		for _, elem := range dcmReader.GetMetadata().Elements {
+			fmt.Println(elem)
+		}
 
 		for _, elem := range dcmReader.GetDataset().Elements {
 			fmt.Println(elem)

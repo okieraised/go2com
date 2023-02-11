@@ -12,6 +12,19 @@ const (
 	TagUnknown  = "unknown_tag"
 )
 
+var FileMetaValidTag = map[DicomTag]bool{
+	FileMetaInformationGroupLength: true,
+	FileMetaInformationVersion:     true,
+	MediaStorageSOPClassUID:        true,
+	MediaStorageSOPInstanceUID:     true,
+	TransferSyntaxUID:              true,
+	ImplementationClassUID:         true,
+	ImplementationVersionName:      true,
+	SourceApplicationEntityTitle:   true,
+	PrivateInformationCreatorUID:   true,
+	PrivateInformation:             true,
+}
+
 type TagBrowser struct {
 	Value       interface{} `json:"Value,omitempty" bson:"Value,omitempty"`
 	VR          string      `json:"vr" bson:"vr"`
@@ -24,10 +37,10 @@ type DicomTag struct {
 }
 
 type TagInfo struct {
-	VR     string
-	Name   string
-	VM     string
-	Status string
+	VR     string `json:"vr"`
+	Name   string `json:"name"`
+	VM     string `json:"vm"`
+	Status string `json:"status"`
 }
 
 // Compare checks if 2 tags are equal. If equals, return 0, else returns 1

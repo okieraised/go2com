@@ -3,7 +3,7 @@
 ** This package is under active development and can be in a very broken state. Please use the latest released version **
 
 ## TODO
-- [ ] Improve DICOM frame parser
+- [ ] Improve DICOM PixelData frame parser
 
 ## Example
 To parse a DICOM file
