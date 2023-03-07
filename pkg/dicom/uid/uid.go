@@ -13,13 +13,12 @@ func ParseTransferSyntaxUID(uid string) (bo binary.ByteOrder, implicit bool, err
 		fallthrough
 	case ExplicitVRLittleEndian, JPEGBaselineProcess1, JPEG2000ImageCompressionLosslessOnly,
 		JPEGBaselineProcess2And4, JPEGLosslessNonHierarchicalProcesses14, JPEGLSLosslessImageCompression,
-		JPEGLSLossyNearLosslessImageCompression, JPEG2000ImageCompression, MPEG4AVCH264highProfile, MPEG4AVCH264BDCompatibleHighProfile,
-		JPEGLosslessNonHierarchicalFirstOrderPredictionProcess14, RLELossless:
+		JPEGLSLossyNearLosslessImageCompression, JPEG2000ImageCompression, MPEG4AVCH264highProfile,
+		MPEG4AVCH264BDCompatibleHighProfile, JPEGLosslessNonHierarchicalFirstOrderPredictionProcess14,
+		RLELossless:
 		return binary.LittleEndian, false, nil
 	case ExplicitVRBigEndian:
 		return binary.BigEndian, false, nil
-	case PrivateGELittleEndianImplicitWithBigEndianPixelData:
-		return binary.LittleEndian, true, nil
 	default:
 		return binary.BigEndian, false, fmt.Errorf("unsupported transfer syntax: %v", uid)
 	}

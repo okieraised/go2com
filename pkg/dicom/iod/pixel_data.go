@@ -1,48 +1,46 @@
 package iod
 
 import (
-	"bufio"
-	"bytes"
-	"fmt"
-	"github.com/okieraised/go2com/pkg/dicom/dcm_io"
+	"github.com/okieraised/go2com/pkg/dicom/dataset"
+	"github.com/okieraised/go2com/pkg/dicom/element"
 	"github.com/okieraised/go2com/pkg/dicom/tag"
 	"github.com/okieraised/go2com/pkg/dicom/uid"
-	"io"
 )
 
-type PixelDataMacro map[tag.DicomTag]*dcm_io.Element
+type PixelDataMacro map[tag.DicomTag]*element.Element
 
 // GetPixelDataMacroAttributes retrieves the tags and values corresponding to the PixelData macro
-//    +------------------------------------------------+
-//    | Element                                        |
-//    +-------------+---------------------------+------+
-//    | Tag         | Keyword                   | Type |
-//    +=============+===========================+======+
-//    | (0028,0002) | SamplesPerPixel           | 1    |
-//    +-------------+---------------------------+------+
-//    | (0028,0004) | PhotometricInterpretation | 1    |
-//    +-------------+---------------------------+------+
-//    | (0028,0006) | PlanarConfiguration       | 1C   |
-//    +-------------+---------------------------+------+
-//    | (0028,0008) | NumberOfFrames            | 1C   |
-//    +-------------+---------------------------+------+
-//    | (0028,0010) | Rows                      | 1    |
-//    +-------------+---------------------------+------+
-//    | (0028,0011) | Columns                   | 1    |
-//    +-------------+---------------------------+------+
-//    | (0028,0100) | BitsAllocated             | 1    |
-//    +-------------+---------------------------+------+
-//    | (0028,0101) | BitsStored                | 1    |
-//    +-------------+---------------------------+------+
-//    | (0028,0103) | PixelRepresentation       | 1    |
-//    +-------------+---------------------------+------+
-//    | (7FE0,0008) | FloatPixelData            | 1C   |
-//    +-------------+---------------------------+------+
-//    | (7FE0,0009) | DoubleFloatPixelData      | 1C   |
-//    +-------------+---------------------------+------+
-//    | (7FE0,0010) | PixelData                 | 1C   |
-//    +-------------+---------------------------+------+
-func GetPixelDataMacroAttributes(ds, meta dcm_io.Dataset) PixelDataMacro {
+//
+//	+------------------------------------------------+
+//	| Element                                        |
+//	+-------------+---------------------------+------+
+//	| Tag         | Keyword                   | Type |
+//	+=============+===========================+======+
+//	| (0028,0002) | SamplesPerPixel           | 1    |
+//	+-------------+---------------------------+------+
+//	| (0028,0004) | PhotometricInterpretation | 1    |
+//	+-------------+---------------------------+------+
+//	| (0028,0006) | PlanarConfiguration       | 1C   |
+//	+-------------+---------------------------+------+
+//	| (0028,0008) | NumberOfFrames            | 1C   |
+//	+-------------+---------------------------+------+
+//	| (0028,0010) | Rows                      | 1    |
+//	+-------------+---------------------------+------+
+//	| (0028,0011) | Columns                   | 1    |
+//	+-------------+---------------------------+------+
+//	| (0028,0100) | BitsAllocated             | 1    |
+//	+-------------+---------------------------+------+
+//	| (0028,0101) | BitsStored                | 1    |
+//	+-------------+---------------------------+------+
+//	| (0028,0103) | PixelRepresentation       | 1    |
+//	+-------------+---------------------------+------+
+//	| (7FE0,0008) | FloatPixelData            | 1C   |
+//	+-------------+---------------------------+------+
+//	| (7FE0,0009) | DoubleFloatPixelData      | 1C   |
+//	+-------------+---------------------------+------+
+//	| (7FE0,0010) | PixelData                 | 1C   |
+//	+-------------+---------------------------+------+
+func GetPixelDataMacroAttributes(ds, meta dataset.Dataset) PixelDataMacro {
 	res := make(PixelDataMacro, 0)
 	for _, elem := range meta.Elements {
 		if elem.Tag == tag.TransferSyntaxUID {
@@ -113,79 +111,6 @@ func (px PixelDataMacro) GetExpectedPixelData() int {
 	}
 
 	return length
-}
-
-func (px PixelDataMacro) ReadEncapsulatedPixelData() ([]byte, error) {
-	pixelDataElem := px[tag.PixelData]
-	rawPixel, ok := pixelDataElem.Value.RawValue.([]byte)
-	if !ok {
-		return nil, fmt.Errorf("cannot convert pixel data to byte array")
-	}
-
-	if uid.UncompressedSyntax[px[tag.TransferSyntaxUID].Value.RawValue.(string)] {
-		return rawPixel, nil
-	}
-
-	bufRd := bufio.NewReaderSize(bytes.NewReader(rawPixel), int(pixelDataElem.ValueLength))
-	pixReader := dcm_io.NewDICOMReader(bufRd, dcm_io.WithSkipPixelData(true))
-	actualPixelData := make([]byte, 0, int(pixelDataElem.ValueLength))
-	index := 0
-	for {
-		var tGroup, tElem uint16
-		tGroup, err := pixReader.readUInt16()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-		tElem, err = pixReader.readUInt16()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-
-		tTag := tag.DicomTag{
-			Group:   tGroup,
-			Element: tElem,
-		}
-
-		if tTag == tag.SequenceDelimitationItem {
-			break
-		}
-
-		tValueLength, err := pixReader.ReadUInt32()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-
-		rawValue, err := pixReader.peek(int(tValueLength))
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-		// The first item is the basic offset table, so we skip it
-		if index > 0 {
-			actualPixelData = append(actualPixelData, rawValue...)
-		}
-		_, err = pixReader.discard(int(tValueLength))
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-		index++
-	}
-
-	return actualPixelData, nil
 }
 
 func (px PixelDataMacro) ValidatePixelData() bool {

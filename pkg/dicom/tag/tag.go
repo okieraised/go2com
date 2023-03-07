@@ -12,19 +12,6 @@ const (
 	TagUnknown  = "unknown_tag"
 )
 
-var FileMetaValidTag = map[DicomTag]bool{
-	FileMetaInformationGroupLength: true,
-	FileMetaInformationVersion:     true,
-	MediaStorageSOPClassUID:        true,
-	MediaStorageSOPInstanceUID:     true,
-	TransferSyntaxUID:              true,
-	ImplementationClassUID:         true,
-	ImplementationVersionName:      true,
-	SourceApplicationEntityTitle:   true,
-	PrivateInformationCreatorUID:   true,
-	PrivateInformation:             true,
-}
-
 type TagBrowser struct {
 	Value       interface{} `json:"Value,omitempty" bson:"Value,omitempty"`
 	VR          string      `json:"vr" bson:"vr"`
@@ -37,10 +24,10 @@ type DicomTag struct {
 }
 
 type TagInfo struct {
-	VR     string `json:"vr"`
-	Name   string `json:"name"`
-	VM     string `json:"vm"`
-	Status string `json:"status"`
+	VR     string
+	Name   string
+	VM     string
+	Status string
 }
 
 // Compare checks if 2 tags are equal. If equals, return 0, else returns 1
@@ -123,18 +110,19 @@ func FindByName(name string) (TagInfo, error) {
 	return TagInfo{}, fmt.Errorf("could not find tag %s", name)
 }
 
-var once = sync.Once{}
-
-// init generates pre-defined tags as a dictionary
-func init() {
-	once.Do(func() {
-		InitTagDict()
-	})
-}
+var lock = &sync.RWMutex{}
 
 func InitTagDict() map[DicomTag]TagInfo {
+	lock.Lock()
+	defer lock.Unlock()
 	if TagDict == nil {
 		initTag()
 	}
 	return TagDict
+}
+
+func init() {
+	if TagDict == nil {
+		initTag()
+	}
 }

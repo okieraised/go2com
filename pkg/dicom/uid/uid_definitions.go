@@ -21,12 +21,10 @@ const (
 	VerificationSOPClass            = "1.2.840.10008.1.1"
 )
 
-// Define the support transfer syntax
 const (
 	ImplicitVRLittleEndian                                   = "1.2.840.10008.1.2"
 	ExplicitVRLittleEndian                                   = "1.2.840.10008.1.2.1"
 	ExplicitVRBigEndian                                      = "1.2.840.10008.1.2.2"
-	PrivateGELittleEndianImplicitWithBigEndianPixelData      = "1.2.840.113619.5.2"
 	RLELossless                                              = "1.2.840.10008.1.2.5"
 	DeflatedExplicitVRLittleEndian                           = "1.2.840.10008.1.2.1.99"
 	JPEGBaselineProcess1                                     = "1.2.840.10008.1.2.4.50"
@@ -58,7 +56,6 @@ var UncompressedSyntax = map[string]bool{
 var uidMap = map[string]Info{
 	"1.2.840.10008.1.1":                {"1.2.840.10008.1.1", "Verification SOP Class", TypeSOPClass, "", ""},
 	"1.2.840.10008.1.2":                {"1.2.840.10008.1.2", "Implicit VR Little Endian", TypeTransferSyntax, "Default Transfer Syntax for DICOM", ""},
-	"1.2.840.113619.5.2":               {"1.2.840.113619.5.2", "Private GE Little Endian Implicit With BigEndian Pixel Data", TypeTransferSyntax, "G.E Private", ""},
 	"1.2.840.10008.1.2.1":              {"1.2.840.10008.1.2.1", "Explicit VR Little Endian", TypeTransferSyntax, "", ""},
 	"1.2.840.10008.1.2.1.99":           {"1.2.840.10008.1.2.1.99", "Deflated Explicit VR Little Endian", TypeTransferSyntax, "", ""},
 	"1.2.840.10008.1.2.2":              {"1.2.840.10008.1.2.2", "Explicit VR Big Endian", TypeTransferSyntax, "", "Retired"},
