@@ -32,7 +32,8 @@ func InitTagDict() {
 
 // NewParser returns a new dicom parser
 func NewParser(fileReader io.Reader, fileSize int64, skipPixelData, skipDataset bool) (*Parser, error) {
-	dcmReader := reader.NewDcmReader(bufio.NewReader(fileReader), skipPixelData)
+	bufReader := bufio.NewReaderSize(fileReader, 4<<20)
+	dcmReader := reader.NewDcmReader(bufReader, skipPixelData)
 	parser := Parser{
 		skipPixelData: skipPixelData,
 		skipDataset:   skipDataset,
